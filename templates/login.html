@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Revenue Cloud Migration Tool</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--background);
+        }
+        
+        .login-card {
+            width: 100%;
+            max-width: 600px;
+            padding: var(--space-xl);
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+        
+        .login-logo h1 {
+            color: var(--primary-blue);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .connection-list {
+            margin-top: var(--space-lg);
+        }
+        
+        .connection-item {
+            display: block;
+            padding: var(--space-md);
+            margin-bottom: var(--space-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .connection-item:hover {
+            border-color: var(--primary-blue);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .connection-name {
+            font-weight: 600;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .connection-details {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .connection-info {
+            flex: 1;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+        
+        .add-connection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: var(--space-lg);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--primary-blue);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .add-connection:hover {
+            border-color: var(--primary-blue);
+            background: rgba(0,102,204,0.05);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+            color: var(--text-primary);
+        }
+        
+        .help-text {
+            background: var(--background);
+            padding: var(--space-md);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--space-lg);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card card">
+            <div class="login-logo">
+                <h1>Revenue Cloud Migration Tool</h1>
+                <p class="text-secondary">Connect to your Salesforce organization to get started</p>
+            </div>
+            
+            <div id="error-message" class="alert alert-error d-none"></div>
+            <div id="success-message" class="alert alert-success d-none"></div>
+            
+            <!-- Help Text -->
+            <div class="help-text">
+                <strong>How this works:</strong><br>
+                This tool uses the Salesforce CLI to connect to your orgs. Each connection is authenticated 
+                through Salesforce's secure OAuth flow. Your credentials are managed by the Salesforce CLI, 
+                not stored in this application.
+            </div>
+            
+            <!-- Existing Connections Section -->
+            <div id="existing-connections-section">
+                <div class="section-title">Saved Connections</div>
+                <div id="connection-list" class="connection-list">
+                    <div id="connections-loading" class="text-center">
+                        <div class="spinner"></div>
+                        <p class="text-secondary mt-3">Checking for saved connections...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Or Divider -->
+            <div class="text-center my-4 text-secondary">— or —</div>
+            
+            <!-- Add New Connection Section -->
+            <div class="text-center">
+                <button class="btn btn-primary btn-large" onclick="showAddConnectionModal()">
+                    Connect to New Salesforce Org
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Connection Modal -->
+    <div class="modal-overlay" id="add-connection-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                Connect to Salesforce Organization
+            </div>
+            <form id="add-connection-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="conn-name">Connection Name <span style="color: var(--error-red);">*</span></label>
+                        <input type="text" class="form-input" id="conn-name" required placeholder="e.g., Production, UAT Sandbox">
+                        <div class="form-hint">A friendly name to identify this connection</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="conn-type">Organization Type <span style="color: var(--error-red);">*</span></label>
+                        <select class="form-select" id="conn-type" required onchange="updateOrgTypeHint()">
+                            <option value="production">Production</option>
+                            <option value="sandbox" selected>Sandbox</option>
+                            <option value="scratch">Scratch Org</option>
+                            <option value="devhub">Dev Hub</option>
+                        </select>
+                        <div class="form-hint" id="org-type-hint">Will use test.salesforce.com for login</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="conn-description">Description</label>
+                        <textarea class="form-textarea" id="conn-description" rows="3" placeholder="Optional notes about this connection"></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>What happens next:</strong><br>
+                        1. A new browser window will open to Salesforce login<br>
+                        2. Log in with your Salesforce credentials<br>
+                        3. Authorize the Salesforce CLI application<br>
+                        4. Return to this window when complete
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddConnectionModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="connect-btn">
+                        Open Salesforce Login
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let connections = [];
+        
+        // Load connections on page load
+        window.addEventListener('DOMContentLoaded', loadConnections);
+        
+        async function loadConnections() {
+            try {
+                const response = await fetch('/api/connections');
+                const data = await response.json();
+                
+                if (data.success) {
+                    connections = data.connections;
+                    displayConnections();
+                } else {
+                    showError('Failed to load connections');
+                    displayNoConnections();
+                }
+            } catch (error) {
+                console.error('Error loading connections:', error);
+                displayNoConnections();
+            }
+        }
+        
+        function displayConnections() {
+            const container = document.getElementById('connection-list');
+            
+            if (connections.length === 0) {
+                displayNoConnections();
+                return;
+            }
+            
+            // Show existing connections
+            let html = '';
+            
+            connections.forEach(conn => {
+                const statusClass = conn.status === 'active' ? 'text-success' : 
+                                  conn.status === 'expired' ? 'text-warning' : 'text-danger';
+                const statusText = conn.status === 'active' ? '● Active' : 
+                                 conn.status === 'expired' ? '○ Expired - Click to refresh' : '○ Error';
+                const isClickable = conn.status === 'active' || conn.status === 'expired';
+                
+                html += `
+                    <div class="connection-item" ${isClickable ? `onclick="selectConnection('${conn.id}')"` : ''} 
+                         style="${!isClickable ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
+                        <div class="connection-name">${conn.name}</div>
+                        <div class="connection-details">
+                            <div class="connection-info">
+                                <div>${conn.metadata?.username || 'Unknown user'}</div>
+                                <div>${conn.org_type} • Last used: ${formatDate(conn.last_used)}</div>
+                            </div>
+                            <div class="connection-status ${statusClass}">
+                                ${statusText}
+                            </div>
+                        </div>
+                        ${conn.description ? `<div class="text-secondary text-small mt-2">${conn.description}</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function displayNoConnections() {
+            const container = document.getElementById('connection-list');
+            container.innerHTML = `
+                <div class="text-center text-secondary">
+                    <p>No saved connections found.</p>
+                    <p>Click the button below to connect to your first Salesforce org.</p>
+                </div>
+            `;
+        }
+        
+        async function selectConnection(connectionId) {
+            const connection = connections.find(c => c.id === connectionId);
+            
+            if (connection.status === 'expired') {
+                if (confirm(`The connection "${connection.name}" has expired. Would you like to re-authenticate?`)) {
+                    // TODO: Implement refresh
+                    showError('Please use "Connect to New Salesforce Org" to re-authenticate for now.');
+                }
+                return;
+            }
+            
+            showSuccess(`Connecting to ${connection.name}...`);
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        connection_id: connectionId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = data.redirect || '/';
+                } else {
+                    showError(data.error || 'Login failed');
+                }
+            } catch (error) {
+                showError('Connection failed. Please try again.');
+            }
+        }
+        
+        // Add connection form handler
+        document.getElementById('add-connection-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const connectBtn = document.getElementById('connect-btn');
+            const originalText = connectBtn.textContent;
+            connectBtn.disabled = true;
+            connectBtn.textContent = 'Opening Salesforce login...';
+            
+            const name = document.getElementById('conn-name').value;
+            const orgType = document.getElementById('conn-type').value;
+            const description = document.getElementById('conn-description').value;
+            
+            // Show info message
+            showSuccess('Salesforce login window should open. Please complete authentication and return here.');
+            
+            try {
+                const response = await fetch('/api/connections/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: name,
+                        org_type: orgType,
+                        description: description
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeAddConnectionModal();
+                    connections.push(data.connection);
+                    displayConnections();
+                    showSuccess(`Successfully connected to ${data.connection.name}!`);
+                    
+                    // Auto-select the new connection after a brief delay
+                    setTimeout(() => {
+                        selectConnection(data.connection.id);
+                    }, 1500);
+                } else {
+                    showError(data.error || 'Failed to add connection');
+                }
+            } catch (error) {
+                showError('Failed to add connection. Please try again.');
+            } finally {
+                connectBtn.disabled = false;
+                connectBtn.textContent = originalText;
+            }
+        });
+        
+        function showAddConnectionModal() {
+            document.getElementById('add-connection-modal').classList.add('active');
+            document.getElementById('conn-name').focus();
+        }
+        
+        function closeAddConnectionModal() {
+            document.getElementById('add-connection-modal').classList.remove('active');
+            document.getElementById('add-connection-form').reset();
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+            
+            // Hide success message if showing
+            document.getElementById('success-message').classList.add('d-none');
+            
+            setTimeout(() => {
+                errorDiv.classList.add('d-none');
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.classList.remove('d-none');
+            
+            // Hide error message if showing
+            document.getElementById('error-message').classList.add('d-none');
+            
+            setTimeout(() => {
+                successDiv.classList.add('d-none');
+            }, 5000);
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' minutes ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + ' days ago';
+            return date.toLocaleDateString();
+        }
+        
+        // Close modal on overlay click
+        document.getElementById('add-connection-modal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeAddConnectionModal();
+            }
+        });
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAddConnectionModal();
+            }
+        });
+        
+        // Update org type hint
+        function updateOrgTypeHint() {
+            const orgType = document.getElementById('conn-type').value;
+            const hint = document.getElementById('org-type-hint');
+            
+            switch(orgType) {
+                case 'sandbox':
+                    hint.textContent = 'Will use test.salesforce.com for login';
+                    break;
+                case 'production':
+                    hint.textContent = 'Will use login.salesforce.com for login';
+                    break;
+                case 'scratch':
+                    hint.textContent = 'Will use login.salesforce.com for login';
+                    break;
+                case 'devhub':
+                    hint.textContent = 'Will use login.salesforce.com and set as default Dev Hub';
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>

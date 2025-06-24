@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Connections - Revenue Cloud Migration Tool</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="navbar-brand">Revenue Cloud Migration Tool</a>
+                <div class="navbar-menu">
+                    <a href="/" class="btn btn-secondary btn-small">← Back to Home</a>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>Manage Salesforce Connections</h1>
+            <p class="text-secondary">Configure and manage your Salesforce org connections</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="page-content">
+        <div class="container">
+            <!-- Add Connection Button -->
+            <div class="mb-4">
+                <button class="btn btn-primary" onclick="showAddConnectionModal()">
+                    + Add New Connection
+                </button>
+            </div>
+
+            <!-- Connections Table -->
+            <div class="table-wrapper">
+                <table class="data-table" id="connections-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Username</th>
+                            <th>Instance</th>
+                            <th>Status</th>
+                            <th>Last Used</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="connections-tbody">
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="spinner"></div>
+                                <p class="text-secondary mt-3">Loading connections...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Connection Modal -->
+    <div class="modal-overlay" id="add-connection-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                Add Salesforce Connection
+            </div>
+            <form id="add-connection-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="conn-name">Connection Name</label>
+                        <input type="text" class="form-input" id="conn-name" required>
+                        <div class="form-hint">E.g., "Production Org" or "UAT Sandbox"</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="conn-type">Organization Type</label>
+                        <select class="form-select" id="conn-type" required>
+                            <option value="production">Production</option>
+                            <option value="sandbox" selected>Sandbox</option>
+                            <option value="scratch">Scratch Org</option>
+                            <option value="devhub">Dev Hub</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="conn-description">Description</label>
+                        <textarea class="form-textarea" id="conn-description" rows="3"></textarea>
+                        <div class="form-hint">Optional description of this connection</div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> Clicking "Connect" will open Salesforce login in a new window.
+                        Please complete the authentication and return to this window.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddConnectionModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="connect-btn">
+                        Connect to Salesforce
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Test Results Modal -->
+    <div class="modal-overlay" id="test-results-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                Connection Test Results
+            </div>
+            <div class="modal-body" id="test-results-body">
+                <!-- Results will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeTestResultsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let connections = [];
+        
+        // Load connections on page load
+        window.addEventListener('DOMContentLoaded', loadConnections);
+        
+        async function loadConnections() {
+            try {
+                const response = await fetch('/api/connections');
+                const data = await response.json();
+                
+                if (data.success) {
+                    connections = data.connections;
+                    displayConnections();
+                } else {
+                    showError('Failed to load connections');
+                }
+            } catch (error) {
+                console.error('Error loading connections:', error);
+                showError('Failed to load connections');
+            }
+        }
+        
+        function displayConnections() {
+            const tbody = document.getElementById('connections-tbody');
+            
+            if (connections.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-secondary">
+                            No connections configured. Click "Add New Connection" to get started.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = connections.map(conn => {
+                const statusClass = conn.status === 'active' ? 'text-success' : 
+                                  conn.status === 'expired' ? 'text-warning' : 'text-danger';
+                const statusIcon = conn.status === 'active' ? '●' : 
+                                 conn.status === 'expired' ? '◐' : '○';
+                
+                const instance = conn.metadata?.instance_url ? 
+                    new URL(conn.metadata.instance_url).hostname.split('.')[0] : 'N/A';
+                
+                return `
+                    <tr>
+                        <td><strong>${conn.name}</strong></td>
+                        <td>${conn.org_type}</td>
+                        <td>${conn.metadata?.username || 'N/A'}</td>
+                        <td>${instance}</td>
+                        <td class="${statusClass}">${statusIcon} ${conn.status}</td>
+                        <td>${formatDate(conn.last_used)}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-small" onclick="testConnection('${conn.id}')">Test</button>
+                                ${conn.status === 'expired' ? 
+                                    `<button class="btn btn-small" onclick="refreshConnection('${conn.id}')">Refresh</button>` : 
+                                    ''}
+                                <button class="btn btn-danger btn-small" onclick="deleteConnection('${conn.id}')">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Add connection form handler
+        document.getElementById('add-connection-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const connectBtn = document.getElementById('connect-btn');
+            connectBtn.disabled = true;
+            connectBtn.textContent = 'Connecting...';
+            
+            const name = document.getElementById('conn-name').value;
+            const orgType = document.getElementById('conn-type').value;
+            const description = document.getElementById('conn-description').value;
+            
+            try {
+                const response = await fetch('/api/connections/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: name,
+                        org_type: orgType,
+                        description: description
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeAddConnectionModal();
+                    connections.push(data.connection);
+                    displayConnections();
+                    showSuccess('Connection added successfully!');
+                } else {
+                    showError(data.error || 'Failed to add connection');
+                }
+            } catch (error) {
+                showError('Failed to add connection. Please try again.');
+            } finally {
+                connectBtn.disabled = false;
+                connectBtn.textContent = 'Connect to Salesforce';
+            }
+        });
+        
+        async function testConnection(connectionId) {
+            try {
+                const response = await fetch('/api/connections/test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ connection_id: connectionId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showTestResults(data.result);
+                } else {
+                    showError(data.result?.error || 'Test failed');
+                }
+            } catch (error) {
+                showError('Connection test failed');
+            }
+        }
+        
+        function showTestResults(result) {
+            const body = document.getElementById('test-results-body');
+            
+            if (result.success) {
+                body.innerHTML = `
+                    <div class="alert alert-success">
+                        <strong>✓ Connection Successful!</strong>
+                    </div>
+                    <p><strong>Organization ID:</strong> ${result.org_id}</p>
+                    <p><strong>Username:</strong> ${result.username}</p>
+                    <p><strong>Message:</strong> ${result.message}</p>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div class="alert alert-error">
+                        <strong>✗ Connection Failed</strong>
+                    </div>
+                    <p>${result.error}</p>
+                `;
+            }
+            
+            document.getElementById('test-results-modal').classList.add('active');
+        }
+        
+        async function refreshConnection(connectionId) {
+            if (!confirm('This will open Salesforce login to re-authenticate. Continue?')) {
+                return;
+            }
+            
+            // TODO: Implement refresh
+            showError('Refresh functionality coming soon');
+        }
+        
+        async function deleteConnection(connectionId) {
+            const conn = connections.find(c => c.id === connectionId);
+            if (!confirm(`Delete connection "${conn.name}"? This cannot be undone.`)) {
+                return;
+            }
+            
+            // TODO: Implement delete
+            showError('Delete functionality coming soon');
+        }
+        
+        function showAddConnectionModal() {
+            document.getElementById('add-connection-modal').classList.add('active');
+        }
+        
+        function closeAddConnectionModal() {
+            document.getElementById('add-connection-modal').classList.remove('active');
+            document.getElementById('add-connection-form').reset();
+        }
+        
+        function closeTestResultsModal() {
+            document.getElementById('test-results-modal').classList.remove('active');
+        }
+        
+        function showError(message) {
+            // TODO: Implement toast notifications
+            alert('Error: ' + message);
+        }
+        
+        function showSuccess(message) {
+            // TODO: Implement toast notifications
+            alert('Success: ' + message);
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' minutes ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + ' days ago';
+            return date.toLocaleDateString();
+        }
+        
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = data.redirect;
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+        
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

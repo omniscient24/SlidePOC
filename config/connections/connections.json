@@ -1,0 +1,38 @@
+{
+  "connections": [
+    {
+      "id": "imported_fortra-dev_1750620409",
+      "name": "Fortra Dev",
+      "cli_alias": "fortra-dev",
+      "org_type": "production",
+      "description": "Imported from Salesforce CLI",
+      "created_by": "import",
+      "created_at": "2025-06-22T14:26:49.752200",
+      "last_used": "2025-06-22T16:04:06.836421",
+      "status": "active",
+      "metadata": {
+        "org_id": "00Da500001HMVTvEAP",
+        "instance_url": "https://fortrarcadev-dev-ed.develop.my.salesforce.com",
+        "username": "marc2@coastalcloud.us",
+        "api_version": "64.0"
+      }
+    },
+    {
+      "id": "imported_fortradp2_1750620411",
+      "name": "Fortradp2",
+      "cli_alias": "fortradp2",
+      "org_type": "sandbox",
+      "description": "Imported from Salesforce CLI",
+      "created_by": "import",
+      "created_at": "2025-06-22T14:26:51.032265",
+      "last_used": "2025-06-24T08:09:57.271091",
+      "status": "active",
+      "metadata": {
+        "org_id": "00Ddp000001W6ZZEA0",
+        "instance_url": "https://fortra--fortradp2.sandbox.my.salesforce.com",
+        "username": "marc.debrey.c@helpsystems.com.fortradp2",
+        "api_version": "64.0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Revenue Cloud Migration Tool</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="navbar-brand">Revenue Cloud Migration Tool</a>
+                <div class="navbar-menu">
+                    <div class="connection-selector">
+                        <label>Current Org:</label>
+                        <select class="form-select" id="connection-selector" style="width: auto;">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+                    <a href="/connections" class="btn btn-secondary btn-small">Manage Connections</a>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>Welcome to Revenue Cloud Migration Tool</h1>
+            <p class="text-secondary">Choose how you'd like to proceed with your Revenue Cloud implementation</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="page-content">
+        <div class="container">
+            <div class="grid grid-2">
+                <!-- New Implementation Card -->
+                <div class="card card-clickable" onclick="window.location.href='/new-implementation'">
+                    <div class="card-header">
+                        <h2>New Implementation</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>Starting fresh with Revenue Cloud? Follow our guided implementation process with proper phase management and dependency handling.</p>
+                        <ul style="margin: var(--space-md) 0;">
+                            <li>Phase 1: Foundation Setup</li>
+                            <li>Phase 2: Product Configuration</li>
+                            <li>Phase 3: Pricing & Operations</li>
+                            <li>Phase 4: Go Live</li>
+                        </ul>
+                        <p class="text-secondary">Recommended for new Revenue Cloud implementations</p>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary">Start New Implementation →</button>
+                    </div>
+                </div>
+
+                <!-- Data Management Card -->
+                <div class="card card-clickable" onclick="window.location.href='/data-management'">
+                    <div class="card-header">
+                        <h2>Data Management</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>Already have Revenue Cloud? Manage your data with powerful tools for synchronization, validation, and bulk operations.</p>
+                        <ul style="margin: var(--space-md) 0;">
+                            <li>Sync with Salesforce</li>
+                            <li>Validate data integrity</li>
+                            <li>Bulk upload/download</li>
+                            <li>Field mapping tools</li>
+                        </ul>
+                        <p class="text-secondary">For ongoing data maintenance and updates</p>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary">Manage Data →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="mt-5">
+                <h3>Quick Stats</h3>
+                <div class="grid grid-4">
+                    <div class="card">
+                        <div class="text-center">
+                            <div class="text-xxl text-primary" id="stat-connections">-</div>
+                            <div class="text-secondary">Connections</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="text-center">
+                            <div class="text-xxl text-success" id="stat-synced">-</div>
+                            <div class="text-secondary">Objects Synced</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="text-center">
+                            <div class="text-xxl text-info" id="stat-records">-</div>
+                            <div class="text-secondary">Total Records</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="text-center">
+                            <div class="text-xxl text-warning" id="stat-pending">-</div>
+                            <div class="text-secondary">Pending Tasks</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .text-xxl {
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+
+    <script>
+        // Load session info on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/session');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    // Update connection selector
+                    const selector = document.getElementById('connection-selector');
+                    if (data.connection) {
+                        selector.innerHTML = `<option selected>${data.connection.name}</option>`;
+                    } else {
+                        selector.innerHTML = `<option>No connection selected</option>`;
+                    }
+                    
+                    // Load stats (mock data for now)
+                    document.getElementById('stat-connections').textContent = '2';
+                    document.getElementById('stat-synced').textContent = '23';
+                    document.getElementById('stat-records').textContent = '1.2k';
+                    document.getElementById('stat-pending').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        });
+        
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = data.redirect;
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

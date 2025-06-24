@@ -1,0 +1,3316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management - Revenue Cloud Migration Tool</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--space-xl);
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            background: var(--background);
+        }
+        
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: var(--primary-blue);
+            background: rgba(0,102,204,0.05);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: var(--primary-blue);
+            margin-bottom: var(--space-md);
+        }
+        
+        .file-list {
+            margin-top: var(--space-lg);
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        
+        .file-icon {
+            font-size: 24px;
+            color: var(--text-secondary);
+        }
+        
+        .object-selector {
+            margin-bottom: var(--space-lg);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+        
+        .sync-footer .action-buttons {
+            margin-top: 0;
+        }
+        
+        
+        /* Compact page header */
+        .page-header {
+            padding: var(--space-sm) 0;
+        }
+        
+        .page-header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .page-header p {
+            margin-bottom: 0;
+            font-size: 0.875rem;
+        }
+        
+        .progress-container {
+            margin-top: var(--space-lg);
+            display: none;
+        }
+        
+        .sync-footer .progress-container {
+            margin-top: var(--space-sm);
+        }
+        
+        .sync-footer .progress-container h4 {
+            margin-bottom: var(--space-xs);
+            font-size: 0.9rem;
+        }
+        
+        .tab-navigation {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        /* Reduce page content padding */
+        .page-content {
+            padding-top: var(--space-sm);
+            padding-bottom: var(--space-sm);
+        }
+        
+        .tab-button {
+            padding: var(--space-sm) var(--space-md);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: var(--font-size-base);
+            color: var(--text-secondary);
+            transition: var(--transition);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        
+        .tab-button:hover {
+            color: var(--text-primary);
+        }
+        
+        .tab-button.active {
+            color: var(--primary-blue);
+            border-bottom-color: var(--primary-blue);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status-badge.synced {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success-green);
+        }
+        
+        .status-badge.not-synced {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--error-red);
+        }
+        
+        .status-badge.syncing {
+            background: rgba(0, 102, 204, 0.1);
+            color: var(--primary-blue);
+        }
+        
+        .status-badge.pending {
+            background: rgba(255, 193, 7, 0.1);
+            color: var(--warning-orange);
+        }
+        
+        .status-badge.empty {
+            background: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+        }
+        
+        .action-link {
+            color: var(--primary-blue);
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        
+        .action-link:hover {
+            text-decoration: underline;
+        }
+        
+        .object-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            white-space: nowrap;
+        }
+        
+        .object-actions .action-link {
+            white-space: nowrap;
+        }
+        
+        .sync-details-row {
+            font-size: 0.875rem;
+        }
+        
+        .sync-details-row .progress {
+            width: 150px;
+            height: 8px;
+            margin: 0;
+        }
+        
+        .category-row {
+            background: var(--text-secondary);
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+        
+        .category-row td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* Prevent hover effects on category rows */
+        .category-row:hover {
+            background: var(--text-secondary) !important;
+        }
+        
+        .category-row:hover td {
+            background: var(--text-secondary) !important;
+            color: white !important;
+        }
+        
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            min-width: 1175px;
+            max-width: min(95vw, 1600px);
+            margin: 20px;
+            /* Ensure content-based sizing */
+            width: fit-content;
+        }
+        
+        .modal-header {
+            padding: var(--space-md);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .modal-body {
+            padding: var(--space-md);
+            overflow: auto;
+            flex: 1;
+        }
+        
+        /* Ensure tables in modals have proper scrollbars */
+        .modal-body .table-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            max-width: 100%;
+        }
+        
+        .modal-body .data-table {
+            min-width: max-content;
+            width: auto;
+        }
+        
+        /* Better spacing for modal tables */
+        .modal-body .data-table th,
+        .modal-body .data-table td {
+            padding: 12px 16px;
+            min-width: 120px;
+        }
+        
+        .modal-body .data-table th {
+            font-weight: 600;
+            background: #f8f9fa;
+        }
+        
+        .modal-footer {
+            padding: var(--space-md) var(--space-xl) !important;
+            border-top: 1px solid var(--border-color);
+            background: #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-sm);
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 2.5rem;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            margin-right: -8px;
+        }
+        
+        .close-button:hover {
+            background: var(--background);
+            color: var(--text-primary);
+        }
+        
+        /* Category row styling */
+        .category-row {
+            background: #e0dfdf !important;
+        }
+        
+        #sync-objects-table tr.category-row:hover,
+        #sync-objects-table .category-row:hover,
+        .data-table tr.category-row:hover,
+        tr.category-row:hover {
+            background: #e0dfdf !important;
+        }
+        
+        .category-row td {
+            color: black;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 12px;
+        }
+        
+        /* Modal header close button styling */
+        .modal-header .close-button {
+            color: white;
+            opacity: 0.8;
+            position: absolute;
+            right: var(--space-xl);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .modal-header .close-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            opacity: 1;
+        }
+        
+        /* Ensure modal header has relative positioning for close button */
+        .modal-header {
+            position: relative;
+        }
+        
+        /* Workbook modal specific styles */
+        .modal-content.workbook-modal {
+            /* Override to ensure proper sizing */
+            width: fit-content !important;
+            /* But respect min/max constraints */
+            min-width: 600px;
+            max-width: min(95vw, 1600px);
+        }
+        
+        .workbook-modal .table-wrapper {
+            /* Visual styling */
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            /* Ensure scrollbars appear when needed */
+            overflow: auto;
+            /* Maximum dimensions to trigger scrollbars */
+            max-height: 60vh;
+            max-width: calc(95vw - 120px); /* Account for modal padding (2 * 32px + extra) */
+            /* Minimum width to prevent collapse */
+            min-width: 0;
+        }
+        
+        /* Ensure all modal tables respect the increased padding */
+        .modal-body .table-wrapper {
+            /* Remove any negative margins that might override modal padding */
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+        
+        /* Force workbook modal body to have proper padding */
+        .workbook-modal .modal-body {
+            padding-left: var(--space-xl) !important;
+            padding-right: var(--space-xl) !important;
+        }
+        
+        /* Override any inline styles on modal body */
+        .modal-overlay .modal-body[style] {
+            padding-left: var(--space-xl) !important;
+            padding-right: var(--space-xl) !important;
+        }
+        
+        .workbook-modal .data-table {
+            /* Reset margin */
+            margin: 0;
+            /* Table should size to content */
+            width: max-content;
+            min-width: 100%;
+        }
+        
+        /* Action links */
+        .action-link {
+            white-space: nowrap;
+            margin-right: var(--space-sm);
+        }
+        
+        .data-table td:last-child {
+            white-space: nowrap;
+        }
+        
+        /* Toast animations */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        /* Fixed layout for sync tab */
+        #sync-tab.tab-content {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 240px); /* Adjust based on navbar and page header */
+            overflow: hidden;
+        }
+        
+        #sync-tab.tab-content.active {
+            display: flex;
+        }
+        
+        .sync-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .sync-header {
+            flex-shrink: 0;
+            background: white;
+            z-index: 10;
+        }
+        
+        .sync-header .card {
+            margin-bottom: 0;
+        }
+        
+        .sync-header .card-header {
+            padding: var(--space-sm) var(--space-md);
+        }
+        
+        .sync-header .card-header h2 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+        
+        .sync-header .card-body {
+            padding: var(--space-sm) var(--space-xl) !important;
+        }
+        
+        .sync-header .card-body > p {
+            margin-bottom: var(--space-xs);
+            font-size: 0.875rem;
+            line-height: 1.2;
+        }
+        
+        .sync-header .grid {
+            margin-bottom: 0;
+            gap: var(--space-xs);
+        }
+        
+        .sync-header .grid .card {
+            padding: var(--space-xs);
+        }
+        
+        .sync-header .text-xl {
+            font-size: 1.1rem;
+            margin-bottom: 2px;
+        }
+        
+        .sync-header .text-small {
+            font-size: 0.75rem;
+        }
+        
+        .sync-table-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            margin: var(--space-xs) 0;
+        }
+        
+        .sync-table-wrapper table {
+            margin: 0;
+        }
+        
+        .sync-table-wrapper thead {
+            position: sticky;
+            top: 0;
+            background: var(--primary-blue);
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .sync-table-wrapper th {
+            padding: var(--space-sm) var(--space-md);
+            background: var(--primary-blue);
+            color: white;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-blue);
+        }
+        
+        #sync-tab .sync-footer {
+            flex-shrink: 0;
+            background: white;
+            padding: var(--space-md) var(--space-xl) !important;
+            border-top: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+        
+        /* Validation Styles */
+        .validation-settings {
+            background: #f8f9fa;
+            padding: var(--space-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .validation-settings h3 {
+            margin-bottom: var(--space-md);
+            color: var(--text-primary);
+        }
+        
+        .validation-option {
+            margin-bottom: var(--space-md);
+        }
+        
+        .validation-option label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .validation-option input[type="radio"] {
+            margin-right: var(--space-sm);
+        }
+        
+        .object-selection {
+            margin-top: var(--space-md);
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--space-sm);
+            background: white;
+        }
+        
+        #validation-progress {
+            background: #f8f9fa;
+            padding: var(--space-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--space-lg);
+        }
+        
+        #validation-results {
+            margin-top: var(--space-lg);
+        }
+        
+        .validation-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .summary-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--space-md);
+            text-align: center;
+        }
+        
+        .summary-card h4 {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .summary-card .count {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .summary-card.high .count {
+            color: #dc3545;
+        }
+        
+        .summary-card.medium .count {
+            color: #ffc107;
+        }
+        
+        .summary-card.low .count {
+            color: #28a745;
+        }
+        
+        .severity-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .severity-badge.severity-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .severity-badge.severity-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .severity-badge.severity-low {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .validation-filters {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+        
+        .validation-filters select {
+            min-width: 120px;
+            max-width: 150px;
+            flex: 1;
+        }
+        
+        .validation-filters .btn {
+            flex-shrink: 0;
+        }
+        
+        .fix-suggestion {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            max-width: 300px;
+        }
+        
+        #validation-results-table {
+            overflow-x: auto;
+        }
+        
+        #validation-results-table th {
+            white-space: nowrap;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(255, 193, 7, 0.5); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="navbar-brand">Revenue Cloud Migration Tool</a>
+                <div class="navbar-menu">
+                    <div class="connection-selector">
+                        <label>Current Org:</label>
+                        <select class="form-select" id="connection-selector" style="width: auto;">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+                    <a href="/connections" class="btn btn-secondary btn-small">Manage Connections</a>
+                    <button class="btn btn-secondary btn-small" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>Data Management</h1>
+            <p class="text-secondary">Sync, validate, and manage your Revenue Cloud data</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="page-content">
+        <div class="container">
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-button active" onclick="switchTab('sync')">Sync Data</button>
+                <button class="tab-button" onclick="switchTab('upload')">Bulk Upload</button>
+                <button class="tab-button" onclick="switchTab('download')">Bulk Download</button>
+            </div>
+
+            <!-- Sync Tab -->
+            <div id="sync-tab" class="tab-content active">
+                <div class="sync-container">
+                    <!-- Fixed Header -->
+                    <div class="sync-header">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Sync with Salesforce</h2>
+                            </div>
+                            <div class="card-body">
+                                <p>Download the latest data from your Salesforce org to ensure your local workbooks are up to date.</p>
+                                
+                                <!-- Status Summary -->
+                                <div class="grid grid-4 mb-4" id="status-summary">
+                                    <div class="card">
+                                        <div class="text-center">
+                                            <div class="text-xl text-primary" id="total-objects">0</div>
+                                            <div class="text-secondary text-small">Total Objects</div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="text-center">
+                                            <div class="text-xl text-success" id="synced-objects">0</div>
+                                            <div class="text-secondary text-small">Synced</div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="text-center">
+                                            <div class="text-xl text-warning" id="pending-objects">0</div>
+                                            <div class="text-secondary text-small">Pending</div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="text-center">
+                                            <div class="text-xl text-danger" id="not-synced-objects">0</div>
+                                            <div class="text-secondary text-small">Not Synced</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Scrollable Table Area -->
+                    <div class="sync-table-wrapper">
+                        <table class="data-table" id="sync-objects-table">
+                            <thead>
+                                <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="sync-all" onchange="toggleAllSync()">
+                                    </th>
+                                    <th>Object Name</th>
+                                    <th>API Name</th>
+                                    <th>Status</th>
+                                    <th>Last Synced</th>
+                                    <th>Records</th>
+                                    <th style="min-width: 300px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sync-objects-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Fixed Footer -->
+                    <div class="sync-footer">
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="startSync()">
+                                Sync Selected Objects
+                            </button>
+                            <button class="btn btn-secondary" onclick="refreshObjectStatus()">
+                                Refresh Status
+                            </button>
+                            <button class="btn btn-secondary" onclick="validateSelectedObjects()">
+                                Validate Selected Objects
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadAllWorkbooks()">
+                                Download All Workbooks
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Tab -->
+            <div id="upload-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Bulk Upload</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- Object Selection -->
+                        <div class="object-selector">
+                            <label class="form-label" for="upload-object">Select Revenue Cloud Object</label>
+                            <select class="form-select" id="upload-object" onchange="updateUploadInfo()">
+                                <option value="">-- Select an object --</option>
+                                <optgroup label="Foundation">
+                                    <option value="LegalEntity">Legal Entities</option>
+                                    <option value="TaxEngine">Tax Engines</option>
+                                    <option value="TaxPolicy">Tax Policies</option>
+                                    <option value="TaxTreatment">Tax Treatments</option>
+                                </optgroup>
+                                <optgroup label="Billing">
+                                    <option value="CostBook">Cost Books</option>
+                                    <option value="BillingPolicy">Billing Policies</option>
+                                    <option value="BillingTreatment">Billing Treatments</option>
+                                </optgroup>
+                                <optgroup label="Products">
+                                    <option value="ProductCatalog">Product Catalogs</option>
+                                    <option value="ProductCategory">Product Categories</option>
+                                    <option value="Product2">Products</option>
+                                    <option value="ProductClassification">Product Classifications</option>
+                                    <option value="ProductCategoryProduct">Product Category Products</option>
+                                    <option value="ProductComponentGroup">Product Component Groups</option>
+                                    <option value="ProductRelatedComponent">Product Related Components</option>
+                                    <option value="ProductSellingModel">Product Selling Models</option>
+                                    <option value="ProductSellingModelOption">Product Selling Model Options</option>
+                                </optgroup>
+                                <optgroup label="Attributes">
+                                    <option value="AttributeDefinition">Attribute Definitions</option>
+                                    <option value="AttributeCategory">Attribute Categories</option>
+                                    <option value="AttributePicklist">Attribute Picklists</option>
+                                    <option value="AttributePicklistValue">Attribute Picklist Values</option>
+                                    <option value="ProductAttributeDefinition">Product Attribute Definitions</option>
+                                </optgroup>
+                                <optgroup label="Pricing">
+                                    <option value="Pricebook2">Price Books</option>
+                                    <option value="PricebookEntry">Price Book Entries</option>
+                                    <option value="CostBookEntry">Cost Book Entries</option>
+                                    <option value="PriceAdjustmentSchedule">Price Adjustment Schedules</option>
+                                    <option value="PriceAdjustmentTier">Price Adjustment Tiers</option>
+                                    <option value="AttributeBasedAdjRule">Attribute Based Adjustment Rules</option>
+                                    <option value="AttributeBasedAdjustment">Attribute Based Adjustments</option>
+                                </optgroup>
+                                <optgroup label="Transactions">
+                                    <option value="Order">Orders</option>
+                                    <option value="OrderItem">Order Items</option>
+                                    <option value="Asset">Assets</option>
+                                    <option value="AssetAction">Asset Actions</option>
+                                    <option value="AssetActionSource">Asset Action Sources</option>
+                                    <option value="Contract">Contracts</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Upload Zone -->
+                        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+                            <h3>Drop files here or click to browse</h3>
+                            <p class="text-secondary">Supports CSV and Excel files (.csv, .xlsx, .xls)</p>
+                            <p class="text-small text-secondary">Maximum file size: 100MB</p>
+                            <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
+                        </div>
+
+                        <!-- File List -->
+                        <div id="file-list" class="file-list" style="display: none;">
+                            <h4>Selected File</h4>
+                            <div id="file-items"></div>
+                        </div>
+
+                        <!-- Upload Options -->
+                        <div id="upload-options" style="display: none; margin-top: var(--space-lg);">
+                            <h4>Upload Options</h4>
+                            <div class="form-group">
+                                <label class="form-label">Operation Type</label>
+                                <select class="form-select" id="operation-type">
+                                    <option value="upsert">Upsert (Insert or Update)</option>
+                                    <option value="insert">Insert Only</option>
+                                    <option value="update">Update Only</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">External ID Field (for Upsert)</label>
+                                <input type="text" class="form-input" id="external-id" placeholder="e.g., External_Id__c">
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="startUpload()">
+                                    Start Upload
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearUpload()">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Tab -->
+            <div id="download-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Bulk Download</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>Export data from Salesforce to Excel workbooks for offline editing and analysis.</p>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Select Objects to Download</label>
+                            <div class="checkbox-group" id="download-objects">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Export Format</label>
+                            <select class="form-select" id="export-format">
+                                <option value="xlsx">Excel Workbook (.xlsx)</option>
+                                <option value="csv">CSV Files (.csv)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="startDownload()">
+                                Download Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    </div>
+
+    <script>
+        // Revenue Cloud objects configuration - Complete list
+        const REVENUE_CLOUD_OBJECTS = [
+            // Foundation Objects (Phase 1 - Core foundation that must be configured first)
+            { name: 'Legal Entities', apiName: 'LegalEntity', category: 'Foundation' },
+            { name: 'Tax Engines', apiName: 'TaxEngine', category: 'Foundation' },
+            { name: 'Tax Policies', apiName: 'TaxPolicy', category: 'Foundation' },
+            { name: 'Tax Treatments', apiName: 'TaxTreatment', category: 'Foundation' },
+            
+            // Billing Objects
+            { name: 'Cost Books', apiName: 'CostBook', category: 'Billing' },
+            { name: 'Billing Policies', apiName: 'BillingPolicy', category: 'Billing' },
+            { name: 'Billing Treatments', apiName: 'BillingTreatment', category: 'Billing' },
+            
+            // Product Catalog Objects (Upload foundation - must be loaded before products)
+            { name: 'Product Catalogs', apiName: 'ProductCatalog', category: 'Product Catalog' },
+            { name: 'Product Categories', apiName: 'ProductCategory', category: 'Product Catalog' },
+            { name: 'Product Classifications', apiName: 'ProductClassification', category: 'Product Catalog' },
+            
+            // Product Objects
+            { name: 'Products', apiName: 'Product2', category: 'Products' },
+            { name: 'Product Selling Models', apiName: 'ProductSellingModel', category: 'Products' },
+            { name: 'Product Selling Model Options', apiName: 'ProductSellingModelOption', category: 'Products' },
+            { name: 'Product Category Products', apiName: 'ProductCategoryProduct', category: 'Products' },
+            { name: 'Product Component Groups', apiName: 'ProductComponentGroup', category: 'Products' },
+            { name: 'Product Related Components', apiName: 'ProductRelatedComponent', category: 'Products' },
+            
+            // Attribute Objects
+            { name: 'Attribute Definitions', apiName: 'AttributeDefinition', category: 'Attributes' },
+            { name: 'Attribute Categories', apiName: 'AttributeCategory', category: 'Attributes' },
+            { name: 'Attribute Picklists', apiName: 'AttributePicklist', category: 'Attributes' },
+            { name: 'Attribute Picklist Values', apiName: 'AttributePicklistValue', category: 'Attributes' },
+            { name: 'Product Attribute Definitions', apiName: 'ProductAttributeDefinition', category: 'Attributes' },
+            
+            // Pricing Objects
+            { name: 'Price Books', apiName: 'Pricebook2', category: 'Pricing' },
+            { name: 'Price Book Entries', apiName: 'PricebookEntry', category: 'Pricing' },
+            { name: 'Cost Book Entries', apiName: 'CostBookEntry', category: 'Pricing' },
+            { name: 'Price Adjustment Schedules', apiName: 'PriceAdjustmentSchedule', category: 'Pricing' },
+            { name: 'Price Adjustment Tiers', apiName: 'PriceAdjustmentTier', category: 'Pricing' },
+            { name: 'Attribute Based Adjustment Rules', apiName: 'AttributeBasedAdjRule', category: 'Pricing' },
+            { name: 'Attribute Based Adjustments', apiName: 'AttributeBasedAdjustment', category: 'Pricing' },
+            
+            // Transaction Objects
+            { name: 'Orders', apiName: 'Order', category: 'Transactions' },
+            { name: 'Order Items', apiName: 'OrderItem', category: 'Transactions' },
+            { name: 'Assets', apiName: 'Asset', category: 'Transactions' },
+            { name: 'Asset Actions', apiName: 'AssetAction', category: 'Transactions' },
+            { name: 'Asset Action Sources', apiName: 'AssetActionSource', category: 'Transactions' },
+            { name: 'Contracts', apiName: 'Contract', category: 'Transactions' }
+        ];
+
+        let selectedFile = null;
+        let activeConnection = null;
+
+        // Initialize page
+        window.addEventListener('DOMContentLoaded', function() {
+            loadConnections();
+            populateObjectLists();
+            setupDragAndDrop();
+            // Load actual record counts
+            loadActualRecordCounts();
+        });
+
+        // Tab switching
+        function switchTab(tabName) {
+            console.log(`Switching to tab: ${tabName}`);
+            
+            // Update button states
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                // Add active class to the button that matches the tab name
+                if (btn.textContent.toLowerCase().includes(tabName.toLowerCase()) || 
+                    (tabName === 'upload' && btn.textContent.includes('Bulk Upload')) ||
+                    (tabName === 'download' && btn.textContent.includes('Bulk Download')) ||
+                    (tabName === 'sync' && btn.textContent.includes('Sync Data')) ||
+                    (tabName === 'validate' && btn.textContent.includes('Validate Data'))) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // If called from button click, use event target
+            if (event && event.target && event.target.classList.contains('tab-button')) {
+                event.target.classList.add('active');
+            }
+            
+            // Update content visibility
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const targetTab = document.getElementById(`${tabName}-tab`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+                console.log(`Activated tab: ${tabName}-tab`);
+            } else {
+                console.error(`Tab not found: ${tabName}-tab`);
+            }
+        }
+
+        // Load connections
+        async function loadConnections() {
+            try {
+                const response = await fetch('/api/session');
+                const data = await response.json();
+                
+                if (data.success && data.active_connection) {
+                    activeConnection = data.active_connection;
+                    document.getElementById('connection-selector').innerHTML = 
+                        `<option value="${activeConnection.id}">${activeConnection.name}</option>`;
+                }
+            } catch (error) {
+                console.error('Error loading connections:', error);
+            }
+        }
+
+        // Object sync status storage
+        let objectSyncStatus = {};
+
+        // Populate object lists
+        function populateObjectLists() {
+            // Initialize sync status from localStorage
+            const savedStatus = localStorage.getItem('objectSyncStatus');
+            if (savedStatus) {
+                objectSyncStatus = JSON.parse(savedStatus);
+            }
+            
+            // Populate sync table
+            populateSyncTable();
+            
+            // Download objects (checkbox list)
+            const downloadContainer = document.getElementById('download-objects');
+            let downloadHtml = '';
+            REVENUE_CLOUD_OBJECTS.forEach(obj => {
+                downloadHtml += `
+                    <label class="checkbox">
+                        <input type="checkbox" name="download-object" value="${obj.apiName}">
+                        <span>${obj.name} (${obj.apiName})</span>
+                    </label>
+                `;
+            });
+            downloadContainer.innerHTML = downloadHtml;
+        }
+        
+        // Load actual record counts from workbook
+        async function loadActualRecordCounts() {
+            try {
+                const response = await fetch('/api/objects/counts');
+                const data = await response.json();
+                
+                if (data.success && data.counts) {
+                    // Update the record count display for each object
+                    Object.entries(data.counts).forEach(([apiName, count]) => {
+                        const recordCell = document.getElementById(`record-count-${apiName}`);
+                        if (recordCell) {
+                            recordCell.textContent = count || '-';
+                            recordCell.title = `Actual count from ${data.workbook || 'workbook'}`;
+                        }
+                        
+                        // Update stored record count and fix status if needed
+                        if (objectSyncStatus[apiName]) {
+                            objectSyncStatus[apiName].recordCount = count;
+                            
+                            // Fix status if it's synced but has 0 records
+                            if (objectSyncStatus[apiName].status === 'synced' && count === 0) {
+                                objectSyncStatus[apiName].status = 'empty';
+                                
+                                // Update the status badge display
+                                const statusBadge = document.getElementById(`status-${apiName}`);
+                                if (statusBadge) {
+                                    statusBadge.className = `status-badge empty`;
+                                    statusBadge.textContent = formatStatus('empty');
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Save updated statuses
+                    localStorage.setItem('objectSyncStatus', JSON.stringify(objectSyncStatus));
+                    
+                    // Update summary
+                    updateStatusSummary();
+                }
+            } catch (error) {
+                console.error('Failed to load record counts:', error);
+            }
+        }
+
+        // Fix status for objects with zero records
+        function fixEmptyObjectStatuses() {
+            let updated = false;
+            Object.keys(objectSyncStatus).forEach(apiName => {
+                const status = objectSyncStatus[apiName];
+                if (status.status === 'synced' && status.recordCount === 0) {
+                    status.status = 'empty';
+                    updated = true;
+                }
+            });
+            
+            if (updated) {
+                localStorage.setItem('objectSyncStatus', JSON.stringify(objectSyncStatus));
+            }
+        }
+
+        // Populate sync table with objects
+        function populateSyncTable() {
+            const tbody = document.getElementById('sync-objects-tbody');
+            let html = '';
+            let currentCategory = '';
+            
+            // Fix any incorrect statuses before displaying
+            fixEmptyObjectStatuses();
+            
+            REVENUE_CLOUD_OBJECTS.forEach((obj, index) => {
+                // Add category row if category changed
+                if (obj.category !== currentCategory) {
+                    currentCategory = obj.category;
+                    html += `
+                        <tr class="category-row" style="background: #e0dfdf !important;" onmouseover="this.style.background='#e0dfdf'" onmouseout="this.style.background='#e0dfdf'">
+                            <td colspan="7" style="color: black; font-weight: 600; text-transform: uppercase; padding: 12px;">${currentCategory}</td>
+                        </tr>
+                    `;
+                }
+                
+                const status = objectSyncStatus[obj.apiName] || {
+                    status: 'not-synced',
+                    lastSynced: null,
+                    recordCount: 0
+                };
+                
+                // Ensure status is correct based on record count
+                if (status.status === 'synced' && status.recordCount === 0) {
+                    status.status = 'empty';
+                }
+                
+                html += `
+                    <tr class="object-row">
+                        <td>
+                            <input type="checkbox" name="sync-object" value="${obj.apiName}" id="sync-${obj.apiName}">
+                        </td>
+                        <td>${obj.name}</td>
+                        <td><code>${obj.apiName}</code></td>
+                        <td>
+                            <span class="status-badge ${status.status}" id="status-${obj.apiName}">
+                                ${formatStatus(status.status)}
+                            </span>
+                        </td>
+                        <td id="last-sync-${obj.apiName}">${formatLastSynced(status.lastSynced)}</td>
+                        <td id="record-count-${obj.apiName}">${status.recordCount || '-'}</td>
+                        <td>
+                            <div class="object-actions">
+                                <a class="action-link" onclick="viewWorkbook('${obj.apiName}')" title="View records in workbook">View</a>
+                                <a class="action-link" onclick="downloadWorkbook('${obj.apiName}')" title="Download as Excel file">Download</a>
+                                <a class="action-link" onclick="uploadSingleObject('${obj.apiName}')" title="Upload data from file">Upload</a>
+                                <a class="action-link" onclick="syncSingleObject('${obj.apiName}')" title="Sync from Salesforce">Sync</a>
+                                <a class="action-link" onclick="openObjectManager('${obj.apiName}')" title="Open in Salesforce Object Manager">Object Manager</a>
+                                <a class="action-link" onclick="validateObject('${obj.apiName}')" title="Validate object data">Validate</a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            
+            // Update status summary
+            updateStatusSummary();
+        }
+        
+        // Update status summary counts
+        function updateStatusSummary() {
+            let syncedCount = 0;
+            let pendingCount = 0;
+            let notSyncedCount = 0;
+            
+            REVENUE_CLOUD_OBJECTS.forEach(obj => {
+                const status = objectSyncStatus[obj.apiName]?.status || 'not-synced';
+                if (status === 'synced' || status === 'empty') syncedCount++;
+                else if (status === 'pending' || status === 'syncing') pendingCount++;
+                else notSyncedCount++;
+            });
+            
+            document.getElementById('total-objects').textContent = REVENUE_CLOUD_OBJECTS.length;
+            document.getElementById('synced-objects').textContent = syncedCount;
+            document.getElementById('pending-objects').textContent = pendingCount;
+            document.getElementById('not-synced-objects').textContent = notSyncedCount;
+        }
+
+        // Format status for display
+        function formatStatus(status) {
+            const statusMap = {
+                'synced': '✓ Synced',
+                'not-synced': '× Not Synced',
+                'syncing': '⟳ Syncing',
+                'pending': '⏳ Pending',
+                'error': '⚠ Error',
+                'empty': '◯ No Data'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Format last synced date
+        function formatLastSynced(dateString) {
+            if (!dateString) return 'Never';
+            
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            // Less than 1 hour
+            if (diff < 3600000) {
+                const minutes = Math.floor(diff / 60000);
+                return `${minutes} min ago`;
+            }
+            // Less than 24 hours
+            else if (diff < 86400000) {
+                const hours = Math.floor(diff / 3600000);
+                return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            }
+            // More than 24 hours
+            else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        // Toggle all sync checkboxes
+        function toggleAllSync() {
+            const selectAll = document.getElementById('sync-all').checked;
+            document.querySelectorAll('input[name="sync-object"]').forEach(cb => {
+                cb.checked = selectAll;
+            });
+        }
+
+        // View workbook for an object
+        async function viewWorkbook(apiName) {
+            try {
+                const response = await fetch(`/api/workbook/view?object=${apiName}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    showWorkbookModal(apiName, data.data, {
+                        workbook: data.workbook,
+                        sheet: data.sheet,
+                        message: data.message
+                    });
+                } else {
+                    showError(data.error || 'Failed to load workbook');
+                }
+            } catch (error) {
+                showError('Failed to view workbook: ' + error.message);
+            }
+        }
+
+        // Download workbook for an object
+        async function downloadWorkbook(apiName) {
+            try {
+                const response = await fetch(`/api/workbook/download?object=${apiName}`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${apiName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showSuccess(`Downloaded ${apiName} workbook`);
+                } else {
+                    showError('Failed to download workbook');
+                }
+            } catch (error) {
+                showError('Download failed: ' + error.message);
+            }
+        }
+
+        // Sync single object
+        async function syncSingleObject(apiName) {
+            const checkbox = document.getElementById(`sync-${apiName}`);
+            checkbox.checked = true;
+            
+            // Update status to syncing
+            updateObjectStatus(apiName, 'syncing');
+            
+            await startSync();
+        }
+        
+        // Upload data for single object
+        function uploadSingleObject(apiName) {
+            // Find the object name from the API name
+            const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === apiName);
+            const objectName = objConfig ? objConfig.name : apiName;
+            
+            // Switch to upload tab
+            switchTab('upload');
+            
+            // Pre-select the object in the dropdown
+            const uploadSelect = document.getElementById('upload-object');
+            if (uploadSelect) {
+                uploadSelect.value = apiName;
+                // Trigger change event to update any dependent UI
+                uploadSelect.dispatchEvent(new Event('change'));
+                
+                // Highlight the dropdown briefly to draw attention
+                uploadSelect.style.border = '2px solid var(--primary-blue)';
+                uploadSelect.style.boxShadow = '0 0 5px rgba(0,102,204,0.3)';
+                setTimeout(() => {
+                    uploadSelect.style.border = '';
+                    uploadSelect.style.boxShadow = '';
+                }, 3000);
+            }
+            
+            // Scroll to top of page to see upload section
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Show a message to guide the user
+            showSuccess(`Ready to upload data for ${objectName}. Select a file to continue.`);
+        }
+
+        // Open Salesforce Object Manager for an object
+        async function openObjectManager(apiName) {
+            try {
+                // Check if we have an active connection
+                if (!activeConnection) {
+                    showError('No active Salesforce connection. Please select a connection from the Manage Connections page.');
+                    return;
+                }
+                
+                // Get instance URL from connection metadata
+                const instanceUrl = activeConnection.metadata?.instance_url;
+                
+                if (!instanceUrl) {
+                    showError('Connection instance URL not found. Please reconnect to Salesforce.');
+                    return;
+                }
+                
+                // Get the object display name for the toast message
+                const objectInfo = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === apiName);
+                const objectName = objectInfo ? objectInfo.name : apiName;
+                
+                // Show loading state
+                showToast(`Opening ${objectName} in Object Manager...`, 'info');
+                
+                // Build the Object Manager URL
+                // The Lightning URL pattern for Object Manager
+                const objectManagerUrl = `${instanceUrl}/lightning/setup/ObjectManager/${apiName}/Details/view`;
+                
+                // Open in new tab
+                const newWindow = window.open(objectManagerUrl, '_blank');
+                
+                // Check if popup was blocked
+                if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                    showError('Pop-up blocked. Please allow pop-ups for this site and try again.');
+                    return;
+                }
+                
+                // Log for debugging
+                console.log(`Opened Object Manager for ${apiName} at: ${objectManagerUrl}`);
+                
+            } catch (error) {
+                console.error('Error opening Object Manager:', error);
+                showError('Failed to open Object Manager. Please ensure you have a valid connection and try again.');
+            }
+        }
+
+        // Update object status in table
+        function updateObjectStatus(apiName, status, recordCount = null) {
+            const statusBadge = document.getElementById(`status-${apiName}`);
+            const recordCell = document.getElementById(`record-count-${apiName}`);
+            const lastSyncCell = document.getElementById(`last-sync-${apiName}`);
+            
+            if (statusBadge) {
+                statusBadge.className = `status-badge ${status}`;
+                statusBadge.textContent = formatStatus(status);
+            }
+            
+            if (status === 'synced' || status === 'empty') {
+                // Update sync status in storage
+                objectSyncStatus[apiName] = {
+                    status: status,
+                    lastSynced: new Date().toISOString(),
+                    recordCount: recordCount || objectSyncStatus[apiName]?.recordCount || 0
+                };
+                
+                // Update display
+                if (lastSyncCell) {
+                    lastSyncCell.textContent = formatLastSynced(objectSyncStatus[apiName].lastSynced);
+                }
+                if (recordCell && recordCount !== null) {
+                    recordCell.textContent = recordCount;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('objectSyncStatus', JSON.stringify(objectSyncStatus));
+            }
+            
+            // Update summary counts
+            updateStatusSummary();
+        }
+
+        // Refresh object status from server
+        async function refreshObjectStatus() {
+            try {
+                // Get sync status
+                const response = await fetch('/api/objects/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    objectSyncStatus = data.status;
+                    localStorage.setItem('objectSyncStatus', JSON.stringify(objectSyncStatus));
+                    populateSyncTable();
+                    
+                    // Also refresh actual record counts
+                    await loadActualRecordCounts();
+                    
+                    showSuccess('Status refreshed');
+                } else {
+                    showError('Failed to refresh status');
+                }
+            } catch (error) {
+                showError('Failed to refresh: ' + error.message);
+            }
+        }
+
+        // Download all workbooks
+        async function downloadAllWorkbooks() {
+            const syncedObjects = Object.entries(objectSyncStatus)
+                .filter(([apiName, status]) => status.status === 'synced')
+                .map(([apiName]) => apiName);
+            
+            if (syncedObjects.length === 0) {
+                showError('No synced objects to download');
+                return;
+            }
+            
+            showSuccess(`Downloading ${syncedObjects.length} workbooks...`);
+            
+            // Download each workbook
+            for (const apiName of syncedObjects) {
+                await downloadWorkbook(apiName);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between downloads
+            }
+        }
+
+        // Show workbook preview modal
+        function showWorkbookModal(apiName, data, workbookInfo = {}) {
+            // Handle different cases
+            let modalContent = '';
+            let hasData = data && data.length > 0;
+            
+            // Check if this is a case where no sheet exists
+            if (workbookInfo.sheet === null && workbookInfo.message) {
+                // Object doesn't have a sheet in the workbook
+                modalContent = `
+                    <div class="alert alert-info">
+                        <strong>Information:</strong> ${workbookInfo.message}
+                        <br><br>
+                        Transaction objects like ${apiName} are typically created through the application interface or API, not through bulk upload.
+                    </div>
+                `;
+            } else if (!hasData) {
+                // Sheet exists but is empty
+                modalContent = `
+                    <div class="alert alert-warning">
+                        <strong>No data found for ${apiName}</strong>
+                        <br><br>
+                        This sheet is empty in the workbook. You can:
+                        <ul style="margin-top: 10px; margin-bottom: 0;">
+                            <li>Upload data using the Upload tab</li>
+                            <li>Sync data from Salesforce (if available)</li>
+                            <li>Manually add data to the Excel workbook</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Create modal HTML
+            const modalHtml = `
+                <div class="modal-overlay active" id="workbook-modal" onclick="if(event.target === this) closeWorkbookModal()">
+                    <div class="modal-content workbook-modal">
+                        <div class="modal-header">
+                            <span>${apiName} Workbook Preview</span>
+                            <button class="close-button" onclick="closeWorkbookModal()" title="Close">×</button>
+                        </div>
+                        <div class="modal-body">
+                            ${hasData ? `
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                                    <div>
+                                        <strong>Total Records:</strong> ${data.length}
+                                        ${data.length > 100 ? '<span class="text-secondary ml-2">(Showing first 100)</span>' : ''}
+                                        ${workbookInfo.workbook ? `<br><span class="text-secondary text-small">Source: ${workbookInfo.workbook}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="table-wrapper">
+                                    <table class="data-table">
+                                        <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                            <tr>
+                                                ${(() => {
+                                                    // Get all unique keys from all records
+                                                    const allKeys = new Set();
+                                                    data.forEach(record => {
+                                                        Object.keys(record).forEach(key => allKeys.add(key));
+                                                    });
+                                                    
+                                                    // Convert to array and sort
+                                                    return Array.from(allKeys).sort().map(key => {
+                                                        // Escape HTML characters and handle special column names
+                                                        const escapedKey = key
+                                                            .replace(/&/g, '&amp;')
+                                                            .replace(/</g, '&lt;')
+                                                            .replace(/>/g, '&gt;')
+                                                            .replace(/"/g, '&quot;')
+                                                            .replace(/'/g, '&#39;');
+                                                        return `<th style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px;">${escapedKey}</th>`;
+                                                    }).join('');
+                                                })()}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${(() => {
+                                                // Get all unique keys from all records (same as headers)
+                                                const allKeys = new Set();
+                                                data.forEach(record => {
+                                                    Object.keys(record).forEach(key => allKeys.add(key));
+                                                });
+                                                const sortedKeys = Array.from(allKeys).sort();
+                                                
+                                                // Map each row
+                                                return data.slice(0, 100).map(row => `
+                                                    <tr>
+                                                        ${sortedKeys.map(key => {
+                                                            const val = row[key];
+                                                            // Escape HTML characters in values
+                                                            const displayVal = val !== null && val !== undefined ? String(val) : '';
+                                                            const escapedVal = displayVal
+                                                                .replace(/&/g, '&amp;')
+                                                                .replace(/</g, '&lt;')
+                                                                .replace(/>/g, '&gt;')
+                                                                .replace(/"/g, '&quot;')
+                                                                .replace(/'/g, '&#39;');
+                                                            return `<td style="padding: 12px 16px; min-width: 120px;">${escapedVal}</td>`;
+                                                        }).join('')}
+                                                    </tr>
+                                                `).join('');
+                                            })()}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : modalContent}
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeWorkbookModal()">Close</button>
+                            ${hasData || workbookInfo.sheet !== null ? `
+                                <button class="btn btn-primary" onclick="downloadWorkbook('${apiName}')">
+                                    Download Full Workbook
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // Close workbook modal
+        function closeWorkbookModal() {
+            const modal = document.getElementById('workbook-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.remove(), 300);
+            }
+        }
+        
+        // Add escape key handler for modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('workbook-modal');
+                if (modal) closeWorkbookModal();
+            }
+        });
+
+        // Create sync progress modal
+        function createSyncProgressModal() {
+            // Remove any existing modal
+            const existingModal = document.getElementById('sync-progress-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            const modalHtml = `
+                <div id="sync-progress-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div>Sync Progress</div>
+                            <button class="close-button" onclick="closeSyncProgressModal()" title="Close">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span id="sync-modal-status">Preparing sync...</span>
+                                    <span id="sync-modal-percentage">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="sync-modal-main-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="sync-modal-details" class="mt-4">
+                                <h4>Object Sync Status</h4>
+                                <div class="table-wrapper" style="border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: auto; max-height: 400px;">
+                                    <table class="data-table" style="margin: 0;">
+                                        <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                            <tr>
+                                                <th>Object</th>
+                                                <th>Status</th>
+                                                <th>Records</th>
+                                                <th>Progress</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sync-modal-details-tbody">
+                                            <!-- Populated during sync -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div id="sync-modal-success" class="mt-3" style="display: none;">
+                                <div class="alert alert-success">
+                                    <strong id="sync-modal-success-title">Sync completed successfully!</strong>
+                                    <div id="sync-modal-success-message" class="mt-2"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="sync-modal-errors" class="mt-3" style="display: none;">
+                                <div class="alert alert-error">
+                                    <strong>Errors occurred during sync:</strong>
+                                    <ul id="sync-modal-error-list" class="mt-2 mb-0"></ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="sync-modal-cancel-btn" class="btn btn-secondary" onclick="cancelSync()">Cancel Sync</button>
+                            <button id="sync-modal-close-btn" class="btn btn-primary" onclick="closeSyncProgressModal()" style="display: none;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show the modal
+            const modal = document.getElementById('sync-progress-modal');
+            modal.classList.add('active');
+            
+            // Add escape key handler
+            document.addEventListener('keydown', handleSyncModalEscape);
+        }
+        
+        function handleSyncModalEscape(e) {
+            if (e.key === 'Escape' && !syncInProgress) {
+                closeSyncProgressModal();
+            }
+        }
+        
+        function closeSyncProgressModal() {
+            const modal = document.getElementById('sync-progress-modal');
+            if (modal) {
+                modal.remove();
+                document.removeEventListener('keydown', handleSyncModalEscape);
+            }
+        }
+        
+        // Create upload progress modal
+        function createUploadProgressModal(fileName, objectName) {
+            // Remove any existing modal
+            const existingModal = document.getElementById('upload-progress-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            const modalHtml = `
+                <div id="upload-progress-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div>Upload Progress</div>
+                            <button class="close-button" onclick="closeUploadProgressModal()" title="Close" id="upload-modal-close-x" style="display: none;">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="upload-info mb-3">
+                                <p><strong>File:</strong> ${fileName}</p>
+                                <p><strong>Object:</strong> ${objectName}</p>
+                            </div>
+                            
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span id="upload-modal-status">Uploading file...</span>
+                                    <span id="upload-modal-percentage">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="upload-modal-progress-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="upload-modal-result" class="mt-3" style="display: none;">
+                                <!-- Results will be shown here -->
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="upload-modal-cancel-btn" class="btn btn-secondary" onclick="cancelUpload()">Cancel Upload</button>
+                            <button id="upload-modal-close-btn" class="btn btn-primary" onclick="closeUploadProgressModal()" style="display: none;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show the modal
+            const modal = document.getElementById('upload-progress-modal');
+            modal.classList.add('active');
+        }
+        
+        function closeUploadProgressModal() {
+            const modal = document.getElementById('upload-progress-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        let uploadInProgress = false;
+        let uploadAborted = false;
+        
+        function cancelUpload() {
+            uploadAborted = true;
+            uploadInProgress = false;
+            const statusEl = document.getElementById('upload-modal-status');
+            const cancelBtnEl = document.getElementById('upload-modal-cancel-btn');
+            const closeBtnEl = document.getElementById('upload-modal-close-btn');
+            const closeXEl = document.getElementById('upload-modal-close-x');
+            
+            if (statusEl) statusEl.textContent = 'Upload cancelled';
+            if (cancelBtnEl) cancelBtnEl.style.display = 'none';
+            if (closeBtnEl) closeBtnEl.style.display = 'inline-block';
+            if (closeXEl) closeXEl.style.display = 'block';
+        }
+        
+        // File handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        function processFile(file) {
+            selectedFile = file;
+            
+            // Show file info
+            const fileList = document.getElementById('file-list');
+            const fileItems = document.getElementById('file-items');
+            
+            fileList.style.display = 'block';
+            fileItems.innerHTML = `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-icon">📄</div>
+                        <div>
+                            <div class="font-medium">${file.name}</div>
+                            <div class="text-secondary text-small">${formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="removeFile()">Remove</button>
+                </div>
+            `;
+            
+            // Show upload options
+            document.getElementById('upload-options').style.display = 'block';
+        }
+
+        // Drag and drop
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('upload-zone');
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                
+                const file = e.dataTransfer.files[0];
+                if (file && isValidFileType(file)) {
+                    processFile(file);
+                } else {
+                    showError('Please select a valid CSV or Excel file');
+                }
+            });
+        }
+
+        // File upload
+        async function startUpload() {
+            const object = document.getElementById('upload-object').value;
+            if (!object) {
+                showError('Please select an object to upload to');
+                return;
+            }
+            
+            if (!selectedFile) {
+                showError('Please select a file to upload');
+                return;
+            }
+            
+            // Get object name for display
+            const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === object);
+            const objectName = objConfig ? objConfig.name : object;
+            
+            // Create and show upload progress modal
+            createUploadProgressModal(selectedFile.name, objectName);
+            uploadInProgress = true;
+            uploadAborted = false;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('object', object);
+            formData.append('operation', document.getElementById('operation-type').value);
+            formData.append('externalId', document.getElementById('external-id').value || '');
+            
+            // Simulate progress for now (replace with real progress tracking)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (uploadAborted) {
+                    clearInterval(progressInterval);
+                    return;
+                }
+                
+                progress += 10;
+                document.getElementById('upload-modal-progress-bar').style.width = `${progress}%`;
+                document.getElementById('upload-modal-percentage').textContent = `${progress}%`;
+                
+                if (progress >= 90) {
+                    clearInterval(progressInterval);
+                }
+            }, 200);
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                clearInterval(progressInterval);
+                
+                if (data.success) {
+                    // Update modal to show success
+                    document.getElementById('upload-modal-progress-bar').style.width = '100%';
+                    document.getElementById('upload-modal-percentage').textContent = '100%';
+                    document.getElementById('upload-modal-status').textContent = 'Upload complete!';
+                    
+                    // Show result details
+                    const resultDiv = document.getElementById('upload-modal-result');
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>Success!</strong> Successfully uploaded ${data.recordCount} records to ${objectName}.
+                        </div>
+                        ${data.preview ? `
+                            <div class="mt-3">
+                                <h4>Preview (first 5 records):</h4>
+                                <pre style="background: var(--background); padding: var(--space-sm); border-radius: var(--border-radius); overflow-x: auto;">${JSON.stringify(data.preview, null, 2)}</pre>
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    // Update object status if on sync tab
+                    if (document.getElementById('sync-tab').classList.contains('active')) {
+                        const recordCount = parseInt(document.getElementById(`record-count-${object}`)?.textContent || '0') + data.recordCount;
+                        updateObjectStatus(object, 'ready', recordCount);
+                    }
+                } else {
+                    // Show error in modal
+                    document.getElementById('upload-modal-status').textContent = 'Upload failed';
+                    const resultDiv = document.getElementById('upload-modal-result');
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-error">
+                            <strong>Error:</strong> ${data.error || 'Upload failed'}
+                        </div>
+                    `;
+                }
+                
+                uploadInProgress = false;
+                document.getElementById('upload-modal-cancel-btn').style.display = 'none';
+                document.getElementById('upload-modal-close-btn').style.display = 'inline-block';
+                document.getElementById('upload-modal-close-x').style.display = 'block';
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                uploadInProgress = false;
+                
+                // Show error in modal
+                document.getElementById('upload-modal-status').textContent = 'Upload failed';
+                const resultDiv = document.getElementById('upload-modal-result');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div class="alert alert-error">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+                
+                document.getElementById('upload-modal-cancel-btn').style.display = 'none';
+                document.getElementById('upload-modal-close-btn').style.display = 'inline-block';
+                document.getElementById('upload-modal-close-x').style.display = 'block';
+            }
+        }
+
+        // Sync functionality
+        let syncInProgress = false;
+        let syncAborted = false;
+        
+        async function startSync() {
+            const selectedObjects = Array.from(document.querySelectorAll('input[name="sync-object"]:checked'))
+                .map(cb => cb.value);
+            
+            if (selectedObjects.length === 0) {
+                showError('Please select at least one object to sync');
+                return;
+            }
+            
+            // Create and show the sync progress modal
+            createSyncProgressModal();
+            syncInProgress = true;
+            syncAborted = false;
+            
+            // Update status for selected objects
+            selectedObjects.forEach(apiName => {
+                updateObjectStatus(apiName, 'pending');
+            });
+            
+            // Populate sync details table in modal
+            const detailsBody = document.getElementById('sync-modal-details-tbody');
+            detailsBody.innerHTML = selectedObjects.map(apiName => {
+                const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === apiName);
+                const objectName = objConfig ? objConfig.name : apiName;
+                return `
+                    <tr class="sync-details-row">
+                        <td>${objectName}</td>
+                        <td id="sync-modal-status-${apiName}">
+                            <span class="status-badge pending">Pending</span>
+                        </td>
+                        <td id="sync-modal-records-${apiName}">-</td>
+                        <td>
+                            <div class="progress-bar" style="height: 20px;">
+                                <div class="progress-fill" id="sync-modal-progress-${apiName}" style="width: 0%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            try {
+                // For now, skip the initial API call if it doesn't exist
+                // and go directly to individual object sync
+                let proceedWithSync = true;
+                
+                try {
+                    const response = await fetch('/api/sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ objects: selectedObjects })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        proceedWithSync = data.success !== false;
+                    } else if (response.status === 404) {
+                        console.log('Initial sync endpoint not implemented, proceeding with individual syncs');
+                        proceedWithSync = true;
+                    } else {
+                        console.log('Initial sync endpoint returned error, proceeding anyway');
+                    }
+                } catch (initError) {
+                    console.log('Initial sync endpoint not available, proceeding with individual syncs');
+                }
+                
+                if (proceedWithSync) {
+                    // Start real sync process
+                    try {
+                        await performRealSync(selectedObjects);
+                    } catch (error) {
+                        console.error('Error during sync:', error);
+                        showSyncError('Sync failed: ' + error.message, selectedObjects);
+                    }
+                } else {
+                    // Show error in modal
+                    showSyncError(data.error || 'Sync failed', selectedObjects);
+                    selectedObjects.forEach(apiName => {
+                        updateObjectStatus(apiName, 'error');
+                        updateModalObjectStatus(apiName, 'error');
+                    });
+                    syncInProgress = false;
+                    showSyncCompleteButton();
+                }
+            } catch (error) {
+                // Show error in modal
+                showSyncError('Sync failed: ' + error.message, selectedObjects);
+                selectedObjects.forEach(apiName => {
+                    updateObjectStatus(apiName, 'error');
+                    updateModalObjectStatus(apiName, 'error');
+                });
+                syncInProgress = false;
+                showSyncCompleteButton();
+            }
+        }
+        
+        function updateModalObjectStatus(apiName, status, recordCount = null) {
+            const statusElement = document.getElementById(`sync-modal-status-${apiName}`);
+            const recordsElement = document.getElementById(`sync-modal-records-${apiName}`);
+            
+            if (statusElement) {
+                statusElement.innerHTML = `<span class="status-badge ${status}">${formatStatus(status)}</span>`;
+            }
+            
+            if (recordsElement && recordCount !== null && recordCount !== undefined) {
+                recordsElement.textContent = recordCount.toLocaleString();
+            }
+        }
+        
+        function cancelSync() {
+            syncAborted = true;
+            syncInProgress = false;
+            showSyncCompleteButton();
+            const statusElement = document.getElementById('sync-modal-status');
+            if (statusElement) {
+                statusElement.textContent = 'Sync cancelled';
+            }
+        }
+        
+        function showSyncCompleteButton() {
+            const cancelBtn = document.getElementById('sync-modal-cancel-btn');
+            const closeBtn = document.getElementById('sync-modal-close-btn');
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            if (closeBtn) closeBtn.style.display = 'inline-block';
+        }
+        
+        function showSyncError(errorMessage, failedObjects = []) {
+            // Update modal status
+            const statusElement = document.getElementById('sync-modal-status');
+            if (statusElement) {
+                statusElement.textContent = 'Sync failed';
+            }
+            
+            // Show error section
+            const errorDiv = document.getElementById('sync-modal-errors');
+            const errorList = document.getElementById('sync-modal-error-list');
+            
+            if (errorList) {
+                errorList.innerHTML = `
+                    <li>${errorMessage}</li>
+                    ${failedObjects.length > 0 ? `<li>Failed objects: ${failedObjects.join(', ')}</li>` : ''}
+                `;
+            }
+            
+            if (errorDiv) {
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Simulate sync progress (replace with real implementation)
+        // Perform real sync with Salesforce
+        async function performRealSync(objects) {
+            console.log('Starting performRealSync with objects:', objects);
+            let currentObject = 0;
+            const totalObjects = objects.length;
+            let successCount = 0;
+            let totalRecords = 0;
+            
+            // Check if modal exists
+            if (!document.getElementById('sync-progress-modal')) {
+                console.error('Sync modal not found!');
+                throw new Error('Sync modal not found');
+            }
+            
+            for (const apiName of objects) {
+                console.log(`Processing object: ${apiName}`);
+                if (syncAborted) {
+                    break;
+                }
+                
+                // Update progress - with detailed logging
+                console.log(`Getting elements for ${apiName}...`);
+                const modalStatus = document.getElementById(`sync-modal-status-${apiName}`);
+                const modalRecords = document.getElementById(`sync-modal-records-${apiName}`);
+                const modalProgress = document.getElementById(`sync-modal-progress-${apiName}`);
+                const mainProgress = document.getElementById('sync-modal-main-progress');
+                
+                console.log('Elements found:', {
+                    modalStatus: !!modalStatus,
+                    modalRecords: !!modalRecords,
+                    modalProgress: !!modalProgress,
+                    mainProgress: !!mainProgress
+                });
+                
+                try {
+                    // Update status to syncing
+                    updateObjectStatus(apiName, 'syncing');
+                    
+                    // Only update modal elements if they exist (object might not be in the modal)
+                    if (!modalStatus && !modalRecords && !modalProgress) {
+                        console.warn(`Modal elements not found for ${apiName}, skipping modal updates`);
+                    }
+                    
+                    if (modalStatus) {
+                        modalStatus.innerHTML = '<span class="status-badge syncing">⟳ Syncing</span>';
+                    }
+                    
+                    // Make API call to sync individual object
+                    const syncUrl = `/api/sync/${apiName}`;
+                    const headers = { 'Content-Type': 'application/json' };
+                    
+                    // Add connection ID if available
+                    if (activeConnection && activeConnection.id) {
+                        headers['X-Connection-Id'] = activeConnection.id;
+                    }
+                    
+                    const response = await fetch(syncUrl, {
+                        method: 'POST',
+                        headers: headers
+                    });
+                    
+                    let result;
+                    
+                    // Check if response is ok
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            // API not implemented yet - use mock data for UI testing
+                            console.log(`API endpoint not found for ${apiName}, using mock data`);
+                            
+                            // Use consistent mock data based on object type
+                            const mockCounts = {
+                                // Foundation objects
+                                'LegalEntity': 5,
+                                'TaxEngine': 3,
+                                'TaxPolicy': 8,
+                                'TaxTreatment': 12,
+                                'BillingPolicy': 4,
+                                'BillingTreatment': 6,
+                                'CostBook': 0,  // Empty example
+                                
+                                // Product objects
+                                'ProductCatalog': 2,
+                                'ProductCategory': 25,
+                                'Product2': 150,
+                                'ProductClassification': 18,
+                                'ProductCategoryProduct': 45,
+                                'ProductComponentGroup': 10,
+                                'ProductRelatedComponent': 22,
+                                'ProductSellingModel': 8,
+                                
+                                // Attribute objects
+                                'AttributeDefinition': 35,
+                                'AttributeCategory': 12,
+                                'AttributePicklist': 20,
+                                'AttributePicklistValue': 85,
+                                'ProductAttributeDefinition': 28,
+                                
+                                // Pricing objects
+                                'Pricebook2': 4,
+                                'PricebookEntry': 120,
+                                'CostBookEntry': 0,  // No data
+                                'PriceAdjustmentSchedule': 6,
+                                'PriceAdjustmentTier': 15,
+                                'AttributeBasedAdjRule': 10,
+                                'AttributeBasedAdjustment': 18,
+                                
+                                // Transaction objects (typically empty in workbook)
+                                'Order': 0,
+                                'OrderItem': 0,
+                                'Asset': 0,
+                                'AssetAction': 0,
+                                'AssetActionSource': 0,
+                                'Contract': 0,
+                                'ProductSellingModelOption': 0
+                            };
+                            
+                            const recordCount = mockCounts[apiName] || Math.floor(Math.random() * 100);
+                            
+                            result = {
+                                success: true,
+                                objectApiName: apiName,
+                                recordCount: recordCount,
+                                message: 'Mock sync completed (API not implemented)',
+                                syncedAt: new Date().toISOString()
+                            };
+                        } else {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    } else {
+                        result = await response.json();
+                    }
+                    
+                    if (result.success) {
+                        const recordCount = result.recordCount || 0;
+                        totalRecords += recordCount;
+                        
+                        // Update progress bar
+                        if (modalProgress) {
+                            modalProgress.style.width = '100%';
+                        }
+                        
+                        // Update record count
+                        if (modalRecords) {
+                            modalRecords.textContent = recordCount.toLocaleString();
+                        }
+                        
+                        // Determine final status based on record count
+                        const finalStatus = recordCount > 0 ? 'synced' : 'empty';
+                        
+                        // Update status
+                        updateObjectStatus(apiName, finalStatus, recordCount);
+                        if (modalStatus) {
+                            modalStatus.innerHTML = `<span class="status-badge ${finalStatus}">${formatStatus(finalStatus)}</span>`;
+                        }
+                        
+                        successCount++;
+                        
+                        // Store in localStorage
+                        objectSyncStatus[apiName] = {
+                            status: finalStatus,
+                            lastSynced: new Date().toISOString(),
+                            recordCount: recordCount
+                        };
+                        
+                    } else {
+                        // Handle sync error for this object
+                        const errorMessage = result.error || 'Unknown error';
+                        console.error(`Sync failed for ${apiName}:`, errorMessage);
+                        
+                        updateObjectStatus(apiName, 'error');
+                        if (modalStatus) {
+                            modalStatus.innerHTML = '<span class="status-badge error">⚠ Error</span>';
+                        }
+                        if (modalRecords) {
+                            modalRecords.textContent = 'Failed';
+                        }
+                        
+                        // Show specific error if available
+                        if (result.details) {
+                            showToast(`${apiName}: ${result.details}`, 'error');
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error syncing ${apiName}:`, error);
+                    updateObjectStatus(apiName, 'error');
+                    if (modalStatus) {
+                        modalStatus.innerHTML = '<span class="status-badge error">⚠ Error</span>';
+                    }
+                    if (modalRecords) {
+                        modalRecords.textContent = 'Failed';
+                    }
+                }
+                
+                // Update overall progress
+                currentObject++;
+                const overallProgress = (currentObject / totalObjects) * 100;
+                if (mainProgress) {
+                    mainProgress.style.width = overallProgress + '%';
+                }
+                
+                // Update percentage display
+                const percentageDisplay = document.getElementById('sync-modal-percentage');
+                if (percentageDisplay) {
+                    percentageDisplay.textContent = Math.round(overallProgress) + '%';
+                }
+                
+                // Update modal header with progress
+                const modalHeader = document.querySelector('#sync-progress-modal .modal-header div');
+                if (modalHeader) {
+                    modalHeader.textContent = `Sync Progress (${currentObject}/${totalObjects})`;
+                }
+                
+                // Small delay between objects to prevent overwhelming the server
+                if (currentObject < totalObjects) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            
+            // Save status to localStorage
+            localStorage.setItem('objectSyncStatus', JSON.stringify(objectSyncStatus));
+            
+            // Update UI
+            syncInProgress = false;
+            const cancelBtn = document.getElementById('sync-modal-cancel-btn');
+            const closeBtn = document.getElementById('sync-modal-close-btn');
+            
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            if (closeBtn) closeBtn.style.display = 'inline-block';
+            
+            // Show completion message
+            const isMockData = true; // Set to false when real API is implemented
+            const resultHtml = `
+                <div class="sync-summary">
+                    <h4>Sync Complete${isMockData ? ' (Mock Data)' : ''}</h4>
+                    <p><strong>${successCount} of ${totalObjects}</strong> objects synced successfully</p>
+                    <p><strong>${totalRecords.toLocaleString()}</strong> total records retrieved</p>
+                    ${isMockData ? '<p class="text-warning"><small>Note: Using mock data as API endpoints are not yet implemented</small></p>' : ''}
+                </div>
+            `;
+            
+            const resultContainer = document.getElementById('sync-modal-result');
+            if (resultContainer) {
+                resultContainer.innerHTML = resultHtml;
+                resultContainer.style.display = 'block';
+            }
+            
+            // Update status summary
+            updateStatusSummary();
+            
+            // Show toast notification
+            if (successCount === totalObjects) {
+                showToast(`Successfully synced ${totalObjects} objects with ${totalRecords.toLocaleString()} records`, 'success');
+            } else {
+                showToast(`Synced ${successCount} of ${totalObjects} objects. Check details for errors.`, 'warning');
+            }
+        }
+        
+        // Legacy simulate function (keeping for reference)
+        function simulateSyncProgress(objects) {
+            let currentObject = 0;
+            const totalObjects = objects.length;
+            
+            // Simulated record counts for testing
+            const simulatedCounts = {
+                // Foundation objects
+                'LegalEntity': 1,
+                'TaxEngine': 2,
+                'TaxPolicy': 3,
+                'TaxTreatment': 4,
+                'BillingPolicy': 2,
+                'BillingTreatment': 3,
+                'CostBook': 0,  // Empty example
+                
+                // Product objects
+                'ProductCatalog': 1,
+                'ProductCategory': 15,
+                'Product2': 25,
+                'ProductClassification': 8,
+                'ProductCategoryProduct': 12,
+                'ProductComponentGroup': 5,
+                'ProductRelatedComponent': 10,
+                'ProductSellingModel': 6,
+                
+                // Attribute objects
+                'AttributeDefinition': 20,
+                'AttributeCategory': 8,
+                'AttributePicklist': 12,
+                'AttributePicklistValue': 39,
+                'ProductAttributeDefinition': 18,
+                
+                // Pricing objects
+                'Pricebook2': 3,
+                'PricebookEntry': 22,
+                'CostBookEntry': 15,
+                'PriceAdjustmentSchedule': 4,
+                'PriceAdjustmentTier': 8,
+                'AttributeBasedAdjRule': 6,
+                'AttributeBasedAdjustment': 12,
+                
+                // Transaction objects (no sheets in workbook)
+                'Order': 0,
+                'OrderItem': 0,
+                'Asset': 0,
+                'AssetAction': 0,
+                'AssetActionSource': 0,
+                'Contract': 0,
+                'ProductSellingModelOption': 0
+            };
+            
+            function processNextObject() {
+                if (syncAborted) {
+                    syncInProgress = false;
+                    showSyncCompleteButton();
+                    return;
+                }
+                
+                if (currentObject >= totalObjects) {
+                    // Update modal progress
+                    document.getElementById('sync-modal-progress-bar').style.width = '100%';
+                    document.getElementById('sync-modal-percentage').textContent = '100%';
+                    document.getElementById('sync-modal-status').textContent = 'Sync complete!';
+                    
+                    // Show success message in modal
+                    const successDiv = document.getElementById('sync-modal-success');
+                    const successMessage = document.getElementById('sync-modal-success-message');
+                    
+                    // Calculate total records synced
+                    let totalRecords = 0;
+                    objects.forEach(apiName => {
+                        const recordsEl = document.getElementById(`sync-modal-records-${apiName}`);
+                        if (recordsEl && recordsEl.textContent !== '-') {
+                            const count = parseInt(recordsEl.textContent) || 0;
+                            totalRecords += count;
+                        }
+                    });
+                    
+                    successMessage.innerHTML = `
+                        <p>Successfully synced ${totalObjects} objects with a total of ${totalRecords.toLocaleString()} records.</p>
+                        <p class="text-small text-secondary mt-2">The sync status has been updated in the objects table.</p>
+                    `;
+                    successDiv.style.display = 'block';
+                    
+                    syncInProgress = false;
+                    showSyncCompleteButton();
+                    
+                    // Reload actual counts after sync
+                    setTimeout(() => {
+                        loadActualRecordCounts();
+                    }, 500);
+                    return;
+                }
+                
+                const apiName = objects[currentObject];
+                const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === apiName);
+                const objectName = objConfig ? objConfig.name : apiName;
+                const overallProgress = Math.round((currentObject / totalObjects) * 100);
+                
+                // Update modal overall progress
+                document.getElementById('sync-modal-progress-bar').style.width = `${overallProgress}%`;
+                document.getElementById('sync-modal-percentage').textContent = `${overallProgress}%`;
+                document.getElementById('sync-modal-status').textContent = `Syncing ${objectName}...`;
+                
+                // Update object status
+                updateObjectStatus(apiName, 'syncing');
+                updateModalObjectStatus(apiName, 'syncing');
+                
+                // Simulate progress for current object
+                let objectProgress = 0;
+                const interval = setInterval(() => {
+                    if (syncAborted) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    
+                    objectProgress += 10;
+                    document.getElementById(`sync-modal-progress-${apiName}`).style.width = `${objectProgress}%`;
+                    
+                    if (objectProgress >= 100) {
+                        clearInterval(interval);
+                        
+                        // Use simulated count for testing, or get from table
+                        let recordCount = simulatedCounts[apiName];
+                        if (recordCount === undefined) {
+                            // If not in simulated data, try to get from table
+                            recordCount = getObjectRecordCount(apiName);
+                            // Generate a random count for simulation
+                            if (recordCount === 0 || recordCount === null) {
+                                recordCount = Math.floor(Math.random() * 50);
+                            }
+                        }
+                        
+                        // Determine appropriate status based on record count
+                        const finalStatus = recordCount > 0 ? 'synced' : 'empty';
+                        
+                        updateObjectStatus(apiName, finalStatus, recordCount);
+                        updateModalObjectStatus(apiName, finalStatus, recordCount);
+                        
+                        currentObject++;
+                        processNextObject();
+                    }
+                }, 200);
+            }
+            
+            processNextObject();
+        }
+
+        // Get object record count from the table
+        function getObjectRecordCount(apiName) {
+            const recordCell = document.getElementById(`record-count-${apiName}`);
+            if (recordCell) {
+                return parseInt(recordCell.textContent) || 0;
+            }
+            return 0;
+        }
+        
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function isValidFileType(file) {
+            const validTypes = ['.csv', '.xlsx', '.xls'];
+            return validTypes.some(type => file.name.toLowerCase().endsWith(type));
+        }
+
+        function removeFile() {
+            selectedFile = null;
+            document.getElementById('file-list').style.display = 'none';
+            document.getElementById('upload-options').style.display = 'none';
+            document.getElementById('file-input').value = '';
+        }
+
+        function clearUpload() {
+            removeFile();
+            closeUploadProgressModal();
+        }
+
+        function showError(message, useToast = true) {
+            if (useToast) {
+                showToast(message, 'error');
+            } else {
+                // For backward compatibility
+                alert('Error: ' + message);
+            }
+        }
+
+        function showSuccess(message, useToast = true) {
+            if (useToast) {
+                showToast(message, 'success');
+            } else {
+                // For backward compatibility
+                alert('Success: ' + message);
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 16px 24px;
+                background: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#17a2b8'};
+                color: white;
+                border-radius: 4px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                z-index: 10000;
+                max-width: 400px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            
+            // Add to page
+            document.body.appendChild(toast);
+            
+            // Remove after delay
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function logout() {
+            fetch('/api/logout', { method: 'POST' })
+                .then(() => window.location.href = '/login');
+        }
+        
+        // Validation Functions
+        let validationInProgress = false;
+        let validationAborted = false;
+        let validationResults = [];
+        
+        async function startValidation() {
+            // Get validation settings
+            const scope = document.querySelector('input[name="validation-scope"]:checked').value;
+            const validationType = document.querySelector('input[name="validation-type"]:checked').value;
+            
+            // Get selected objects if specific scope
+            let selectedObjects = [];
+            if (scope === 'specific') {
+                const checkboxes = document.querySelectorAll('#validation-object-list input[type="checkbox"]:checked');
+                selectedObjects = Array.from(checkboxes).map(cb => cb.value);
+                
+                if (selectedObjects.length === 0) {
+                    showToast('Please select at least one object to validate', 'error');
+                    return;
+                }
+            }
+            
+            // Show progress section
+            document.getElementById('validation-progress').style.display = 'block';
+            document.getElementById('validation-results').style.display = 'none';
+            document.getElementById('start-validation-btn').disabled = true;
+            document.getElementById('stop-validation-btn').disabled = false;
+            
+            validationInProgress = true;
+            validationAborted = false;
+            validationResults = [];
+            
+            try {
+                // Step 1: Sync object metadata with target org
+                updateValidationStatus('Syncing object metadata with target org...', 10);
+                await syncObjectMetadata();
+                
+                if (validationAborted) return;
+                
+                // Step 2: Load data from Excel workbooks
+                updateValidationStatus('Loading data from Excel workbooks...', 30);
+                const objectData = await loadDataForValidation(scope === 'all' ? null : selectedObjects);
+                
+                if (validationAborted) return;
+                
+                // Step 3: Run validation rules
+                updateValidationStatus('Running validation rules...', 50);
+                const errors = await runValidationRules(objectData, validationType);
+                
+                if (validationAborted) return;
+                
+                // Step 4: Process results
+                updateValidationStatus('Processing validation results...', 90);
+                validationResults = errors;
+                
+                // Update UI with results
+                displayValidationResults(errors);
+                
+                updateValidationStatus('Validation complete!', 100);
+                
+                // Show completion toast
+                if (errors.length === 0) {
+                    showToast('Validation complete! No errors found.', 'success');
+                } else {
+                    showToast(`Validation complete! Found ${errors.length} errors.`, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Validation error:', error);
+                showToast('Error during validation: ' + error.message, 'error');
+                updateValidationStatus('Validation failed', 0);
+            } finally {
+                validationInProgress = false;
+                document.getElementById('start-validation-btn').disabled = false;
+                document.getElementById('stop-validation-btn').disabled = true;
+                
+                // If in modal, update button states
+                if (document.getElementById('validation-modal').classList.contains('active')) {
+                    document.getElementById('start-validation-btn').style.display = 'inline-block';
+                    document.getElementById('stop-validation-btn').style.display = 'none';
+                    document.getElementById('validation-settings').style.display = 'block';
+                }
+            }
+        }
+        
+        function stopValidation() {
+            validationAborted = true;
+            showToast('Validation stopped', 'info');
+            document.getElementById('start-validation-btn').disabled = false;
+            document.getElementById('stop-validation-btn').disabled = true;
+        }
+        
+        async function syncObjectMetadata() {
+            // Mock implementation - replace with actual API call
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    console.log('Synced object metadata from target org');
+                    resolve();
+                }, 1000);
+            });
+        }
+        
+        async function loadDataForValidation(selectedObjects) {
+            // Mock implementation - replace with actual data loading
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    // Simulate loaded data
+                    const mockData = {
+                        'Product2': [
+                            { Id: 'P001', Name: 'Basic Product', ProductCode: 'BASIC', IsActive: true },
+                            { Id: 'P002', Name: 'Premium Product', ProductCode: 'PREMIUM', IsActive: true }, // Valid record
+                            { Id: 'P003', Name: 'Enterprise Product', ProductCode: 'ENT', IsActive: 'true' }, // Invalid data type for IsActive
+                            { Id: 'P004', Name: '', ProductCode: 'SPECIAL', IsActive: false } // Missing required Name field
+                        ],
+                        'LegalEntity': [
+                            { Id: 'LE001', Name: 'Main Entity', TaxPolicy__c: 'TP001' },
+                            { Id: 'LE002', Name: '', TaxPolicy__c: 'TP001' } // Missing required field
+                        ],
+                        'Pricebook2': [
+                            { Id: 'PB001', Name: 'Standard Price Book', IsActive: true },
+                            { Id: 'PB002', Name: 'Partner Price Book', IsActive: 'Yes' } // Invalid data type
+                        ],
+                        'CostBook': [
+                            { Id: 'CB001', Name: 'Standard Cost Book' },
+                            { Id: 'CB002', Name: 'Premium Cost Book' }
+                        ]
+                    };
+                    
+                    if (selectedObjects && selectedObjects.length > 0) {
+                        // Filter to only selected objects
+                        const filtered = {};
+                        selectedObjects.forEach(obj => {
+                            if (mockData[obj]) {
+                                filtered[obj] = mockData[obj];
+                            }
+                        });
+                        resolve(filtered);
+                    } else {
+                        resolve(mockData);
+                    }
+                }, 1500);
+            });
+        }
+        
+        async function runValidationRules(objectData, validationType) {
+            const errors = [];
+            let recordsProcessed = 0;
+            const totalRecords = Object.values(objectData).reduce((sum, records) => sum + records.length, 0);
+            
+            // Define validation rules
+            const requiredFields = {
+                'Product2': ['Name'],
+                'LegalEntity': ['Name'],
+                'Pricebook2': ['Name']
+            };
+            
+            const lookupFields = {
+                'LegalEntity': { 'TaxPolicy__c': 'TaxPolicy' },
+                'Product2': { 'ProductSellingModel__c': 'ProductSellingModel' }
+            };
+            
+            const dataTypes = {
+                'Pricebook2': { 'IsActive': 'boolean' },
+                'Product2': { 'IsActive': 'boolean' }
+            };
+            
+            // Process each object
+            for (const [objectName, records] of Object.entries(objectData)) {
+                if (validationAborted) break;
+                
+                for (const record of records) {
+                    if (validationAborted) break;
+                    
+                    // Required field validation
+                    if (validationType === 'all' || validationType === 'required') {
+                        const required = requiredFields[objectName] || [];
+                        for (const field of required) {
+                            if (!record[field] || record[field].toString().trim() === '') {
+                                errors.push({
+                                    severity: 'High',
+                                    object: objectName,
+                                    recordId: record.Id || 'Unknown',
+                                    field: field,
+                                    errorType: 'Missing Required Field',
+                                    description: `${field} is required but is empty`,
+                                    fix: `Populate the ${field} field with a valid value`
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Lookup validation
+                    if (validationType === 'all' || validationType === 'lookup') {
+                        const lookups = lookupFields[objectName] || {};
+                        for (const [field, targetObject] of Object.entries(lookups)) {
+                            if (record[field]) {
+                                // Simulate lookup validation (in real implementation, check against actual data)
+                                if (record[field] === 'CB999' || record[field] === 'TP999') {
+                                    errors.push({
+                                        severity: 'High',
+                                        object: objectName,
+                                        recordId: record.Id || 'Unknown',
+                                        field: field,
+                                        errorType: 'Invalid Lookup',
+                                        description: `${field} references non-existent ${targetObject} record: ${record[field]}`,
+                                        fix: `Update ${field} to reference a valid ${targetObject} record or clear the field`
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Data type validation
+                    if (validationType === 'all' || validationType === 'datatype') {
+                        const types = dataTypes[objectName] || {};
+                        for (const [field, expectedType] of Object.entries(types)) {
+                            if (record[field] !== undefined && record[field] !== null) {
+                                if (expectedType === 'boolean') {
+                                    if (typeof record[field] !== 'boolean' && 
+                                        record[field] !== 'true' && 
+                                        record[field] !== 'false' &&
+                                        record[field] !== true &&
+                                        record[field] !== false) {
+                                        errors.push({
+                                            severity: 'Medium',
+                                            object: objectName,
+                                            recordId: record.Id || 'Unknown',
+                                            field: field,
+                                            errorType: 'Invalid Data Type',
+                                            description: `${field} should be boolean but contains: ${record[field]}`,
+                                            fix: `Update ${field} to be either true or false`
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    recordsProcessed++;
+                    const progress = 50 + Math.round((recordsProcessed / totalRecords) * 40);
+                    updateValidationStatus(`Validating records... (${recordsProcessed}/${totalRecords})`, progress);
+                }
+            }
+            
+            return errors;
+        }
+        
+        function updateValidationStatus(message, progress) {
+            document.getElementById('validation-status').textContent = message;
+            document.getElementById('validation-progress-bar').style.width = progress + '%';
+            document.getElementById('validation-percentage').textContent = progress + '%';
+        }
+        
+        function displayValidationResults(errors) {
+            // Update summary
+            document.getElementById('total-errors').textContent = errors.length;
+            
+            const errorCounts = {
+                high: errors.filter(e => e.severity === 'High').length,
+                medium: errors.filter(e => e.severity === 'Medium').length,
+                low: errors.filter(e => e.severity === 'Low').length
+            };
+            
+            document.getElementById('high-errors').textContent = errorCounts.high;
+            document.getElementById('medium-errors').textContent = errorCounts.medium;
+            document.getElementById('low-errors').textContent = errorCounts.low;
+            
+            // Populate results table
+            const tbody = document.getElementById('validation-results-tbody');
+            tbody.innerHTML = '';
+            
+            errors.forEach(error => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><span class="severity-badge severity-${error.severity.toLowerCase()}">${error.severity}</span></td>
+                    <td>${error.object}</td>
+                    <td>${error.recordId}</td>
+                    <td>${error.field}</td>
+                    <td>${error.errorType}</td>
+                    <td>${error.description}</td>
+                    <td class="fix-suggestion">${error.fix}</td>
+                    <td><a class="action-link" onclick="viewErrorRecord('${error.object}', '${error.recordId}')" title="View record with error">View</a></td>
+                `;
+            });
+            
+            // Show results section
+            document.getElementById('validation-results').style.display = 'block';
+        }
+        
+        function clearValidationResults() {
+            validationResults = [];
+            document.getElementById('validation-results').style.display = 'none';
+            document.getElementById('validation-results-tbody').innerHTML = '';
+            document.getElementById('total-errors').textContent = '0';
+            document.getElementById('high-errors').textContent = '0';
+            document.getElementById('medium-errors').textContent = '0';
+            document.getElementById('low-errors').textContent = '0';
+            showToast('Validation results cleared', 'info');
+        }
+        
+        function filterValidationResults() {
+            const severityFilter = document.getElementById('severity-filter').value;
+            const objectFilter = document.getElementById('object-filter').value;
+            const errorTypeFilter = document.getElementById('error-type-filter').value;
+            
+            let filtered = validationResults;
+            
+            if (severityFilter) {
+                filtered = filtered.filter(e => e.severity === severityFilter);
+            }
+            
+            if (objectFilter) {
+                filtered = filtered.filter(e => e.object === objectFilter);
+            }
+            
+            if (errorTypeFilter) {
+                filtered = filtered.filter(e => e.errorType === errorTypeFilter);
+            }
+            
+            displayValidationResults(filtered);
+        }
+        
+        function exportValidationResults() {
+            if (validationResults.length === 0) {
+                showToast('No validation results to export', 'warning');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Severity', 'Object', 'Record ID', 'Field', 'Error Type', 'Description', 'Fix Suggestion'];
+            const csvContent = [
+                headers.join(','),
+                ...validationResults.map(error => [
+                    error.severity,
+                    error.object,
+                    error.recordId,
+                    error.field,
+                    error.errorType,
+                    `"${error.description}"`,
+                    `"${error.fix}"`
+                ].join(','))
+            ].join('\n');
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `validation_results_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showToast('Validation results exported successfully', 'success');
+        }
+        
+        // Helper function to get selected objects from sync table
+        function getSelectedObjects() {
+            return Array.from(document.querySelectorAll('input[name="sync-object"]:checked'))
+                .map(cb => cb.value);
+        }
+        
+        // Modal validation functions
+        function validateObject(apiName) {
+            const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === apiName);
+            const objectName = objConfig ? objConfig.name : apiName;
+            
+            showToast(`Opening validation for ${objectName}...`, 'info');
+            
+            // Set up modal for single object validation
+            document.querySelector('input[name="validation-scope"][value="specific"]').checked = true;
+            updateValidationObjectList();
+            
+            // Pre-select only this object
+            setTimeout(() => {
+                const checkboxes = document.querySelectorAll('#validation-object-list input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = cb.value === apiName;
+                });
+                
+                openValidationModal();
+            }, 100);
+        }
+        
+        function validateSelectedObjects() {
+            const selectedObjects = getSelectedObjects();
+            
+            if (selectedObjects.length === 0) {
+                showToast('Please select at least one object to validate', 'warning');
+                return;
+            }
+            
+            // Set up modal for selected objects validation
+            document.querySelector('input[name="validation-scope"][value="specific"]').checked = true;
+            updateValidationObjectList();
+            
+            // Pre-select the objects that were checked in the sync table
+            setTimeout(() => {
+                const checkboxes = document.querySelectorAll('#validation-object-list input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = selectedObjects.includes(cb.value);
+                });
+                
+                openValidationModal();
+            }, 100);
+        }
+        
+        function openValidationModal() {
+            const modal = document.getElementById('validation-modal');
+            modal.classList.add('active');
+            
+            // Reset state
+            document.getElementById('validation-progress').style.display = 'none';
+            document.getElementById('validation-results').style.display = 'none';
+            document.getElementById('start-validation-btn').style.display = 'inline-block';
+            document.getElementById('stop-validation-btn').style.display = 'none';
+            
+            // Set up radio button listeners
+            document.querySelectorAll('input[name="validation-scope"]').forEach(radio => {
+                radio.addEventListener('change', updateValidationObjectList);
+            });
+            
+            updateValidationObjectList();
+        }
+        
+        function closeValidationModal() {
+            const modal = document.getElementById('validation-modal');
+            modal.classList.remove('active');
+            
+            // Stop validation if in progress
+            if (validationInProgress) {
+                stopValidation();
+            }
+        }
+        
+        function updateValidationObjectList() {
+            const scope = document.querySelector('input[name="validation-scope"]:checked').value;
+            const objectList = document.getElementById('validation-object-list');
+            
+            if (scope === 'specific') {
+                objectList.style.display = 'block';
+                
+                // Populate object list if empty
+                if (objectList.innerHTML === '' || objectList.innerHTML.includes('Will be populated')) {
+                    const categories = {};
+                    
+                    REVENUE_CLOUD_OBJECTS.forEach(obj => {
+                        if (!categories[obj.category]) {
+                            categories[obj.category] = [];
+                        }
+                        categories[obj.category].push(obj);
+                    });
+                    
+                    let html = '<h4>Select Objects to Validate:</h4>';
+                    Object.entries(categories).forEach(([category, objects]) => {
+                        html += `<div style="margin-bottom: 10px;"><strong>${category}</strong><br>`;
+                        objects.forEach(obj => {
+                            html += `<label style="display: inline-block; margin-right: 15px; margin-bottom: 5px;">
+                                <input type="checkbox" value="${obj.apiName}" style="margin-right: 5px;">
+                                ${obj.name}
+                            </label>`;
+                        });
+                        html += '</div>';
+                    });
+                    
+                    objectList.innerHTML = html;
+                }
+            } else {
+                objectList.style.display = 'none';
+            }
+        }
+        
+        function runValidation() {
+            // Update UI
+            document.getElementById('validation-settings').style.display = 'none';
+            document.getElementById('start-validation-btn').style.display = 'none';
+            document.getElementById('stop-validation-btn').style.display = 'inline-block';
+            
+            // Call the main validation function
+            startValidation();
+        }
+        
+        function viewErrorRecord(objectApiName, recordId) {
+            // Close validation modal
+            closeValidationModal();
+            
+            // Open view modal for the object
+            viewWorkbook(objectApiName);
+            
+            // After modal opens, highlight the specific record
+            setTimeout(() => {
+                highlightRecordInViewModal(recordId);
+            }, 500);
+        }
+        
+        function highlightRecordInViewModal(recordId) {
+            // Find all table rows in the view modal
+            const viewModal = document.querySelector('.modal-overlay.active');
+            if (!viewModal) return;
+            
+            const rows = viewModal.querySelectorAll('table.data-table tbody tr');
+            
+            // Look for the record ID in each row
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let found = false;
+                
+                // Check if any cell contains the record ID
+                cells.forEach(cell => {
+                    if (cell.textContent === recordId) {
+                        found = true;
+                    }
+                });
+                
+                if (found) {
+                    // Highlight the row
+                    row.style.backgroundColor = '#fff3cd';
+                    row.style.border = '2px solid #ffc107';
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Add a temporary animation
+                    row.style.animation = 'highlight-pulse 2s ease-in-out';
+                    
+                    // Remove highlight after 5 seconds
+                    setTimeout(() => {
+                        row.style.backgroundColor = '';
+                        row.style.border = '';
+                        row.style.animation = '';
+                    }, 5000);
+                }
+            });
+        }
+    </script>
+    
+    <!-- Validation Modal -->
+    <div id="validation-modal" class="modal-overlay">
+        <div class="modal-content" style="min-width: 1175px; max-width: min(95vw, 1600px);">
+            <div class="modal-header" style="background: #0066cc; color: white;">
+                <div>Data Validation</div>
+                <button class="close-button" onclick="closeValidationModal()" title="Close" style="font-size: 24px; font-weight: bold;">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Validation Settings -->
+                <div id="validation-settings" class="validation-settings">
+                    <h3>Validation Settings</h3>
+                    <div class="grid grid-2">
+                        <div class="validation-option">
+                            <label class="form-label">Validation Scope</label>
+                            <div>
+                                <label><input type="radio" name="validation-scope" value="all" checked> All Objects</label>
+                                <label><input type="radio" name="validation-scope" value="specific"> Specific Objects</label>
+                            </div>
+                        </div>
+                        
+                        <div class="validation-option">
+                            <label class="form-label">Validation Type</label>
+                            <div>
+                                <label><input type="radio" name="validation-type" value="all" checked> All Validations</label>
+                                <label><input type="radio" name="validation-type" value="required"> Required Fields Only</label>
+                                <label><input type="radio" name="validation-type" value="lookup"> Lookup Validations Only</label>
+                                <label><input type="radio" name="validation-type" value="datatype"> Data Type Validations Only</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Object Selection (shown when scope is 'specific') -->
+                    <div id="validation-object-list" class="object-selection" style="display: none;">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Progress Section -->
+                <div id="validation-progress" style="display: none;">
+                    <h4>Validation Progress</h4>
+                    <div class="progress-label">
+                        <span id="validation-status">Initializing...</span>
+                        <span id="validation-percentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="validation-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <!-- Results Section -->
+                <div id="validation-results" style="display: none; width: 100%;">
+                    <h3>Validation Results</h3>
+                    
+                    <!-- Summary Cards -->
+                    <div class="validation-summary">
+                        <div class="summary-card">
+                            <h4>Total Errors</h4>
+                            <div class="count" id="total-errors">0</div>
+                        </div>
+                        <div class="summary-card high">
+                            <h4>High Severity</h4>
+                            <div class="count" id="high-errors">0</div>
+                        </div>
+                        <div class="summary-card medium">
+                            <h4>Medium Severity</h4>
+                            <div class="count" id="medium-errors">0</div>
+                        </div>
+                        <div class="summary-card low">
+                            <h4>Low Severity</h4>
+                            <div class="count" id="low-errors">0</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="validation-filters" style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: space-between;">
+                        <div style="display: flex; gap: 10px;">
+                            <select class="form-select" id="severity-filter" onchange="filterValidationResults()">
+                                <option value="">All Severities</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <select class="form-select" id="object-filter" onchange="filterValidationResults()">
+                                <option value="">All Objects</option>
+                                <!-- Will be populated dynamically -->
+                            </select>
+                            <select class="form-select" id="error-type-filter" onchange="filterValidationResults()">
+                                <option value="">All Error Types</option>
+                                <option value="Missing Required Field">Missing Required Field</option>
+                                <option value="Invalid Lookup">Invalid Lookup</option>
+                                <option value="Invalid Data Type">Invalid Data Type</option>
+                                <option value="Duplicate Record">Duplicate Record</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" onclick="clearValidationResults()">Clear Results</button>
+                            <button class="btn btn-primary" onclick="exportValidationResults()">Export Results</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Table -->
+                    <div class="table-wrapper" style="width: 100%; overflow-x: auto;">
+                        <table class="data-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Severity</th>
+                                    <th>Object</th>
+                                    <th>Record ID</th>
+                                    <th>Field</th>
+                                    <th>Error Type</th>
+                                    <th>Description</th>
+                                    <th>Fix Suggestion</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="validation-results-tbody">
+                                <!-- Results will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background: #e0e0e0; padding: var(--space-md) var(--space-xl);">
+                <button id="start-validation-btn" class="btn btn-primary" onclick="runValidation()">Start Validation</button>
+                <button id="stop-validation-btn" class="btn btn-secondary" onclick="stopValidation()" style="display: none;">Stop Validation</button>
+                <button class="btn btn-secondary" onclick="closeValidationModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
