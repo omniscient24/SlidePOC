@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Management - Revenue Cloud Migration Tool</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Ant Design Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ant-design/icons-svg@4.3.1/inline-svg/outlined/filter.svg">
+    <script src="https://cdn.jsdelivr.net/npm/@ant-design/icons@5.2.6/dist/index.umd.min.js"></script>
     <style>
         .upload-zone {
             border: 2px dashed var(--border-color);
@@ -145,6 +148,7 @@
             border-radius: 12px;
             font-size: 0.875rem;
             font-weight: 500;
+            white-space: nowrap;
         }
         
         .status-badge.synced {
@@ -547,6 +551,7 @@
             color: white;
             font-weight: 600;
             border-bottom: 2px solid var(--primary-blue);
+            white-space: nowrap;
         }
         
         #sync-tab .sync-footer {
@@ -706,6 +711,104 @@
             50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(255, 193, 7, 0.5); }
             100% { transform: scale(1); }
         }
+        
+        /* Filter Styles */
+        .filterable {
+            position: relative;
+            padding-right: 35px;
+            min-width: 120px;
+        }
+        
+        .filter-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+            width: 22px;
+            height: 22px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .filter-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: rgba(255, 255, 255, 1);
+        }
+        
+        .filter-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .filter-icon:hover svg {
+            fill: white;
+        }
+        
+        .filter-icon.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .filter-icon.active svg {
+            fill: white;
+        }
+        
+        /* Filter Dropdown */
+        .filter-dropdown {
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 10px;
+            z-index: 1000;
+            min-width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .filter-dropdown.active {
+            display: block;
+        }
+        
+        .filter-dropdown h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .filter-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        
+        .filter-option:hover {
+            background: #f5f5f5;
+        }
+        
+        .filter-option input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .filter-actions {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .filter-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -797,11 +900,46 @@
                                     <th width="40">
                                         <input type="checkbox" id="sync-all" onchange="toggleAllSync()">
                                     </th>
-                                    <th>Object Name</th>
-                                    <th>API Name</th>
-                                    <th>Status</th>
-                                    <th>Last Synced</th>
-                                    <th>Records</th>
+                                    <th class="filterable" style="min-width: 200px;">
+                                        Object Name
+                                        <span class="filter-icon" onclick="showFilter(event, 'name')">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                                <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                                            </svg>
+                                        </span>
+                                    </th>
+                                    <th class="filterable" style="min-width: 180px;">
+                                        API Name
+                                        <span class="filter-icon" onclick="showFilter(event, 'apiName')">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                                <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                                            </svg>
+                                        </span>
+                                    </th>
+                                    <th class="filterable" style="min-width: 120px;">
+                                        Status
+                                        <span class="filter-icon" onclick="showFilter(event, 'status')">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                                <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                                            </svg>
+                                        </span>
+                                    </th>
+                                    <th class="filterable" style="min-width: 140px;">
+                                        Last Synced
+                                        <span class="filter-icon" onclick="showFilter(event, 'lastSynced')">
+                                            <svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor">
+                                                <path d="M349 838c0 17.7 14.2 32 31.8 32h262.4c17.6 0 31.8-14.3 31.8-32V642H349v196zm531.1-684H143.9c-24.5 0-39.8 26.7-27.5 48l221.3 376h348.8l221.3-376c12.1-21.3-3.2-48-27.7-48z"/>
+                                            </svg>
+                                        </span>
+                                    </th>
+                                    <th class="filterable" style="min-width: 120px;">
+                                        Records
+                                        <span class="filter-icon" onclick="showFilter(event, 'records')">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                                <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                                            </svg>
+                                        </span>
+                                    </th>
                                     <th style="min-width: 300px;">Actions</th>
                                 </tr>
                             </thead>
@@ -1236,6 +1374,15 @@
             });
             
             tbody.innerHTML = html;
+            
+            // Reset filter data when table is repopulated
+            originalData = [];
+            filterState = {};
+            
+            // Clear any existing filter dropdowns
+            document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                dropdown.remove();
+            });
             
             // Update status summary
             updateStatusSummary();
@@ -3180,6 +3327,207 @@
                     }, 5000);
                 }
             });
+        }
+        
+        // Table Filter Functions
+        let filterState = {};
+        let originalData = [];
+        let filteredData = [];
+        
+        function showFilter(event, column) {
+            event.stopPropagation();
+            
+            // Close any open filter dropdowns
+            document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+            
+            // Create or get filter dropdown
+            let dropdown = document.getElementById(`filter-dropdown-${column}`);
+            if (!dropdown) {
+                dropdown = createFilterDropdown(column);
+            }
+            
+            // Position dropdown
+            const filterIcon = event.target;
+            const rect = filterIcon.getBoundingClientRect();
+            dropdown.style.top = (rect.bottom + window.scrollY) + 'px';
+            dropdown.style.left = (rect.left + window.scrollX - 150) + 'px';
+            
+            // Show dropdown
+            dropdown.classList.add('active');
+            
+            // Close on click outside
+            setTimeout(() => {
+                document.addEventListener('click', closeFilters);
+            }, 0);
+        }
+        
+        function createFilterDropdown(column) {
+            const dropdown = document.createElement('div');
+            dropdown.id = `filter-dropdown-${column}`;
+            dropdown.className = 'filter-dropdown';
+            
+            // Get unique values for this column
+            const values = getUniqueValues(column);
+            
+            let html = `<h4>Filter ${getColumnName(column)}</h4>`;
+            
+            // Add filter options
+            values.forEach(value => {
+                const checked = !filterState[column] || filterState[column].includes(value) ? 'checked' : '';
+                html += `
+                    <label class="filter-option">
+                        <input type="checkbox" value="${value}" ${checked} 
+                               onchange="updateFilter('${column}', '${value}', this.checked)">
+                        <span>${value || '(empty)'}</span>
+                    </label>
+                `;
+            });
+            
+            html += `
+                <div class="filter-actions">
+                    <button class="btn btn-sm" onclick="clearFilter('${column}')">Clear</button>
+                    <button class="btn btn-sm btn-primary" onclick="applyFilter('${column}')">Apply</button>
+                </div>
+            `;
+            
+            dropdown.innerHTML = html;
+            document.body.appendChild(dropdown);
+            
+            return dropdown;
+        }
+        
+        function getUniqueValues(column) {
+            const values = new Set();
+            
+            // Use original data to get all possible values
+            if (originalData.length === 0) {
+                // Store original data when first needed
+                const tbody = document.getElementById('sync-objects-tbody');
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    if (!row.classList.contains('category-row')) {
+                        originalData.push(extractRowData(row));
+                    }
+                });
+            }
+            
+            originalData.forEach(item => {
+                values.add(item[column]);
+            });
+            
+            return Array.from(values).sort();
+        }
+        
+        function extractRowData(row) {
+            const cells = row.querySelectorAll('td');
+            return {
+                name: cells[1]?.textContent.trim() || '',
+                apiName: cells[2]?.textContent.trim() || '',
+                status: cells[3]?.querySelector('.status-badge')?.textContent.trim() || '',
+                lastSynced: cells[4]?.textContent.trim() || '',
+                records: cells[5]?.textContent.trim() || '',
+                element: row
+            };
+        }
+        
+        function getColumnName(column) {
+            const names = {
+                name: 'Object Name',
+                apiName: 'API Name',
+                status: 'Status',
+                lastSynced: 'Last Synced',
+                records: 'Records'
+            };
+            return names[column] || column;
+        }
+        
+        function updateFilter(column, value, checked) {
+            if (!filterState[column]) {
+                filterState[column] = getUniqueValues(column);
+            }
+            
+            if (checked) {
+                if (!filterState[column].includes(value)) {
+                    filterState[column].push(value);
+                }
+            } else {
+                filterState[column] = filterState[column].filter(v => v !== value);
+            }
+        }
+        
+        function clearFilter(column) {
+            delete filterState[column];
+            const dropdown = document.getElementById(`filter-dropdown-${column}`);
+            if (dropdown) {
+                dropdown.remove();
+            }
+            const filterIcon = document.querySelector(`.filter-icon[onclick*="${column}"]`);
+            if (filterIcon) {
+                filterIcon.classList.remove('active');
+            }
+            applyFilter();
+        }
+        
+        function applyFilter(column) {
+            if (column) {
+                const dropdown = document.getElementById(`filter-dropdown-${column}`);
+                dropdown.classList.remove('active');
+                
+                // Update filter icon
+                const hasFilter = filterState[column] && filterState[column].length < getUniqueValues(column).length;
+                const filterIcon = document.querySelector(`.filter-icon[onclick*="${column}"]`);
+                if (hasFilter) {
+                    filterIcon.classList.add('active');
+                } else {
+                    filterIcon.classList.remove('active');
+                }
+            }
+            
+            // Apply filters to data
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            // Start with original data
+            filteredData = [...originalData];
+            
+            // Apply filters
+            Object.entries(filterState).forEach(([column, values]) => {
+                if (values && values.length > 0) {
+                    filteredData = filteredData.filter(item => values.includes(item[column]));
+                }
+            });
+            
+            // Update table display
+            updateTableDisplay();
+        }
+        
+        function updateTableDisplay() {
+            const tbody = document.getElementById('sync-objects-tbody');
+            
+            // Hide all rows first
+            originalData.forEach(item => {
+                item.element.style.display = 'none';
+            });
+            
+            // Show filtered and sorted rows
+            filteredData.forEach(item => {
+                item.element.style.display = '';
+            });
+            
+            // Always show category rows
+            tbody.querySelectorAll('.category-row').forEach(row => {
+                row.style.display = '';
+            });
+        }
+        
+        function closeFilters() {
+            document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+            document.removeEventListener('click', closeFilters);
         }
     </script>
     
