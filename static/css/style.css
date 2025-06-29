@@ -547,8 +547,8 @@ a:hover {
 .modal-content {
     background: var(--white);
     border-radius: var(--border-radius-lg);
-    min-width: 1175px;
-    max-width: min(95vw, 1600px);
+    min-width: 1645px;
+    max-width: min(95vw, 2240px);
     width: fit-content;
     max-height: 90vh;
     overflow: auto;
