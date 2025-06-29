@@ -271,6 +271,100 @@
             border-color: #0066cc;
         }
         
+        /* Modal column filter styles */
+        .modal-filter-icon {
+            cursor: pointer;
+            margin-left: 12px;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .modal-filter-icon svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+        
+        .modal-filter-icon:hover svg {
+            opacity: 0.6;
+        }
+        
+        .modal-filter-icon.active svg {
+            opacity: 1;
+            color: #1890ff;
+        }
+        
+        .modal-filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            background: white;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            min-width: 220px;
+            max-height: 400px;
+            overflow: auto;
+            z-index: 1050;
+            display: none;
+        }
+        
+        .modal-filter-dropdown.active {
+            display: block;
+        }
+        
+        .modal-filter-dropdown .filter-search {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .modal-filter-dropdown .filter-search input {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .modal-filter-dropdown .filter-options {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .modal-filter-dropdown .filter-option {
+            padding: 6px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .modal-filter-dropdown .filter-option:hover {
+            background: #f5f5f5;
+        }
+        
+        .modal-filter-dropdown .filter-option input[type="checkbox"] {
+            margin: 0;
+        }
+        
+        .modal-filter-dropdown .filter-actions {
+            padding: 8px 12px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        
+        .modal-filter-dropdown .filter-actions button {
+            flex: 1;
+            padding: 4px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
         .category-row:hover td {
             background: #e0dfdf !important;
             color: black !important;
@@ -1821,12 +1915,21 @@
                                                         const sortableClass = isSortable ? 'sortable-column' : '';
                                                         const sortClick = isSortable ? `onclick="sortModalTable('${key.replace(/'/g, "\\'")}')"` : '';
                                                         
-                                                        return `<th class="draggable-column ${sortableClass}" draggable="true" data-column="${key}" data-index="${index}" ${sortClick} style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px; border-right: 1px solid #e0e0e0; cursor: ${isSortable ? 'pointer' : 'move'}; user-select: none;">
+                                                        // Check if this column should have a filter
+                                                        const filterableColumns = ['Type', 'Family', 'IsActive', 'IsRequired', 'DataType', 'IsDefault', 'Status'];
+                                                        const isFilterable = filterableColumns.includes(key);
+                                                        
+                                                        return `<th class="draggable-column ${sortableClass}" draggable="true" data-column="${key}" data-index="${index}" ${sortClick} style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px; border-right: 1px solid #e0e0e0; cursor: ${isSortable ? 'pointer' : 'move'}; user-select: none; position: relative;">
                                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                                 <span>${escapedKey}</span>
                                                                 ${isSortable ? `<span class="sort-icon" data-column="${key}" style="display: inline-flex; flex-direction: column; font-size: 10px; line-height: 1;">
                                                                     <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="opacity: 0.3;">
                                                                         <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
+                                                                    </svg>
+                                                                </span>` : ''}
+                                                                ${isFilterable ? `<span class="modal-filter-icon" data-column="${key}" onclick="showModalFilter(event, '${key.replace(/'/g, "\\'")}')">
+                                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                                                        <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
                                                                     </svg>
                                                                 </span>` : ''}
                                                             </div>
@@ -1857,13 +1960,15 @@
             // Add modal to page
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             
-            // Store data globally for sorting
+            // Store data globally for sorting and filtering
             window.currentModalData = {
                 apiName: apiName,
                 originalData: data ? [...data] : [],
                 sortedData: data ? [...data] : [],
+                filteredData: data ? [...data] : [],
                 sortColumn: null,
                 sortDirection: null,
+                activeFilters: {},
                 workbookInfo: workbookInfo
             };
             
@@ -3876,13 +3981,13 @@
             data.sortColumn = newDirection ? column : null;
             data.sortDirection = newDirection;
             
-            // Sort data
+            // Sort data (use filtered data as base)
             if (newDirection === null) {
-                // Reset to original order
-                data.sortedData = [...data.originalData];
+                // Reset to original order but maintain filters
+                data.sortedData = [...data.filteredData];
             } else {
-                // Sort the data
-                data.sortedData = [...data.sortedData].sort((a, b) => {
+                // Sort the filtered data
+                data.sortedData = [...data.filteredData].sort((a, b) => {
                     const aVal = a[column];
                     const bVal = b[column];
                     
@@ -3927,6 +4032,199 @@
                     svg.innerHTML = '<path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>';
                 }
             });
+        }
+        
+        // Show modal filter dropdown
+        function showModalFilter(event, column) {
+            event.stopPropagation();
+            
+            // Close any existing dropdowns
+            document.querySelectorAll('.modal-filter-dropdown').forEach(d => d.remove());
+            
+            // Get unique values for this column
+            const data = window.currentModalData;
+            const uniqueValues = new Set();
+            data.originalData.forEach(row => {
+                const val = row[column];
+                if (val !== null && val !== undefined) {
+                    uniqueValues.add(String(val));
+                }
+            });
+            
+            const values = Array.from(uniqueValues).sort();
+            const activeFilters = data.activeFilters[column] || [];
+            
+            // Create dropdown
+            const dropdown = document.createElement('div');
+            dropdown.className = 'modal-filter-dropdown';
+            dropdown.innerHTML = `
+                <div class="filter-search">
+                    <input type="text" placeholder="Search..." onkeyup="filterModalOptions(this, '${column}')">
+                </div>
+                <div class="filter-options">
+                    <label class="filter-option" style="font-weight: 500;">
+                        <input type="checkbox" ${activeFilters.length === 0 || activeFilters.length === values.length ? 'checked' : ''} 
+                               onchange="toggleAllModalFilters('${column}', this.checked)">
+                        <span>Select All</span>
+                    </label>
+                    ${values.map(value => `
+                        <label class="filter-option">
+                            <input type="checkbox" value="${value.replace(/"/g, '&quot;')}" 
+                                   ${activeFilters.length === 0 || activeFilters.includes(value) ? 'checked' : ''}
+                                   onchange="updateModalFilter('${column}', '${value.replace(/'/g, "\\'")}', this.checked)">
+                            <span>${value}</span>
+                        </label>
+                    `).join('')}
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearModalFilter('${column}')">Clear</button>
+                    <button class="btn-apply" onclick="applyModalFilters()">Apply</button>
+                </div>
+            `;
+            
+            // Position dropdown
+            const th = event.target.closest('th');
+            th.appendChild(dropdown);
+            dropdown.classList.add('active');
+            
+            // Mark icon as active
+            event.target.closest('.modal-filter-icon').classList.add('active');
+            
+            // Close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', closeModalFilters);
+            }, 100);
+        }
+        
+        // Filter dropdown options
+        function filterModalOptions(input, column) {
+            const searchText = input.value.toLowerCase();
+            const options = input.closest('.modal-filter-dropdown').querySelectorAll('.filter-option');
+            
+            options.forEach((option, index) => {
+                if (index === 0) return; // Skip "Select All"
+                const text = option.querySelector('span').textContent.toLowerCase();
+                option.style.display = text.includes(searchText) ? 'flex' : 'none';
+            });
+        }
+        
+        // Update modal filter selection
+        function updateModalFilter(column, value, checked) {
+            const data = window.currentModalData;
+            if (!data.activeFilters[column]) {
+                data.activeFilters[column] = [];
+            }
+            
+            if (checked) {
+                if (!data.activeFilters[column].includes(value)) {
+                    data.activeFilters[column].push(value);
+                }
+            } else {
+                data.activeFilters[column] = data.activeFilters[column].filter(v => v !== value);
+            }
+            
+            // Update "Select All" checkbox
+            const dropdown = document.querySelector('.modal-filter-dropdown.active');
+            if (dropdown) {
+                const selectAll = dropdown.querySelector('input[type="checkbox"]');
+                const allOptions = dropdown.querySelectorAll('.filter-option input[type="checkbox"]');
+                const checkedOptions = dropdown.querySelectorAll('.filter-option input[type="checkbox"]:checked');
+                selectAll.checked = checkedOptions.length === allOptions.length;
+            }
+        }
+        
+        // Toggle all modal filters
+        function toggleAllModalFilters(column, checked) {
+            const dropdown = document.querySelector('.modal-filter-dropdown.active');
+            if (!dropdown) return;
+            
+            const checkboxes = dropdown.querySelectorAll('.filter-option input[type="checkbox"]');
+            checkboxes.forEach((cb, index) => {
+                if (index > 0) { // Skip the "Select All" checkbox
+                    cb.checked = checked;
+                    updateModalFilter(column, cb.value, checked);
+                }
+            });
+        }
+        
+        // Clear modal filter
+        function clearModalFilter(column) {
+            const data = window.currentModalData;
+            delete data.activeFilters[column];
+            
+            // Remove active class from icon
+            document.querySelector(`.modal-filter-icon[data-column="${column}"]`).classList.remove('active');
+            
+            applyModalFilters();
+            closeModalFilters();
+        }
+        
+        // Apply modal filters
+        function applyModalFilters() {
+            const data = window.currentModalData;
+            
+            // Filter data based on active filters
+            data.filteredData = data.originalData.filter(row => {
+                for (const [column, allowedValues] of Object.entries(data.activeFilters)) {
+                    if (allowedValues.length === 0) continue;
+                    
+                    const value = String(row[column] || '');
+                    if (!allowedValues.includes(value)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            
+            // Re-sort if needed
+            if (data.sortColumn) {
+                const direction = data.sortDirection;
+                data.sortedData = [...data.filteredData].sort((a, b) => {
+                    const aVal = a[data.sortColumn];
+                    const bVal = b[data.sortColumn];
+                    
+                    if (aVal === null || aVal === undefined) return 1;
+                    if (bVal === null || bVal === undefined) return -1;
+                    
+                    let comparison = 0;
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        comparison = aVal - bVal;
+                    } else {
+                        comparison = String(aVal).localeCompare(String(bVal));
+                    }
+                    
+                    return direction === 'asc' ? comparison : -comparison;
+                });
+            } else {
+                data.sortedData = [...data.filteredData];
+            }
+            
+            // Update table
+            const tbody = document.getElementById('modal-table-body');
+            if (tbody) {
+                tbody.innerHTML = renderModalTableBody(data.sortedData, data.apiName);
+            }
+            
+            // Update filter icons
+            document.querySelectorAll('.modal-filter-icon').forEach(icon => {
+                const column = icon.getAttribute('data-column');
+                if (data.activeFilters[column] && data.activeFilters[column].length > 0) {
+                    icon.classList.add('active');
+                } else {
+                    icon.classList.remove('active');
+                }
+            });
+            
+            closeModalFilters();
+        }
+        
+        // Close modal filters
+        function closeModalFilters() {
+            document.querySelectorAll('.modal-filter-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('active');
+                setTimeout(() => dropdown.remove(), 300);
+            });
+            document.removeEventListener('click', closeModalFilters);
         }
     </script>
     
