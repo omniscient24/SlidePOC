@@ -428,7 +428,7 @@ a:hover {
     border-bottom: 1px solid var(--border-color);
 }
 
-.data-table tr:hover {
+.data-table tr:not(.category-row):hover {
     background: var(--background);
 }
 

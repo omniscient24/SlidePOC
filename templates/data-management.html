@@ -209,9 +209,9 @@
         }
         
         .category-row {
-            background: var(--text-secondary);
+            background: #e0dfdf;
             font-weight: 600;
-            color: white;
+            color: black;
             text-transform: uppercase;
             font-size: 0.8rem;
             letter-spacing: 0.05em;
@@ -224,12 +224,20 @@
         
         /* Prevent hover effects on category rows */
         .category-row:hover {
-            background: var(--text-secondary) !important;
+            background: #e0dfdf !important;
+            cursor: default;
         }
         
         .category-row:hover td {
-            background: var(--text-secondary) !important;
-            color: white !important;
+            background: #e0dfdf !important;
+            color: black !important;
+        }
+        
+        /* Sync table header styling */
+        #sync-objects-table thead th {
+            background: #264c63 !important;
+            background-color: #264c63 !important;
+            color: white;
         }
         
         /* Modal styles */
@@ -767,7 +775,7 @@
             padding: 10px;
             z-index: 1000;
             min-width: 200px;
-            max-height: 300px;
+            max-height: 480px;
             overflow-y: auto;
             display: none;
         }
@@ -908,13 +916,8 @@
                                             </svg>
                                         </span>
                                     </th>
-                                    <th class="filterable" style="min-width: 180px;">
+                                    <th style="min-width: 180px;">
                                         API Name
-                                        <span class="filter-icon" onclick="showFilter(event, 'apiName')">
-                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                                <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
-                                            </svg>
-                                        </span>
                                     </th>
                                     <th class="filterable" style="min-width: 120px;">
                                         Status
@@ -927,18 +930,13 @@
                                     <th class="filterable" style="min-width: 140px;">
                                         Last Synced
                                         <span class="filter-icon" onclick="showFilter(event, 'lastSynced')">
-                                            <svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor">
-                                                <path d="M349 838c0 17.7 14.2 32 31.8 32h262.4c17.6 0 31.8-14.3 31.8-32V642H349v196zm531.1-684H143.9c-24.5 0-39.8 26.7-27.5 48l221.3 376h348.8l221.3-376c12.1-21.3-3.2-48-27.7-48z"/>
-                                            </svg>
-                                        </span>
-                                    </th>
-                                    <th class="filterable" style="min-width: 120px;">
-                                        Records
-                                        <span class="filter-icon" onclick="showFilter(event, 'records')">
                                             <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                                                 <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
                                             </svg>
                                         </span>
+                                    </th>
+                                    <th style="min-width: 120px;">
+                                        Records
                                     </th>
                                     <th style="min-width: 300px;">Actions</th>
                                 </tr>
@@ -1214,15 +1212,37 @@
         async function loadConnections() {
             try {
                 const response = await fetch('/api/session');
+                
+                if (!response.ok) {
+                    console.error('Session API returned error:', response.status, response.statusText);
+                    if (response.status === 401 || response.status === 403) {
+                        showWarning('Session expired. Please <a href="/login" style="color: white; text-decoration: underline;">log in</a> again.');
+                    }
+                    return;
+                }
+                
                 const data = await response.json();
+                
+                if (!data.success) {
+                    console.error('Session API returned error:', data.error);
+                    showWarning('No active session. Please <a href="/login" style="color: white; text-decoration: underline;">log in</a> to continue.');
+                    return;
+                }
                 
                 if (data.success && data.active_connection) {
                     activeConnection = data.active_connection;
-                    document.getElementById('connection-selector').innerHTML = 
-                        `<option value="${activeConnection.id}">${activeConnection.name}</option>`;
+                    const selector = document.getElementById('connection-selector');
+                    if (selector) {
+                        selector.innerHTML = 
+                            `<option value="${activeConnection.id}">${activeConnection.name}</option>`;
+                    }
+                } else {
+                    console.log('No active connection in session data');
+                    showWarning('No active connection. Please log in first.');
                 }
             } catch (error) {
                 console.error('Error loading connections:', error);
+                showError('Failed to load connections. Please refresh the page.');
             }
         }
 
@@ -2761,6 +2781,15 @@
             }
         }
         
+        function showWarning(message, useToast = true) {
+            if (useToast) {
+                showToast(message, 'warning');
+            } else {
+                // For backward compatibility
+                alert('Warning: ' + message);
+            }
+        }
+        
         function showToast(message, type = 'info') {
             // Create toast element
             const toast = document.createElement('div');
@@ -2770,7 +2799,7 @@
                 bottom: 20px;
                 right: 20px;
                 padding: 16px 24px;
-                background: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#17a2b8'};
+                background: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : type === 'warning' ? '#ff6b35' : '#17a2b8'};
                 color: white;
                 border-radius: 4px;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -2778,7 +2807,7 @@
                 max-width: 400px;
                 animation: slideIn 0.3s ease-out;
             `;
-            toast.textContent = message;
+            toast.innerHTML = message;
             
             // Add to page
             document.body.appendChild(toast);
