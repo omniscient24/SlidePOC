@@ -1,0 +1,4 @@
+Id,Name,Description,IsActive,IsStandard,IsArchived,ValidFrom,ValidTo
+01sa50000027OvjAAE,Nonprofit,,True,False,False,,
+01sa50000027OviAAE,Standard,,False,False,False,,
+01sa50000027OvhAAE,Standard Price Book,,True,True,False,,

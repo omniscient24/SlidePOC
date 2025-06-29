@@ -1,0 +1,963 @@
+[
+  {
+    "sobject": "Product2",
+    "objects": [
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_1"
+        },
+        "Name": "DCS Essentials",
+        "ProductCode": "CYB-DCS-ESS-BUN",
+        "StockKeepingUnit": "SKU-CYB-DCS-ESS-BUN",
+        "Description": "Data Classification Suite - Essentials tier",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "Type": "Bundle",
+        "AvailabilityDate": "2025-06-01",
+        "IsAssetizable": "True",
+        "QuantityUnitOfMeasure": "Each",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_2"
+        },
+        "Name": "DCS Advanced",
+        "ProductCode": "CYB-DCS-ADV-BUN",
+        "StockKeepingUnit": "SKU-CYB-DCS-ADV-BUN",
+        "Description": "Data Classification Suite - Advanced tier",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "Type": "Bundle",
+        "AvailabilityDate": "2025-06-02",
+        "IsAssetizable": "True",
+        "QuantityUnitOfMeasure": "Each",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_3"
+        },
+        "Name": "DCS Elite",
+        "ProductCode": "CYB-DCS-ELITE-BUN",
+        "StockKeepingUnit": "SKU-CYB-DCS-ELITE-BUN-SAAS",
+        "Description": "Data Classification Suite - Elite tier (SaaS only)",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "Type": "Bundle",
+        "AvailabilityDate": "2025-06-03",
+        "IsAssetizable": "True",
+        "QuantityUnitOfMeasure": "Each",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_4"
+        },
+        "Name": "Data Detection Engine",
+        "ProductCode": "CYB-DCS-DDE-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-DDE-CMP",
+        "Description": "Data Detection Engine",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-04",
+        "IsAssetizable": "True",
+        "QuantityUnitOfMeasure": "Each",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "True"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_5"
+        },
+        "Name": "Unlimited Classification",
+        "ProductCode": "CYB-DCS-UC-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-UC-CMP",
+        "Description": "Unlimited Classification",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-05",
+        "IsAssetizable": "True",
+        "QuantityUnitOfMeasure": "Each",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "True"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_6"
+        },
+        "Name": "DCS Analysis Collector",
+        "ProductCode": "CYB-DCS-ACOL-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-ACOL-CMP",
+        "Description": "DCS Analysis Collector",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-06",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "True"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_7"
+        },
+        "Name": "DCS Admin Console",
+        "ProductCode": "CYB-DCS-ACON-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-ACON-CMP",
+        "Description": "DCS Admin Console",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-07",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "True"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_8"
+        },
+        "Name": "DCS for Windows",
+        "ProductCode": "CYB-DCS-FW-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-FW-CMP",
+        "Description": "DCS for Windows",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-08",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "True"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_9"
+        },
+        "Name": "DCS for OWA",
+        "ProductCode": "CYB-DCS-OWA-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-OWA-CMP",
+        "Description": "DCS for OWA",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-09",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_10"
+        },
+        "Name": "Software Development Kit",
+        "ProductCode": "CYB-DCS-SDK-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-SDK-CMP",
+        "Description": "DCS Software Development Kit",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-10",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "True"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_11"
+        },
+        "Name": "DCS Getting Started Package",
+        "ProductCode": "CYB-DCS-QS-CMP",
+        "StockKeepingUnit": "SKU-CYB-DCS-QS-CMP",
+        "Description": "DCS Getting Started Package",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-11",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "True"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_12"
+        },
+        "Name": "Fortra Mail for iOS",
+        "ProductCode": "CYB-DCS-MAIL-ADD",
+        "StockKeepingUnit": "SKU-CYB-DCS-MAIL-ADD",
+        "Description": "Fortra Mail client for iOS devices",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-12",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_13"
+        },
+        "Name": "DCS Policy Manager Desktop",
+        "ProductCode": "CYB-DCS-PMD-ADD",
+        "StockKeepingUnit": "SKU-CYB-DCS-PMD-ADD",
+        "Description": "Cloud Policy Manager for Desktop",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-13",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_14"
+        },
+        "Name": "DCS Policy Manager M365",
+        "ProductCode": "CYB-DCS-PM365-ADD",
+        "StockKeepingUnit": "SKU-CYB-DCS-PM365-ADD",
+        "Description": "Cloud Policy Manager for Microsoft 365",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-14",
+        "IsAssetizable": "True",
+        "IsSerialized": "True",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_15"
+        },
+        "Name": "Professional Services Package 1",
+        "ProductCode": "CYB-DP-PS1-SVC",
+        "StockKeepingUnit": "SKU-CYB-DP-PS1-SVC",
+        "Description": "Professional Services Package 1",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-15",
+        "IsAssetizable": "True",
+        "IsSerialized": "False",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_16"
+        },
+        "Name": "Professional Services Package 2",
+        "ProductCode": "CYB-DP-PS2-SVC",
+        "StockKeepingUnit": "SKU-CYB-DP-PS2-SVC",
+        "Description": "Professional Services Package 2",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-16",
+        "IsAssetizable": "True",
+        "IsSerialized": "False",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_17"
+        },
+        "Name": "Professional Services Package 3",
+        "ProductCode": "CYB-DP-PS3-SVC",
+        "StockKeepingUnit": "SKU-CYB-DP-PS3-SVC",
+        "Description": "Professional Services Package 3",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-17",
+        "IsAssetizable": "True",
+        "IsSerialized": "False",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_18"
+        },
+        "Name": "Training",
+        "ProductCode": "CYB-DP-TRN-SVC",
+        "StockKeepingUnit": "SKU-CYB-DP-TRN-SVC",
+        "Description": "Training",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-18",
+        "IsAssetizable": "True",
+        "IsSerialized": "False",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_19"
+        },
+        "Name": "Support - Tier 1",
+        "ProductCode": "CYB-SUP-T1-SVC",
+        "StockKeepingUnit": "SKU-CYB-SUP-T1-SVC",
+        "Description": "Support - Tier 1",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-19",
+        "IsAssetizable": "True",
+        "IsSerialized": "False",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_20"
+        },
+        "Name": "Support - Tier 2",
+        "ProductCode": "CYB-SUP-T2-SVC",
+        "StockKeepingUnit": "SKU-CYB-SUP-T2-SVC",
+        "Description": "Support - Tier 2",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-20",
+        "IsAssetizable": "True",
+        "IsSerialized": "False",
+        "IsSoldOnlyWithOtherProds": "False"
+      },
+      {
+        "attributes": {
+          "type": "Product2",
+          "referenceId": "Product2_21"
+        },
+        "Name": "Support - Tier 3",
+        "ProductCode": "CYB-SUP-T3-SVC",
+        "StockKeepingUnit": "SKU-CYB-SUP-T3-SVC",
+        "Description": "Support - Tier 3",
+        "IsActive": "True",
+        "Family": "Data Protection",
+        "AvailabilityDate": "2025-06-21",
+        "IsAssetizable": "True",
+        "IsSerialized": "False",
+        "IsSoldOnlyWithOtherProds": "False"
+      }
+    ],
+    "file": "Product2.json"
+  },
+  {
+    "sobject": "Pricebook2",
+    "objects": [
+      {
+        "attributes": {
+          "type": "Pricebook2",
+          "referenceId": "Pricebook2_1"
+        },
+        "Id": "01sa50000027OvjAAE",
+        "Name": "Nonprofit",
+        "IsActive": "True",
+        "IsStandard": "False",
+        "IsArchived": "False"
+      },
+      {
+        "attributes": {
+          "type": "Pricebook2",
+          "referenceId": "Pricebook2_2"
+        },
+        "Id": "01sa50000027OviAAE",
+        "Name": "Standard",
+        "IsActive": "False",
+        "IsStandard": "False",
+        "IsArchived": "False"
+      },
+      {
+        "attributes": {
+          "type": "Pricebook2",
+          "referenceId": "Pricebook2_3"
+        },
+        "Id": "01sa50000027OvhAAE",
+        "Name": "Standard Price Book",
+        "IsActive": "True",
+        "IsStandard": "True",
+        "IsArchived": "False"
+      }
+    ],
+    "file": "Pricebook2.json"
+  },
+  {
+    "sobject": "Picklist Values",
+    "objects": [
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_1"
+        },
+        "Object": "Product2",
+        "Field": "Family"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_2"
+        },
+        "Object": "Product2",
+        "Field": "Family",
+        "Value": "Bundle"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_3"
+        },
+        "Object": "Product2",
+        "Field": "Family",
+        "Value": "Construction"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_4"
+        },
+        "Object": "Product2",
+        "Field": "ConfigureDuringSale",
+        "Value": "Allowed"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_5"
+        },
+        "Object": "Product2",
+        "Field": "ConfigureDuringSale",
+        "Value": "NotAllowed"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_6"
+        },
+        "Object": "Product2",
+        "Field": "ConfigureDuringSale",
+        "Value": "Required"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_7"
+        },
+        "Object": "Product2",
+        "Field": "DecompositionScope",
+        "Value": "OrderLineItem"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_8"
+        },
+        "Object": "Product2",
+        "Field": "DecompositionScope",
+        "Value": "Order"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_9"
+        },
+        "Object": "Product2",
+        "Field": "DecompositionScope",
+        "Value": "Bundle"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_10"
+        },
+        "Object": "Product2",
+        "Field": "DecompositionScope",
+        "Value": "Account"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_11"
+        },
+        "Object": "Product2",
+        "Field": "FulfillmentQtyCalcMethod",
+        "Value": "Aggregate"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_12"
+        },
+        "Object": "Product2",
+        "Field": "FulfillmentQtyCalcMethod",
+        "Value": "AlwaysOne"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_13"
+        },
+        "Object": "Product2",
+        "Field": "TransferRecordMode",
+        "Value": "SendAndReceive"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_14"
+        },
+        "Object": "Product2",
+        "Field": "TransferRecordMode",
+        "Value": "ReceiveOnly"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_15"
+        },
+        "Object": "Product2",
+        "Field": "Type",
+        "Value": "Bundle"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_16"
+        },
+        "Object": "Product2",
+        "Field": "UsageModelType",
+        "Value": "Anchor"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_17"
+        },
+        "Object": "Product2",
+        "Field": "UsageModelType",
+        "Value": "Pack"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_18"
+        },
+        "Object": "Product2",
+        "Field": "UsageModelType",
+        "Value": "Commit"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_19"
+        },
+        "Object": "Product2",
+        "Field": "QuantityUnitOfMeasure",
+        "Value": "Each"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_20"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "SellingModelType",
+        "Value": "OneTime"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_21"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "SellingModelType",
+        "Value": "TermDefined"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_22"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "SellingModelType",
+        "Value": "Evergreen"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_23"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "PricingTermUnit",
+        "Value": "Months"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_24"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "PricingTermUnit",
+        "Value": "Quarterly"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_25"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "PricingTermUnit",
+        "Value": "Semi-Annual"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_26"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "PricingTermUnit",
+        "Value": "Annual"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_27"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "Status",
+        "Value": "Draft"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_28"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "Status",
+        "Value": "Active"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_29"
+        },
+        "Object": "ProductSellingModel",
+        "Field": "Status",
+        "Value": "Inactive"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_30"
+        },
+        "Object": "TaxPolicy",
+        "Field": "Status",
+        "Value": "Draft"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_31"
+        },
+        "Object": "TaxPolicy",
+        "Field": "Status",
+        "Value": "Active"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_32"
+        },
+        "Object": "TaxPolicy",
+        "Field": "Status",
+        "Value": "Inactive"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_33"
+        },
+        "Object": "TaxPolicy",
+        "Field": "TreatmentSelection",
+        "Value": "LegalEntity"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_34"
+        },
+        "Object": "TaxPolicy",
+        "Field": "TreatmentSelection",
+        "Value": "Manual"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_35"
+        },
+        "Object": "TaxPolicy",
+        "Field": "TreatmentSelection",
+        "Value": "Default"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_36"
+        },
+        "Object": "LegalEntity",
+        "Field": "Status",
+        "Value": "Draft"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_37"
+        },
+        "Object": "LegalEntity",
+        "Field": "Status",
+        "Value": "Active"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_38"
+        },
+        "Object": "LegalEntity",
+        "Field": "Status",
+        "Value": "Inactive"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_39"
+        },
+        "Object": "ProductClassification",
+        "Field": "Status",
+        "Value": "Draft"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_40"
+        },
+        "Object": "ProductClassification",
+        "Field": "Status",
+        "Value": "Active"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_41"
+        },
+        "Object": "ProductClassification",
+        "Field": "Status",
+        "Value": "Inactive"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_42"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Checkbox"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_43"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Date"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_44"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Datetime"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_45"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Number"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_46"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Text"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_47"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Currency"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_48"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Percent"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_49"
+        },
+        "Object": "AttributeDefinition",
+        "Field": "DataType",
+        "Value": "Picklist"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_50"
+        },
+        "Object": "PriceAdjustmentSchedule",
+        "Field": "ScheduleType",
+        "Value": "Volume"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_51"
+        },
+        "Object": "PriceAdjustmentSchedule",
+        "Field": "ScheduleType",
+        "Value": "Term"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_52"
+        },
+        "Object": "PriceAdjustmentSchedule",
+        "Field": "ScheduleType",
+        "Value": "Attribute"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_53"
+        },
+        "Object": "PriceAdjustmentSchedule",
+        "Field": "ScheduleType",
+        "Value": "Bundle"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_54"
+        },
+        "Object": "PriceAdjustmentSchedule",
+        "Field": "ScheduleType",
+        "Value": "Custom"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_55"
+        },
+        "Object": "PriceAdjustmentSchedule",
+        "Field": "AdjustmentMethod",
+        "Value": "Range"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_56"
+        },
+        "Object": "PriceAdjustmentSchedule",
+        "Field": "AdjustmentMethod",
+        "Value": "Slab"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_57"
+        },
+        "Object": "PriceAdjustmentTier",
+        "Field": "TierType",
+        "Value": "Percent"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_58"
+        },
+        "Object": "PriceAdjustmentTier",
+        "Field": "TierType",
+        "Value": "Amount"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_59"
+        },
+        "Object": "TaxEngine",
+        "Field": "Status",
+        "Value": "Draft"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_60"
+        },
+        "Object": "TaxEngine",
+        "Field": "Status",
+        "Value": "Active"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_61"
+        },
+        "Object": "TaxEngine",
+        "Field": "Status",
+        "Value": "Inactive"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_62"
+        },
+        "Object": "TaxEngine",
+        "Field": "Type",
+        "Value": "Internal"
+      },
+      {
+        "attributes": {
+          "type": "Picklist Values",
+          "referenceId": "Picklist Values_63"
+        },
+        "Object": "TaxEngine",
+        "Field": "Type",
+        "Value": "External"
+      }
+    ],
+    "file": "Picklist Values.json"
+  }
+]

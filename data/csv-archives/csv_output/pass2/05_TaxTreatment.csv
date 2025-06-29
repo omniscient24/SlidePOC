@@ -1,0 +1,5 @@
+Name*,External_ID__c*,TaxPolicy.External_ID__c,LegalEntity.External_ID__c,TaxEngine.External_ID__c,Description,TaxCode,IsTaxable*,Status*
+Standard Taxable,TAX_TREAT_001,TAX_POLICY_001,LEGAL_US_001,TAX_ENGINE_001,Standard taxable treatment,P0000000,True,Active
+Tax Exempt,TAX_TREAT_002,TAX_POLICY_002,,,Tax exempt treatment,NT,False,Active
+EU VAT,TAX_TREAT_003,TAX_POLICY_003,LEGAL_EU_001,TAX_ENGINE_002,EU VAT treatment,VAT-STD,True,Active
+APAC GST,TAX_TREAT_004,TAX_POLICY_003,LEGAL_APAC_001,TAX_ENGINE_002,APAC GST treatment,GST-STD,True,Active

@@ -1,0 +1,12 @@
+Name,Label,Description,DataType,IsActive,IsRequired,DefaultValue,Code,DefaultHelpText,ValueDescription
+Deployment Option,Deployment Option,The depoloyment option for the product.,Picklist,True,True,On Premise,DM,The depoloyment option for the product.,Deployment Option
+Pricing Tier,Pricing Tier,The pricing tier to appy to the product.,Picklist,True,True,1,PT,The pricing tier to appy to the product.,Pricing Tier
+License Type,License Type,The license type to apply to the product.,Number,True,True,Subscription,LT,The license type to apply to the product.,License Type
+Units,Units,,Picklist,True,True,,UN,,
+Unit Type,Unit Type,,Picklist,True,True,,UT,,
+Server Type,Server Type,,Picklist,True,True,Production,ST,,
+Type of Agents?,Type of Agents?,,Picklist,True,True,,TOA,,
+Key type?,Key type?,,Picklist,True,True,,KT,,
+Server Location Type,Server Location Type,,Picklist,True,True,,SLT,,
+PGroup,PGroup,,Picklist,True,True,,PG,,
+Operating System,Operating System,,Picklist,True,True,Windows,OS,,

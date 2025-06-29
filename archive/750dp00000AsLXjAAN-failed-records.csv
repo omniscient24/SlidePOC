@@ -1,0 +1,12 @@
+"sf__Id","sf__Error",ProductCategoryId,ProductId
+"","FIELD_INTEGRITY_EXCEPTION:Category ID: id value of incorrect type: 0ZSdp00000007kfGAA:ProductCategoryId --","0ZSdp00000007kfGAA","01tdp000006JEGkAAO"
+"","FIELD_INTEGRITY_EXCEPTION:Category ID: id value of incorrect type: 0ZSdp00000007kfGAA:ProductCategoryId --","0ZSdp00000007kfGAA","01tdp000006JEGlAAO"
+"","FIELD_INTEGRITY_EXCEPTION:Category ID: id value of incorrect type: 0ZSdp00000007kfGAA:ProductCategoryId --","0ZSdp00000007kfGAA","01tdp000006JEGjAAO"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AIjGAM:--","0ZGdp00000007JIGAY","01tdp000006HfpkAAC"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AIkGAM:--","0ZGdp00000007JIGAY","01tdp000006HfplAAC"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AIlGAM:--","0ZGdp00000007JIGAY","01tdp000006HfpmAAC"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AImGAM:--","0ZGdp00000007JIGAY","01tdp000006HfpnAAC"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AInGAM:--","0ZGdp00000007JIGAY","01tdp000006HfpoAAC"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AIoGAM:--","0ZGdp00000007JIGAY","01tdp000006HfppAAC"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AIpGAM:--","0ZGdp00000007JIGAY","01tdp000006HfpqAAC"
+"","DUPLICATE_VALUE:duplicate value found: CatalogId duplicates value on record with id: 0ZRdp0000000AIqGAM:--","0ZGdp00000007JIGAY","01tdp000006HfprAAC"

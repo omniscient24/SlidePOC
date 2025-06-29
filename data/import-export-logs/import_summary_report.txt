@@ -1,0 +1,20 @@
+REVENUE CLOUD IMPORT SUMMARY
+==================================================
+
+ProductCatalog: 3 records
+ProductCategory: 5 records
+ProductClassification: 7 records
+AttributeDefinition: 20 records
+AttributeCategory: 6 records
+AttributePicklist: 10 records
+ProductSellingModel: 9 records
+Product2: 22 records
+ProductAttributeDefinition: 17 records
+AttributePicklistValue: 1 records
+Pricebook2: 2 records
+PricebookEntry: 24 records
+ProductCategoryProduct: 5 records
+ProductRelatedComponent: 0 records
+
+Total objects with data: 13
+Total records imported: 131

@@ -1,0 +1,10 @@
+Id,Name,Code,Status,Fortra__c
+11Ba500000Nw5RwEAJ,Data Protection,DP,Active,True
+11Ba500000NtYa5EAF,DSPM Products,DSPM,Active,True
+11Ba500000Nw5RtEAJ,Defensive Security Solutions,DSS,Active,True
+11Ba500000Nw5RzEAJ,IBM i Security,IIS,Active,True
+11Ba500000Nw5RuEAJ,Offensive Security Solutions,OSPM,Active,True
+11Ba500000Nw5RxEAJ,Secure File Transfer,SFT,Active,True
+11Ba500000NrUKJEA3,Software,SFT001,Active,False
+11Ba500000NrUKREA3,Support,SL001,Active,False
+11Ba500000NrUKQEA3,Training,TL001,Active,False

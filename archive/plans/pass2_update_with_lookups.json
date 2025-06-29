@@ -1,0 +1,66 @@
+[
+  {
+    "sobject": "ProductCategoryProduct__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass2/26_ProductCategoryProduct.csv"
+    ],
+    "lookups": [
+      {
+        "sobjectField": "Product__r.ProductCode__c",
+        "lookupExternalIdField": "ProductCode__c"
+      },
+      {
+        "sobjectField": "ProductCategory__r.CategoryCode__c",
+        "lookupExternalIdField": "CategoryCode__c"
+      }
+    ]
+  },
+  {
+    "sobject": "ProductAttributeDefinition__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass2/17_ProductAttributeDef.csv"
+    ],
+    "lookups": [
+      {
+        "sobjectField": "Product__r.ProductCode__c",
+        "lookupExternalIdField": "ProductCode__c"
+      },
+      {
+        "sobjectField": "AttributeDefinition__r.AttributeCode__c",
+        "lookupExternalIdField": "AttributeCode__c"
+      }
+    ]
+  },
+  {
+    "sobject": "ProductRelatedComponent__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass2/25_ProductRelatedComponent.csv"
+    ],
+    "lookups": [
+      {
+        "sobjectField": "ParentProduct__r.ProductCode__c",
+        "lookupExternalIdField": "ProductCode__c"
+      },
+      {
+        "sobjectField": "ChildProduct__r.ProductCode__c",
+        "lookupExternalIdField": "ProductCode__c"
+      }
+    ]
+  },
+  {
+    "sobject": "ProductSellingModelOption__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass2/15_ProductSellingModel.csv"
+    ],
+    "lookups": [
+      {
+        "sobjectField": "Product__r.ProductCode__c",
+        "lookupExternalIdField": "ProductCode__c"
+      },
+      {
+        "sobjectField": "ProductSellingModel__r.ModelCode__c",
+        "lookupExternalIdField": "ModelCode__c"
+      }
+    ]
+  }
+]

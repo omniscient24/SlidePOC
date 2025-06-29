@@ -1,0 +1,26 @@
+[
+  {
+    "sobject": "ProductCatalog",
+    "files": [
+      "json_tree_output/pass1/ProductCatalog.json"
+    ]
+  },
+  {
+    "sobject": "ProductCategory",
+    "files": [
+      "json_tree_output/pass1/ProductCategory.json"
+    ]
+  },
+  {
+    "sobject": "AttributeDefinition",
+    "files": [
+      "json_tree_output/pass1/AttributeDefinition.json"
+    ]
+  },
+  {
+    "sobject": "Product2",
+    "files": [
+      "json_tree_output/pass1/Product2.json"
+    ]
+  }
+]

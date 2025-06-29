@@ -1,0 +1,4 @@
+TaxEngineName*,External_ID__c*,Description,Status*,Type,SellerCode,TaxEngineStreet,TaxEngineCity,TaxEngineState,TaxEnginePostalCode,TaxEngineCountry
+Internal Tax Engine,TAX_ENGINE_001,Internal tax calculation,Active,Internal,,123 Main St,San Francisco,CA,94105.0,USA
+Avalara Engine,TAX_ENGINE_002,Avalara integration,Active,External,ACME001,,,,,
+Vertex Engine,TAX_ENGINE_003,Vertex integration,Inactive,External,ACME-VTX,,,,,

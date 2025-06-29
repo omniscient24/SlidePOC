@@ -1,0 +1,10 @@
+Name,Label,Description,DataType,IsActive,IsRequired,DefaultValue,Code,DeveloperName,PicklistId,DefaultHelpText,ValueDescription,SourceSystemIdentifier
+Pricing Tier,Pricing Tier,Pricing Tier,Picklist,True,True,,PT,Pricing_Tier,,,,
+License Type,License Type,License Type,Picklist,True,True,,LT,License_type,,,,
+Unit Type,Unit Type,Unit Type,Picklist,True,True,,UT,Unit_Type,,,,
+Server Type,Server Type,Server Type,Picklist,True,True,,ST ,Server_Type,,,,
+Type of Agents?,Type of Agents?,Type of Agents?,Picklist,True,True,,TA,Type_of_Agents,,,,
+Key Type,Key Type,Key Type,Picklist,True,True,,KT,Key_Type,,,,
+Server Location Type,Server Location Type,Server Location Type,Picklist,True,True,,SLT,Server_Location_Type,,,,
+PGroup,PGroup,PGroup,Picklist,True,True,,PG,Pgroup,,,,
+Operating System,Operating System,Operating System,Picklist,True,True,,OS,Operating_System,,,,

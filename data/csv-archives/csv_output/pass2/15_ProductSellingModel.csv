@@ -1,0 +1,10 @@
+Id,Name,SellingModelType,Status,PricingTermUnit,PricingTerm,ModelCode__c
+,Evergreen - Monthly,Evergreen,Active,Months,1.0,MODEL001
+,Evergreen - Quarterly,Evergreen,Active,Quarterly,1.0,MODEL002
+,Evergreen - Semi-Annual,Evergreen,Active,Semi-Annual,1.0,MODEL003
+,Evergreen - Yearly,Evergreen,Active,Annual,1.0,MODEL004
+,One Time,OneTime,Active,,,MODEL005
+,Term Based - Monthly,TermDefined,Active,Months,1.0,MODEL006
+,Term Based - Quarterly,TermDefined,Active,Quarterly,1.0,MODEL007
+,Term Based - Semi-Annual,TermDefined,Active,Semi-Annual,1.0,MODEL008
+,Term Based - Yearly,TermDefined,Active,Annual,1.0,MODEL009

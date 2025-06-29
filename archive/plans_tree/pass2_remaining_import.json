@@ -1,0 +1,10 @@
+[
+  {
+    "sobject": "ProductAttributeDefinition",
+    "files": ["../json_tree_output/pass2_mapped/ProductAttributeDefinition.json"]
+  },
+  {
+    "sobject": "ProductRelatedComponent",
+    "files": ["../json_tree_output/pass2_mapped/ProductRelatedComponent.json"]
+  }
+]

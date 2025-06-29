@@ -1,0 +1,67 @@
+FIELD CLEANUP REPORT
+================================================================================
+Date: 2025-06-22 10:58:07
+Backup created: data/Revenue_Cloud_Complete_Upload_Template_pre_cleanup_20250622_105748.xlsx
+
+ProductCatalog (11_ProductCatalog)
+------------------------------------------------------------
+  ✓ Kept 7 fields
+
+ProductCategory (12_ProductCategory)
+------------------------------------------------------------
+  ✓ Kept 4 fields
+
+ProductClassification (08_ProductClassification)
+------------------------------------------------------------
+  ✓ Kept 4 fields
+
+AttributeCategory (10_AttributeCategory)
+------------------------------------------------------------
+  ✓ Kept 4 fields
+
+AttributePicklist (14_AttributePicklist)
+------------------------------------------------------------
+  - Removed: OwnerId (System field - always removed)
+  ✓ Kept 6 fields
+
+AttributeDefinition (09_AttributeDefinition)
+------------------------------------------------------------
+  ✓ Kept 12 fields
+
+ProductSellingModel (15_ProductSellingModel)
+------------------------------------------------------------
+  ✓ Kept 6 fields
+
+Product2 (13_Product2)
+------------------------------------------------------------
+  - Removed: Type (Object-specific rule: remove)
+  ✓ Kept 18 fields
+
+Pricebook2 (19_Pricebook2)
+------------------------------------------------------------
+  ✓ Kept 6 fields
+
+ProductAttributeDefinition (17_ProductAttributeDef)
+------------------------------------------------------------
+  - Removed: AttributeCategoryId (Object-specific rule: remove)
+  ✓ Kept 17 fields
+
+AttributePicklistValue (18_AttributePicklistValue)
+------------------------------------------------------------
+  ✓ Kept 10 fields
+
+ProductCategoryProduct (26_ProductCategoryProduct)
+------------------------------------------------------------
+  ✓ Kept 3 fields
+
+PricebookEntry (20_PricebookEntry)
+------------------------------------------------------------
+  ✓ Kept 7 fields
+
+ProductRelatedComponent (25_ProductRelatedComponent)
+------------------------------------------------------------
+  ✓ Kept 13 fields
+
+ProductComponentGroup (14_ProductComponentGroup)
+------------------------------------------------------------
+  ✓ Kept 5 fields

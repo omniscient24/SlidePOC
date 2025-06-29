@@ -1,0 +1,3 @@
+Id,Name*,Code,Description,CatalogType,EffectiveStartDate,EffectiveEndDate,NumberOfCategories,CatalogCode__c
+,Cyber,Cyber,Cyber products.,Cyber,2025-06-02,,6,CATALOG001
+,Tech,Tech,Tech products.,Tech,2025-06-03,,6,CATALOG002

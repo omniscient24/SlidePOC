@@ -1,0 +1,16 @@
+Name,ParentProductId,ChildProductId,Quantity,MinQuantity,MaxQuantity,IsComponentRequired,Sequence,DoesBundlePriceIncludeChild
+DCS Essentials - DCS for Windows,01tdp000006JEGlAAO,01tdp000006HfpoAAC,1,1,999,True,10,True
+DCS Essentials - Data Detection Engine,01tdp000006JEGlAAO,01tdp000006HfpkAAC,1,1,999,True,20,True
+DCS Essentials - DCS Getting Started Package,01tdp000006JEGlAAO,01tdp000006HfprAAC,1,1,999,True,30,True
+DCS Advanced - DCS for Windows,01tdp000006JEGjAAO,01tdp000006HfpoAAC,1,1,999,True,40,True
+DCS Advanced - Data Detection Engine,01tdp000006JEGjAAO,01tdp000006HfpkAAC,1,1,999,True,50,True
+DCS Advanced - DCS Admin Console,01tdp000006JEGjAAO,01tdp000006HfpnAAC,1,1,999,True,60,True
+DCS Advanced - DCS Analysis Collector,01tdp000006JEGjAAO,01tdp000006HfpmAAC,1,1,999,True,70,True
+DCS Advanced - DCS for OWA,01tdp000006JEGjAAO,01tdp000006HfppAAC,1,0,999,False,80,True
+DCS Elite - DCS for Windows,01tdp000006JEGkAAO,01tdp000006HfpoAAC,1,1,999,True,90,True
+DCS Elite - Data Detection Engine,01tdp000006JEGkAAO,01tdp000006HfpkAAC,1,1,999,True,100,True
+DCS Elite - DCS Admin Console,01tdp000006JEGkAAO,01tdp000006HfpnAAC,1,1,999,True,110,True
+DCS Elite - DCS Analysis Collector,01tdp000006JEGkAAO,01tdp000006HfpmAAC,1,1,999,True,120,True
+DCS Elite - DCS for OWA,01tdp000006JEGkAAO,01tdp000006HfppAAC,1,1,999,True,130,True
+DCS Elite - Unlimited Classification,01tdp000006JEGkAAO,01tdp000006HfplAAC,1,1,999,True,140,True
+DCS Elite - Software Development Kit,01tdp000006JEGkAAO,01tdp000006HfpqAAC,1,0,999,False,150,True

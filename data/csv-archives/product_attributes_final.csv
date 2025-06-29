@@ -1,0 +1,18 @@
+Name,Product2Id,AttributeDefinitionId,AttributeCategoryId,Sequence,IsRequired,IsHidden,IsReadOnly,IsPriceImpacting,DefaultValue,HelpText,MinimumValue,MaximumValue,DisplayType,Status,AttributeNameOverride,Description,ProductClassificationAttributeId
+Term - 6HfphAAC,01tdp000006HfphAAC,0tjdp00000000XuAAI,0v3dp00000000BOAAY,2,True,False,False,False,12.0,,,,,Active,,,11Cdp000003aD8IEAU
+Term - 6HfpiAAC,01tdp000006HfpiAAC,0tjdp00000000XuAAI,0v3dp00000000BOAAY,2,True,False,False,False,12.0,,,,,Active,,,11Cdp000003aD8IEAU
+Term - 6HfpjAAC,01tdp000006HfpjAAC,0tjdp00000000XuAAI,0v3dp00000000BOAAY,2,True,False,False,False,12.0,,,,,Active,,,11Cdp000003aD8IEAU
+Users - 6HfpkAAC,01tdp000006HfpkAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfplAAC,01tdp000006HfplAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfpmAAC,01tdp000006HfpmAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfpnAAC,01tdp000006HfpnAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfpoAAC,01tdp000006HfpoAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfppAAC,01tdp000006HfppAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfpqAAC,01tdp000006HfpqAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfprAAC,01tdp000006HfprAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfpsAAC,01tdp000006HfpsAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfptAAC,01tdp000006HfptAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfpuAAC,01tdp000006HfpuAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Users - 6HfpvAAC,01tdp000006HfpvAAC,0tjdp00000000XvAAI,0v3dp00000000BOAAY,3,False,False,False,False,,,,,,Active,,,11Cdp000003aD8JEAU
+Managed Service - 6Hfq0AAC,01tdp000006Hfq0AAC,0tjdp00000000XtAAI,0v3dp00000000BJAAY,1,False,False,False,False,,,,,,Active,,,11Cdp000003aD8HEAU
+Managed Service - 6Hfq1AAC,01tdp000006Hfq1AAC,0tjdp00000000XtAAI,0v3dp00000000BJAAY,1,False,False,False,False,,,,,,Active,,,11Cdp000003aD8HEAU

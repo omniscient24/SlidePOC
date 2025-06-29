@@ -1,0 +1,5 @@
+Id,Name,Code,CatalogId,ParentCategoryId,SortOrder
+0ZGdp00000007JFGAY,Core Offerings,CO,0ZSdp00000007kfGAA,,1
+0ZGdp00000007JGGAY,Add-Ons,AO,0ZSdp00000007kfGAA,,3
+0ZGdp00000007JHGAY,Standalone,SA,0ZSdp00000007kfGAA,,4
+0ZGdp00000007JIGAY,Bundle Components,BC,,,2

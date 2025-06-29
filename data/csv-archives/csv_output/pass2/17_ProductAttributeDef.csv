@@ -1,0 +1,3 @@
+Id,Name,Product2Id,Product2.Name,AttributeDefinitionId,AttributeDefinition.Name,AttributeCategoryId,Sequence,IsRequired,IsHidden,IsReadOnly,IsPriceImpacting,DefaultValue,HelpText,MinimumValue,MaximumValue,DisplayType,Status,AttributeNameOverride,Description
+0v7a50000001tVYAAY,Training,01ta5000007bvSbAAI,Basic Training,0tja5000000OrRSAA0,Training,0v3a50000003SvtAAE,0,False,False,False,True,Software Training,,,,,Active,Training,
+0v7a50000001tVZAAY,Support Level,01ta5000007bvSfAAI,Support,0tja5000000OrRaAAK,Support Level,0v3a50000003SvuAAE,0,False,False,False,True,Premium Support,,,,,Active,Support Level,

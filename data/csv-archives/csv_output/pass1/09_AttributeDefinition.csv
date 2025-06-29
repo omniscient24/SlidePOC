@@ -1,0 +1,8 @@
+Id,Name,Label,Description,DataType,IsActive,IsRequired,DefaultValue,Code,DeveloperName,PicklistId,DefaultHelpText,ValueDescription,SourceSystemIdentifier,AttributeCode__c
+0tja5000000OtwDAAS,Deployment Option,Deployment Option,Deployment Option,Picklist,True,True,,DEPOP,Deployment_Option1,0v5a5000000QQlFAAW,,,,ATTR001
+0tja5000000OtszAAC,Managed Service?,Managed Service?,Managed Service?,Checkbox,True,True,0.0,MS,Managed_Service,,,,,ATTR002
+0tja5000000OtxpAAC,Pricing Tier,Pricing Tier,Pricing Tier,Picklist,True,False,,PT,Pricing_Tier1,0v5a5000000QQmrAAG,,Tier,,ATTR003
+0tja5000000OrRaAAK,Support Level,Support Level,,Picklist,True,False,,,Support_Level,0v5a5000000QK4wAAG,,,,ATTR004
+0tja5000000OsorAAC,Term,Term,,Number,True,False,,Term,Term,,,,,ATTR005
+0tja5000000OrRSAA0,Training,Training,,Picklist,True,False,,,Training,0v5a5000000QK4oAAG,,,,ATTR006
+0tja5000000OsP3AAK,Users,Users,,Number,True,False,,,Users,,,,,ATTR007

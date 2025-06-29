@@ -1,0 +1,4 @@
+"sf__Id","sf__Error",Product2Id,Pricebook2Id,ProductSellingModelId,UnitPrice,IsActive
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","01tdp000006JEGjAAO","01sa5000001vuxlAAA","0jPdp00000000zREAQ","5000.0","true"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","01tdp000006JEGlAAO","01sa5000001vuxlAAA","0jPdp00000000zREAQ","5000.0","true"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","01tdp000006JEGkAAO","01sa5000001vuxlAAA","0jPdp00000000zREAQ","5000.0","true"

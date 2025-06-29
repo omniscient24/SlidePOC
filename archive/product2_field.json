@@ -1,0 +1,12 @@
+{
+  "Metadata": {
+    "label": "External ID",
+    "fullName": "Product2.External_ID__c",
+    "type": "Text",
+    "length": 255,
+    "externalId": true,
+    "unique": true,
+    "caseSensitive": false,
+    "description": "External ID field for data migration and integration purposes"
+  }
+}

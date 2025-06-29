@@ -1,0 +1,4 @@
+Name*,External_ID__c*,Status*,BillingTreatmentSelection*,Description
+Standard Billing,BILL_POLICY_001,Active,Default,Standard billing
+Subscription Billing,BILL_POLICY_002,Active,Manual,Subscription products
+Usage Billing,BILL_POLICY_003,Active,Manual,Usage-based billing

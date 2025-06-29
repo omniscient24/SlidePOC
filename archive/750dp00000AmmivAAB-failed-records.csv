@@ -1,0 +1,9 @@
+"sf__Id","sf__Error",Id
+"01tdp000006HfpiAAC","DELETE_FAILED:Your attempt to delete DCS Advanced could not be completed because it is associated with the following product attribute definitions.: 0tjdp00000000Xu
+Your attempt to delete DCS Advanced could not be completed because it is associated with the following quote line items.: AB Test Quote
+:--","01tdp000006HfpiAAC"
+"01tdp000006HfpjAAC","DELETE_FAILED:Your attempt to delete DCS Elite could not be completed because it is associated with the following product attribute definitions.: 0tjdp00000000Xu
+:--","01tdp000006HfpjAAC"
+"01tdp000006HfphAAC","DELETE_FAILED:Your attempt to delete DCS Essentials could not be completed because it is associated with the following product attribute definitions.: 0tjdp00000000Xu
+Your attempt to delete DCS Essentials could not be completed because it is associated with the following quote line items.: AB Test Quote, AB Test Quote
+:--","01tdp000006HfphAAC"

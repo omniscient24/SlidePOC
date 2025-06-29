@@ -1,0 +1,6 @@
+Name,External_ID__c*,CostBook.External_ID__c*,Product.External_ID__c*,Description,Cost*,EffectiveFrom*,EffectiveTo
+ECS Cost,CBE_001,COSTBOOK_001,PROD_001,Cloud suite cost,500.0,2024-01-01 00:00:00,
+PS Cost,CBE_002,COSTBOOK_001,PROD_002,Services cost,150.0,2024-01-01 00:00:00,
+HW Cost,CBE_003,COSTBOOK_001,PROD_003,Hardware cost,300.0,2024-01-01 00:00:00,
+Support Cost,CBE_004,COSTBOOK_001,PROD_004,Support cost,100.0,2024-01-01 00:00:00,
+Training Cost,CBE_005,COSTBOOK_001,PROD_005,Training cost,75.0,2024-01-01 00:00:00,

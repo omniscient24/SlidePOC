@@ -1,0 +1,4 @@
+"sf__Id","sf__Error",Id,ConfigureDuringSale
+"01tdp000006JEGlAAO","INVALID_INPUT:We couldn’t convert the static product to a configurable product. Ensure that the immediate child and parent product meet the requirements and try again.:--","01tdp000006JEGlAAO","Allowed"
+"01tdp000006JEGjAAO","INVALID_INPUT:We couldn’t convert the static product to a configurable product. Ensure that the immediate child and parent product meet the requirements and try again.:--","01tdp000006JEGjAAO","Allowed"
+"01tdp000006JEGkAAO","INVALID_INPUT:We couldn’t convert the static product to a configurable product. Ensure that the immediate child and parent product meet the requirements and try again.:--","01tdp000006JEGkAAO","Allowed"

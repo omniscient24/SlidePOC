@@ -1,0 +1,2 @@
+"sf__Id","sf__Error",ParentProductId,ChildProductId,ProductComponentGroupId,ProductRelationshipTypeId,Quantity,MinQuantity,MaxQuantity,IsQuantityEditable,IsComponentRequired,IsDefaultComponent,Sequence
+"","INVALID_INPUT:Enter a positive number.:MinQuantity --","01tdp000006JEGjAAO","01tdp000006HfppAAC","0y7dp00000000BLAAY","0yoa5000000gTtdAAE","1.0","0.0","1.0","true","false","false","80"

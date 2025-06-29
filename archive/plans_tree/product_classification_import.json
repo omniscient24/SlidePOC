@@ -1,0 +1,14 @@
+[
+  {
+    "sobject": "ProductClassification",
+    "files": [
+      "../json_tree_output/product_classification/ProductClassification.json"
+    ]
+  },
+  {
+    "sobject": "ProductClassificationAttr",
+    "files": [
+      "../json_tree_output/product_classification/ProductClassificationAttr.json"
+    ]
+  }
+]

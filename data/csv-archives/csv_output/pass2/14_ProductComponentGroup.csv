@@ -1,0 +1,21 @@
+Name,Description,ParentProductId,ParentGroupId,MinBundleComponents,MaxBundleComponents,Sequence,Code
+Core Offerings,Core offering products.,01ta5000007eqDZAAY,,,,1,CO
+Core Offerings,Core offering products.,01ta5000007eqDaAAI,,,,1,CO
+Core Offerings,Core offering products.,01ta5000007eqDbAAI,,,,1,CO
+Software,Software products.,01ta5000007bvSjAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDeAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDfAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDgAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDkAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDhAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDmAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDlAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDjAAI,,,,2,SFT
+Software,Software products.,01ta5000007eqDiAAI,,,,2,SFT
+Other Services,Other services.,01ta5000007eqDqAAI,,,,3,OS
+Other Services,Other services.,01ta5000007eqDrAAI,,,,3,OS
+Other Services,Other services.,01ta5000007eqDsAAI,,,,3,OS
+Other Services,Other services.,01ta5000007eqDtAAI,,,,3,OS
+Professional Services,Professional service products.,01ta5000007eqDnAAI,,,,4,PS
+Professional Services,Professional service products.,01ta5000007eqDoAAI,,,,4,PS
+Professional Services,Professional service products.,01ta5000007eqDpAAI,,,,4,PS

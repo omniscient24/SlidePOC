@@ -1,0 +1,22 @@
+Name,ProductCode,StockKeepingUnit,Description,IsActive,Family,Type,AvailabilityDate,BasedOnId
+DCS Essentials,CYB-DCS-ESS-BUN,SKU-DCS-ESS,Data Classification Suite - Essentials tier,True,Data Protection,Bundle,2025-06-01,11Bdp000000nAELEA2
+DCS Advanced,CYB-DCS-ADV-BUN,SKU-DCS-ADV,Data Classification Suite - Advanced tier,True,Data Protection,Bundle,2025-06-01,11Bdp000000nAELEA2
+DCS Elite,CYB-DCS-ELITE-BUN,SKU-DCS-ELITE,Data Classification Suite - Elite tier (SaaS only),True,Data Protection,Bundle,2025-06-01,11Bdp000000nAELEA2
+Data Detection Engine,CYB-DCS-DDE-CMP,SKU-DCS-PM-DT,Data Detection Engine,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Unlimited Classification,CYB-DCS-UC-CMP,SKU-DCS-PM-D365,Unlimited Classification,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+DCS Analysis Collector,CYB-DCS-ACOL-CMP,SKU-DCS-MAIL,DCS Analysis Collector,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+DCS Admin Console,CYB-DCS-ACON-CMP,SKU-DCS-QS,DCS Admin Console,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+DCS for Windows,CYB-DCS-FW-CMP,SKU-SAT-ESS,DCS for Windows,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+DCS for OWA,CYB-DCS-OWA-CMP,SKU-SAT-ADV,DCS for OWA,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Software Development Kit,CYB-DCS-SDK-CMP,SKU-SAT-ELITE,DCS Software Development Kit,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+DCS Getting Started Package,CYB-DCS-QS-CMP,SKU-SAT-MSS,DCS Getting Started Package,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Fortra Mail for iOS,CYB-DCS-MAIL-ADD,SKU-SAT-AC,Fortra Mail client for iOS devices,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+DCS Policy Manager Desktop,CYB-DCS-PMD-ADD,SKU-SAT-PC,Cloud Policy Manager for Desktop,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+DCS Policy Manager M365,CYB-DCS-PM365-ADD,SKU-SAT-PQ,Cloud Policy Manager for Microsoft 365,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Professional Services Package 1,CYB-DP-PS1-SVC,SKU-SAT-HOUR,Professional Services Package 1,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Professional Services Package 2,CYB-DP-PS2-SVC,SKU-SAT-SAS-B,Professional Services Package 2,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Professional Services Package 3,CYB-DP-PS3-SVC,SKU-SAT-SAS-S,Professional Services Package 3,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Training,CYB-DP-TRN-SVC,SKU-SAT-SAS-A,Training,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Support - Tier 1,CYB-SUP-T1-SVC,,Support - Tier 1,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Support - Tier 2,CYB-SUP-T2-SVC,,Support - Tier 2,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2
+Support - Tier 3,CYB-SUP-T3-SVC,,Support - Tier 3,True,Data Protection,,2025-06-01,11Bdp000000nAELEA2

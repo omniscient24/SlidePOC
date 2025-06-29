@@ -1,0 +1,10 @@
+Name,SellingModelType,Status,PricingTermUnit,PricingTerm
+Evergreen - Monthly,Evergreen,Active,Months,1.0
+Evergreen - Quarterly,Evergreen,Active,Quarterly,1.0
+Evergreen - Semi-Annual,Evergreen,Active,Semi-Annual,1.0
+Evergreen - Yearly,Evergreen,Active,Annual,1.0
+One Time,OneTime,Active,,
+Term Based - Monthly,TermDefined,Active,Months,1.0
+Term Based - Quarterly,TermDefined,Active,Quarterly,1.0
+Term Based - Semi-Annual,TermDefined,Active,Semi-Annual,1.0
+Term Based - Yearly,TermDefined,Active,Annual,1.0

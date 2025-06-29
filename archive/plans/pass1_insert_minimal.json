@@ -1,0 +1,30 @@
+[
+  {
+    "sobject": "ProductCategory__c",
+    "externalId": "CategoryCode__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass1/12_ProductCategory.csv"
+    ]
+  },
+  {
+    "sobject": "ProductCatalog__c",
+    "externalId": "CatalogCode__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass1/11_ProductCatalog.csv"
+    ]
+  },
+  {
+    "sobject": "AttributeDefinition__c",
+    "externalId": "AttributeCode__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass1/09_AttributeDefinition.csv"
+    ]
+  },
+  {
+    "sobject": "Product2",
+    "externalId": "ProductCode__c",
+    "files": [
+      "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/csv_output/pass1/13_Product2.csv"
+    ]
+  }
+]

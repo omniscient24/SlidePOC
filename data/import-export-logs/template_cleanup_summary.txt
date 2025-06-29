@@ -1,0 +1,27 @@
+
+    CLEANED TEMPLATE SUMMARY
+    ========================
+    
+    The following changes were made to create a reusable template:
+    
+    1. Removed all hardcoded Salesforce IDs and replaced with placeholders:
+       - PRODUCT_ID_HERE
+       - CATEGORY_ID_HERE
+       - ATTRIBUTE_ID_HERE
+       - PRICEBOOK_ID_HERE
+       - etc.
+    
+    2. Cleared reference fields that point to other records
+    
+    3. Reset External ID fields to use sequential numbering
+    
+    4. Reduced example rows in junction object sheets
+    
+    5. Kept sheet structure and column headers intact
+    
+    To use this template:
+    1. Fill in your actual Salesforce IDs where placeholders exist
+    2. Add your product and configuration data
+    3. Set appropriate relationships between objects
+    4. Import in the correct order (see Instructions sheet)
+    

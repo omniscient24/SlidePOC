@@ -1,0 +1,21 @@
+Name,Label,Description,DataType,IsActive,IsRequired,DefaultValue,Code,DefaultHelpText,ValueDescription
+Deployment Option,Deployment Option,The depoloyment option for the product.,Picklist,True,True,On Premise,DM,The depoloyment option for the product.,Deployment Option
+Pricing Tier,Pricing Tier,The pricing tier to appy to the product.,Picklist,True,True,1,PT,The pricing tier to appy to the product.,Pricing Tier
+Managed Service?,Managed Service?,,Checkbox,True,True,1,MS,,Managed Service?
+License Type,License Type,The license type to apply to the product.,Number,True,True,Subscription,LT,The license type to apply to the product.,License Type
+Units,Units,,Picklist,True,True,,UN,,
+Unit Type,Unit Type,,Picklist,True,True,,UT,,
+Server Type,Server Type,,Picklist,True,True,Production,ST,,
+Version?,Version?,,Text,True,True,,VER,,
+Maintenance Type?,Maintenance Type?,,Text,True,True,,MT,,
+MYCAP?,MYCAP?,,Checkbox,True,True,,MYCAP,,
+Agents?,Agents?,,Number,True,True,,AG,,
+Type of Agents?,Type of Agents?,,Picklist,True,True,,TOA,,
+Studios?,Studios?,,Number,True,True,,STO,,
+Cluster Ready?,Cluster Ready?,,Checkbox,True,True,,CR,,
+Key type?,Key type?,,Picklist,True,True,,KT,,
+Server Location Type,Server Location Type,,Picklist,True,True,,SLT,,
+PGroup,PGroup,,Picklist,True,True,,PG,,
+Operating System,Operating System,,Picklist,True,True,Windows,OS,,
+Term,Term,,Picklist,True,True,,Term,,Term
+Users,Users,,Picklist,True,True,,ATTR007,,Users

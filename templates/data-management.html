@@ -228,6 +228,50 @@
             cursor: default;
         }
         
+        /* Column dragging styles */
+        .draggable-column {
+            cursor: move;
+            user-select: none;
+            position: relative;
+        }
+        
+        .draggable-column.dragging {
+            opacity: 0.5;
+            background: #e3f2fd !important;
+        }
+        
+        .draggable-column.drag-over {
+            border-left: 3px solid #1890ff;
+        }
+        
+        .draggable-column.drag-over-right {
+            border-right: 3px solid #1890ff;
+        }
+        
+        /* Visual indicator for draggable headers */
+        .draggable-column:hover {
+            background: #f5f5f5;
+        }
+        
+        /* Reset column order button */
+        .reset-columns-btn {
+            position: absolute;
+            top: 10px;
+            right: 60px;
+            padding: 4px 12px;
+            font-size: 12px;
+            background: white;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .reset-columns-btn:hover {
+            background: #f5f5f5;
+            border-color: #40a9ff;
+        }
+        
         .category-row:hover td {
             background: #e0dfdf !important;
             color: black !important;
@@ -1723,6 +1767,7 @@
                     <div class="modal-content workbook-modal">
                         <div class="modal-header">
                             <span>${apiName} Workbook Preview</span>
+                            ${hasData ? `<button class="reset-columns-btn" onclick="resetColumnOrder('${apiName}')" title="Reset column order">Reset Columns</button>` : ''}
                             <button class="close-button" onclick="closeWorkbookModal()" title="Close">×</button>
                         </div>
                         <div class="modal-body">
@@ -1745,8 +1790,24 @@
                                                         Object.keys(record).forEach(key => allKeys.add(key));
                                                     });
                                                     
-                                                    // Convert to array and sort
-                                                    return Array.from(allKeys).sort().map(key => {
+                                                    // Get saved column order from localStorage
+                                                    const savedOrder = localStorage.getItem(`columnOrder_${apiName}`);
+                                                    let columnsToShow = Array.from(allKeys).sort();
+                                                    
+                                                    if (savedOrder) {
+                                                        try {
+                                                            const orderArray = JSON.parse(savedOrder);
+                                                            // Validate saved columns still exist
+                                                            const validColumns = orderArray.filter(col => allKeys.has(col));
+                                                            // Add any new columns that aren't in saved order
+                                                            const newColumns = columnsToShow.filter(col => !validColumns.includes(col));
+                                                            columnsToShow = [...validColumns, ...newColumns];
+                                                        } catch (e) {
+                                                            console.error('Error loading column order:', e);
+                                                        }
+                                                    }
+                                                    
+                                                    return columnsToShow.map((key, index) => {
                                                         // Escape HTML characters and handle special column names
                                                         const escapedKey = key
                                                             .replace(/&/g, '&amp;')
@@ -1754,7 +1815,7 @@
                                                             .replace(/>/g, '&gt;')
                                                             .replace(/"/g, '&quot;')
                                                             .replace(/'/g, '&#39;');
-                                                        return `<th style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px;">${escapedKey}</th>`;
+                                                        return `<th class="draggable-column" draggable="true" data-column="${key}" data-index="${index}" style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px;">${escapedKey}</th>`;
                                                     }).join('');
                                                 })()}
                                             </tr>
@@ -1766,12 +1827,28 @@
                                                 data.forEach(record => {
                                                     Object.keys(record).forEach(key => allKeys.add(key));
                                                 });
-                                                const sortedKeys = Array.from(allKeys).sort();
+                                                
+                                                // Get saved column order from localStorage
+                                                const savedOrder = localStorage.getItem(`columnOrder_${apiName}`);
+                                                let columnsToShow = Array.from(allKeys).sort();
+                                                
+                                                if (savedOrder) {
+                                                    try {
+                                                        const orderArray = JSON.parse(savedOrder);
+                                                        // Validate saved columns still exist
+                                                        const validColumns = orderArray.filter(col => allKeys.has(col));
+                                                        // Add any new columns that aren't in saved order
+                                                        const newColumns = columnsToShow.filter(col => !validColumns.includes(col));
+                                                        columnsToShow = [...validColumns, ...newColumns];
+                                                    } catch (e) {
+                                                        console.error('Error loading column order:', e);
+                                                    }
+                                                }
                                                 
                                                 // Map each row
                                                 return data.slice(0, 100).map(row => `
                                                     <tr>
-                                                        ${sortedKeys.map(key => {
+                                                        ${columnsToShow.map(key => {
                                                             const val = row[key];
                                                             // Escape HTML characters in values
                                                             const displayVal = val !== null && val !== undefined ? String(val) : '';
@@ -1805,6 +1882,13 @@
             
             // Add modal to page
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Initialize column dragging if table has data
+            if (hasData) {
+                setTimeout(() => {
+                    ModalColumnManager.initializeColumnDragging('workbook-modal', apiName);
+                }, 100);
+            }
         }
 
         // Close workbook modal
@@ -3557,6 +3641,165 @@
                 dropdown.classList.remove('active');
             });
             document.removeEventListener('click', closeFilters);
+        }
+        
+        // Modal Column Manager - Handles drag and drop for column reordering
+        const ModalColumnManager = {
+            draggedElement: null,
+            draggedIndex: null,
+            objectApiName: null,
+            
+            initializeColumnDragging(modalId, objectApiName) {
+                console.log('Initializing column dragging for', objectApiName);
+                this.objectApiName = objectApiName;
+                
+                const headers = document.querySelectorAll(`#${modalId} th.draggable-column`);
+                headers.forEach((header, index) => {
+                    header.dataset.columnIndex = index;
+                    header.addEventListener('dragstart', this.handleDragStart.bind(this));
+                    header.addEventListener('dragover', this.handleDragOver.bind(this));
+                    header.addEventListener('drop', this.handleDrop.bind(this));
+                    header.addEventListener('dragend', this.handleDragEnd.bind(this));
+                    header.addEventListener('dragenter', this.handleDragEnter.bind(this));
+                    header.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                });
+            },
+            
+            handleDragStart(e) {
+                this.draggedElement = e.target;
+                this.draggedIndex = parseInt(e.target.dataset.columnIndex);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', e.target.innerHTML);
+                e.target.classList.add('dragging');
+            },
+            
+            handleDragEnter(e) {
+                if (e.target.classList.contains('draggable-column')) {
+                    e.target.classList.add('drag-over');
+                }
+            },
+            
+            handleDragLeave(e) {
+                if (e.target.classList.contains('draggable-column')) {
+                    e.target.classList.remove('drag-over');
+                    e.target.classList.remove('drag-over-right');
+                }
+            },
+            
+            handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                
+                if (e.target.classList.contains('draggable-column') && e.target !== this.draggedElement) {
+                    const rect = e.target.getBoundingClientRect();
+                    const midpoint = rect.left + rect.width / 2;
+                    
+                    e.target.classList.remove('drag-over', 'drag-over-right');
+                    if (e.clientX < midpoint) {
+                        e.target.classList.add('drag-over');
+                    } else {
+                        e.target.classList.add('drag-over-right');
+                    }
+                }
+                
+                return false;
+            },
+            
+            handleDrop(e) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                
+                if (e.target.classList.contains('draggable-column') && e.target !== this.draggedElement) {
+                    const targetIndex = parseInt(e.target.dataset.columnIndex);
+                    const targetColumn = e.target.dataset.column;
+                    const draggedColumn = this.draggedElement.dataset.column;
+                    
+                    // Determine if we're inserting before or after
+                    const rect = e.target.getBoundingClientRect();
+                    const midpoint = rect.left + rect.width / 2;
+                    const insertAfter = e.clientX >= midpoint;
+                    
+                    // Reorder the columns
+                    this.reorderColumns(draggedColumn, targetColumn, insertAfter);
+                }
+                
+                return false;
+            },
+            
+            handleDragEnd(e) {
+                e.target.classList.remove('dragging');
+                document.querySelectorAll('.draggable-column').forEach(col => {
+                    col.classList.remove('drag-over', 'drag-over-right');
+                });
+            },
+            
+            reorderColumns(draggedColumn, targetColumn, insertAfter) {
+                // Get current table
+                const table = document.querySelector('#workbook-modal table');
+                if (!table) return;
+                
+                // Get all headers and their current order
+                const headers = Array.from(table.querySelectorAll('th.draggable-column'));
+                const currentOrder = headers.map(h => h.dataset.column);
+                
+                // Calculate new order
+                const draggedIdx = currentOrder.indexOf(draggedColumn);
+                const targetIdx = currentOrder.indexOf(targetColumn);
+                
+                if (draggedIdx === -1 || targetIdx === -1) return;
+                
+                // Remove dragged column from array
+                currentOrder.splice(draggedIdx, 1);
+                
+                // Insert at new position
+                let insertIdx = currentOrder.indexOf(targetColumn);
+                if (insertAfter) insertIdx++;
+                currentOrder.splice(insertIdx, 0, draggedColumn);
+                
+                // Save new order
+                localStorage.setItem(`columnOrder_${this.objectApiName}`, JSON.stringify(currentOrder));
+                
+                // Reorder table headers
+                const headerRow = table.querySelector('thead tr');
+                const newHeaders = currentOrder.map(col => {
+                    return headers.find(h => h.dataset.column === col);
+                });
+                
+                // Clear and rebuild header row
+                headerRow.innerHTML = '';
+                newHeaders.forEach((header, idx) => {
+                    header.dataset.columnIndex = idx;
+                    headerRow.appendChild(header);
+                });
+                
+                // Reorder table body cells
+                const bodyRows = table.querySelectorAll('tbody tr');
+                bodyRows.forEach(row => {
+                    const cells = Array.from(row.cells);
+                    const newCells = currentOrder.map((col, idx) => {
+                        const headerIdx = headers.findIndex(h => h.dataset.column === col);
+                        return cells[headerIdx];
+                    });
+                    
+                    row.innerHTML = '';
+                    newCells.forEach(cell => row.appendChild(cell));
+                });
+            }
+        };
+        
+        // Reset column order function
+        function resetColumnOrder(apiName) {
+            localStorage.removeItem(`columnOrder_${apiName}`);
+            
+            // Find and click the View button to refresh the modal
+            const viewBtn = document.querySelector(`button[onclick*="viewWorkbook('${apiName}')"]`);
+            if (viewBtn) {
+                closeWorkbookModal();
+                setTimeout(() => viewBtn.click(), 300);
+            }
         }
     </script>
     

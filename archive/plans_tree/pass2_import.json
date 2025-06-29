@@ -1,0 +1,32 @@
+[
+  {
+    "sobject": "ProductSellingModel",
+    "files": [
+      "../json_tree_output/pass2/ProductSellingModel.json"
+    ]
+  },
+  {
+    "sobject": "ProductCategoryProduct",
+    "files": [
+      "../json_tree_output/pass2/ProductCategoryProduct.json"
+    ]
+  },
+  {
+    "sobject": "ProductAttributeDefinition",
+    "files": [
+      "../json_tree_output/pass2/ProductAttributeDefinition.json"
+    ]
+  },
+  {
+    "sobject": "ProductRelatedComponent",
+    "files": [
+      "../json_tree_output/pass2/ProductRelatedComponent.json"
+    ]
+  },
+  {
+    "sobject": "PricebookEntry",
+    "files": [
+      "../json_tree_output/pass2/PricebookEntry.json"
+    ]
+  }
+]

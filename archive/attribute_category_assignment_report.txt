@@ -1,0 +1,143 @@
+ATTRIBUTE CATEGORY ASSIGNMENT RECOMMENDATIONS
+================================================================================
+Generated: 2025-06-21 18:55:23
+
+SUMMARY
+----------------------------------------
+Total AttributeCategories: 5
+Total AttributeDefinitions: 20
+Total ProductAttributeDefinitions: 17
+
+CURRENT USAGE (Cannot be updated due to field restrictions)
+----------------------------------------
+Training: 15 attributes
+Deployment Option Attributes: 2 attributes
+
+RECOMMENDED ASSIGNMENTS
+----------------------------------------
+
+
+Deployment Option Attributes (DOA)
+ID: 0v3dp00000000BJAAY
+------------------------------------------------------------
+  • Deployment Option (DO)
+    Reason: Directly related to deployment options
+    Currently in use: No
+
+  • Managed Service? (MS)
+    Reason: Determines if deployment is managed
+    Currently in use: Yes
+    Used by: Managed Service - 6Hfq0AAC, Managed Service - 6Hfq1AAC
+
+  • Agents? (AG)
+    Reason: Deployment configuration for agents
+    Currently in use: No
+
+  • Type of Agents? (TA)
+    Reason: Specifies agent deployment type
+    Currently in use: No
+
+
+
+Service Attributes (SA)
+ID: 0v3dp00000000BLAAY
+------------------------------------------------------------
+  • Operating System (OS)
+    Reason: Service platform specification
+    Currently in use: No
+
+  • Server Type (ST)
+    Reason: Service infrastructure type
+    Currently in use: No
+
+  • Server Location Type (SLT)
+    Reason: Service location configuration
+    Currently in use: No
+
+  • Cluster Ready? (CR)
+    Reason: Service clustering capability
+    Currently in use: No
+
+
+
+Storage (STO)
+ID: 0v3dp00000000BNAAY
+------------------------------------------------------------
+  • Studios? (STO)
+    Reason: Storage-related studio configuration
+    Currently in use: No
+
+  • Units (UN)
+    Reason: Storage unit quantity
+    Currently in use: No
+
+  • Unit Type (UT)
+    Reason: Type of storage units
+    Currently in use: No
+
+
+
+Support (SP001)
+ID: 0v3dp00000000BMAAY
+------------------------------------------------------------
+  • Maintenance Type? (MT)
+    Reason: Support maintenance level
+    Currently in use: No
+
+  • Version? (VER)
+    Reason: Support version tracking
+    Currently in use: No
+
+  • License Type (LT)
+    Reason: Support license model
+    Currently in use: No
+
+  • Key Type (KT)
+    Reason: Support key management
+    Currently in use: No
+
+
+
+Training (T001)
+ID: 0v3dp00000000BOAAY
+------------------------------------------------------------
+  • Term (Term)
+    Reason: Training duration/term
+    Currently in use: Yes
+    Used by: Term - 6HfphAAC, Term - 6HfpiAAC, Term - 6HfpjAAC
+
+  • Users (USR)
+    Reason: Number of training users
+    Currently in use: Yes
+    Used by: Users - 6HfpkAAC, Users - 6HfplAAC, Users - 6HfpmAAC ...
+
+  • MYCAP? (MYCAP)
+    Reason: Training certification program
+    Currently in use: No
+
+  • PGroup (PG)
+    Reason: Training pricing group
+    Currently in use: No
+
+  • Pricing Tier (PT)
+    Reason: Training pricing level
+    Currently in use: No
+
+
+
+IMPLEMENTATION RECOMMENDATIONS
+================================================================================
+1. AttributeCategoryId can only be set during ProductAttributeDefinition creation
+2. To implement these assignments, you would need to:
+   a) Delete existing ProductAttributeDefinition records
+   b) Recreate them with the appropriate AttributeCategoryId values
+3. Alternative: Keep current setup and use categories for future attributes only
+
+
+CATEGORY UTILIZATION ANALYSIS
+----------------------------------------
+Deployment Option Attributes: 1/4 attributes in use (25%)
+Service Attributes: 0/4 attributes in use (0%)
+Storage: 0/3 attributes in use (0%)
+Support: 0/4 attributes in use (0%)
+Training: 2/5 attributes in use (40%)

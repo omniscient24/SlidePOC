@@ -1,0 +1,5 @@
+Id,Name,Code,CatalogId,ParentCategoryId,SortOrder,CategoryCode__c
+,Core Offerings,CO,0ZSa5000000eyK1GAI,,1,CAT001
+,Software,SFT,0ZSa5000000eyK1GAI,,2,CAT002
+,Managed Services,MS,0ZSa5000000eyK1GAI,,3,CAT003
+,Other Services,OS,0ZSa5000000eyK1GAI,,4,CAT004

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Column Drag Test</title>
+    <style>
+        table { border-collapse: collapse; margin: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        .draggable-column { 
+            cursor: move; 
+            background: #f0f0f0;
+            user-select: none;
+        }
+        .draggable-column.dragging { opacity: 0.5; background: #e3f2fd; }
+        .draggable-column.drag-over { border-left: 3px solid #1890ff; }
+        .draggable-column.drag-over-right { border-right: 3px solid #1890ff; }
+        .draggable-column:hover { background: #e0e0e0; }
+        button { margin: 20px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Column Drag and Drop Test</h1>
+    <button onclick="resetOrder()">Reset Column Order</button>
+    <button onclick="showCurrentOrder()">Show Current Order</button>
+    
+    <table id="test-table">
+        <thead>
+            <tr>
+                <th class="draggable-column" draggable="true" data-column="Name">Name</th>
+                <th class="draggable-column" draggable="true" data-column="Age">Age</th>
+                <th class="draggable-column" draggable="true" data-column="City">City</th>
+                <th class="draggable-column" draggable="true" data-column="Country">Country</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>John Doe</td>
+                <td>30</td>
+                <td>New York</td>
+                <td>USA</td>
+            </tr>
+            <tr>
+                <td>Jane Smith</td>
+                <td>25</td>
+                <td>London</td>
+                <td>UK</td>
+            </tr>
+            <tr>
+                <td>Bob Johnson</td>
+                <td>35</td>
+                <td>Paris</td>
+                <td>France</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div id="log" style="margin: 20px; padding: 10px; border: 1px solid #ddd;"></div>
+    
+    <script>
+        let draggedElement = null;
+        
+        function log(msg) {
+            document.getElementById('log').innerHTML += msg + '<br>';
+            console.log(msg);
+        }
+        
+        document.querySelectorAll('.draggable-column').forEach((header, index) => {
+            header.dataset.columnIndex = index;
+            
+            header.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                e.dataTransfer.effectAllowed = 'move';
+                this.classList.add('dragging');
+                log('Dragging: ' + this.dataset.column);
+            });
+            
+            header.addEventListener('dragover', function(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                
+                if (this !== draggedElement) {
+                    const rect = this.getBoundingClientRect();
+                    const midpoint = rect.left + rect.width / 2;
+                    
+                    this.classList.remove('drag-over', 'drag-over-right');
+                    if (e.clientX < midpoint) {
+                        this.classList.add('drag-over');
+                    } else {
+                        this.classList.add('drag-over-right');
+                    }
+                }
+                return false;
+            });
+            
+            header.addEventListener('drop', function(e) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                
+                if (this !== draggedElement) {
+                    log('Dropped on: ' + this.dataset.column);
+                    
+                    // Get all headers
+                    const headers = Array.from(document.querySelectorAll('.draggable-column'));
+                    const table = document.getElementById('test-table');
+                    const tbody = table.querySelector('tbody');
+                    
+                    // Get indices
+                    const draggedIdx = headers.indexOf(draggedElement);
+                    const targetIdx = headers.indexOf(this);
+                    
+                    // Determine insertion point
+                    const rect = this.getBoundingClientRect();
+                    const midpoint = rect.left + rect.width / 2;
+                    const insertBefore = e.clientX < midpoint;
+                    
+                    // Reorder headers
+                    const thead = table.querySelector('thead tr');
+                    if (insertBefore) {
+                        thead.insertBefore(draggedElement, this);
+                    } else {
+                        thead.insertBefore(draggedElement, this.nextSibling);
+                    }
+                    
+                    // Reorder body cells
+                    tbody.querySelectorAll('tr').forEach(row => {
+                        const cells = Array.from(row.cells);
+                        const draggedCell = cells[draggedIdx];
+                        const targetCell = cells[targetIdx];
+                        
+                        if (insertBefore) {
+                            row.insertBefore(draggedCell, targetCell);
+                        } else {
+                            row.insertBefore(draggedCell, targetCell.nextSibling);
+                        }
+                    });
+                    
+                    // Update indices
+                    document.querySelectorAll('.draggable-column').forEach((h, i) => {
+                        h.dataset.columnIndex = i;
+                    });
+                    
+                    log('Reordered successfully');
+                }
+                
+                return false;
+            });
+            
+            header.addEventListener('dragend', function(e) {
+                this.classList.remove('dragging');
+                document.querySelectorAll('.draggable-column').forEach(col => {
+                    col.classList.remove('drag-over', 'drag-over-right');
+                });
+                log('Drag ended');
+            });
+            
+            header.addEventListener('dragenter', function(e) {
+                if (this !== draggedElement) {
+                    this.classList.add('drag-over');
+                }
+            });
+            
+            header.addEventListener('dragleave', function(e) {
+                this.classList.remove('drag-over', 'drag-over-right');
+            });
+        });
+        
+        function resetOrder() {
+            location.reload();
+        }
+        
+        function showCurrentOrder() {
+            const headers = document.querySelectorAll('.draggable-column');
+            const order = Array.from(headers).map(h => h.dataset.column).join(', ');
+            alert('Current order: ' + order);
+            log('Current order: ' + order);
+        }
+    </script>
+</body>
+</html>

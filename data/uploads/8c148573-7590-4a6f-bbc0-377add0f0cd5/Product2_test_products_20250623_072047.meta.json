@@ -1,0 +1,16 @@
+{
+  "filename": "test_products.csv",
+  "saved_as": "/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/uploads/8c148573-7590-4a6f-bbc0-377add0f0cd5/Product2_test_products_20250623_072047.csv",
+  "object": "Product2",
+  "uploaded_at": "2025-06-23T07:20:47.641758",
+  "size": 374,
+  "record_count": 5,
+  "headers": [
+    "Name",
+    "ProductCode",
+    "Description",
+    "IsActive",
+    "Family"
+  ],
+  "session_id": "8c148573-7590-4a6f-bbc0-377add0f0cd5"
+}

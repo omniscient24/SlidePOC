@@ -1,0 +1,23 @@
+{
+  "migration_date": "2025-06-20T12:56:48.794886",
+  "mappings": {
+    "01tdp000006HfpiAAC": {
+      "new_id": "01tdp000006JEGjAAO",
+      "name": "DCS Advanced",
+      "code": "CYB-DCS-ADV-BUN-V2",
+      "old_code": "CYB-DCS-ADV-BUN"
+    },
+    "01tdp000006HfpjAAC": {
+      "new_id": "01tdp000006JEGkAAO",
+      "name": "DCS Elite",
+      "code": "CYB-DCS-ELITE-BUN-V2",
+      "old_code": "CYB-DCS-ELITE-BUN"
+    },
+    "01tdp000006HfphAAC": {
+      "new_id": "01tdp000006JEGlAAO",
+      "name": "DCS Essentials",
+      "code": "CYB-DCS-ESS-BUN-V2",
+      "old_code": "CYB-DCS-ESS-BUN"
+    }
+  }
+}

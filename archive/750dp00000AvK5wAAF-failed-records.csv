@@ -1,0 +1,6 @@
+"sf__Id","sf__Error",Name,Description,ParentProductId,Sequence,Code
+"","DUPLICATE_VALUE:duplicate value found: Code duplicates value on record with id: 0y7dp00000000BKAAY:--","Core Components","Essential components included in DCS Advanced bundle","01tdp000006JEGjAAO","10","ADV_CORE"
+"","DUPLICATE_VALUE:duplicate value found: Code duplicates value on record with id: 0y7dp00000000BLAAY:--","Optional Add-Ons","Optional components for DCS Advanced bundle","01tdp000006JEGjAAO","20","ADV_OPT"
+"","DUPLICATE_VALUE:duplicate value found: Code duplicates value on record with id: 0y7dp00000000BMAAY:--","Core Components","Essential components included in DCS Elite bundle","01tdp000006JEGkAAO","10","ELITE_CORE"
+"","DUPLICATE_VALUE:duplicate value found: Code duplicates value on record with id: 0y7dp00000000BNAAY:--","Premium Components","Premium components included in DCS Elite bundle","01tdp000006JEGkAAO","20","ELITE_PREM"
+"","DUPLICATE_VALUE:duplicate value found: Code duplicates value on record with id: 0y7dp00000000BJAAY:--","Core Components","Essential components included in DCS Essentials bundle","01tdp000006JEGlAAO","10","ESS_CORE"

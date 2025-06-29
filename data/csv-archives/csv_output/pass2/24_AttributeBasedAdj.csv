@@ -1,0 +1,4 @@
+External_ID__c*,PriceAdjustmentSchedule.External_ID__c*,AdjustmentType*,AdjustmentValue*,EffectiveFrom*,EffectiveTo,ProductSellingModel.External_ID__c,AttributeBasedAdjRule.External_ID__c*,Product.External_ID__c*
+ABA_001,PAS_002,Percent,10,2024-01-01 00:00:00,,PSM_002,ABAR_001,PROD_001
+ABA_002,PAS_002,Percent,15,2024-01-01 00:00:00,,PSM_002,ABAR_002,PROD_001
+ABA_003,PAS_002,Percent,20,2024-01-01 00:00:00,,PSM_002,ABAR_003,PROD_004

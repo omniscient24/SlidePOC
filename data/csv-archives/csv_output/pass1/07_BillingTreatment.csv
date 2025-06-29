@@ -1,0 +1,5 @@
+Name*,External_ID__c*,BillingPolicy.External_ID__c,Status*,LegalEntity.External_ID__c,Description,ExcludeFromBilling*
+Standard Billing,BILL_TREAT_001,BILL_POLICY_001,Active,LEGAL_US_001,Standard billing treatment,No
+No Charge,BILL_TREAT_002,BILL_POLICY_001,Active,,No charge items,Yes
+Monthly Billing,BILL_TREAT_003,BILL_POLICY_002,Active,LEGAL_US_001,Monthly subscription billing,No
+Usage Billing,BILL_TREAT_004,BILL_POLICY_003,Active,LEGAL_US_001,Usage-based billing,No

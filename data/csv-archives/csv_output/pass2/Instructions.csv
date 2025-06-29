@@ -1,0 +1,28 @@
+Step,Object,Description
+1,Setup,"Create External_ID__c (Text 255, External ID, Unique) on ALL objects"
+2,CostBook,Cost tracking books for products
+3,LegalEntity,Legal entities for tax and billing
+4,TaxEngine,Tax calculation engines
+5,TaxPolicy,Tax policies
+6,TaxTreatment,"Tax treatments (depends on TaxPolicy, LegalEntity, TaxEngine)"
+7,BillingPolicy,Billing policies
+8,BillingTreatment,"Billing treatments (depends on BillingPolicy, LegalEntity)"
+9,ProductClassification,Product classifications/types
+10,AttributeDefinition,Reusable attribute definitions
+11,AttributeCategory,Attribute categories for grouping
+12,ProductCatalog,Product catalogs
+13,ProductCategory,Product categories (depends on ProductCatalog)
+14,ProductCategoryProduct,"Links products to categories (depends on ProductCategory, Product2)"
+15,Product2,"Products (depends on Tax/Billing policies, Classifications)"
+16,ProductComponentGroup,Product component groups for bundles (depends on Product2)
+17,ProductRelatedComponent,Links child products to parent products in component groups
+18,CostBookEntry,"Product costs (depends on CostBook, Product2)"
+19,ProductSellingModel,"Selling models (OneTime, TermDefined, Evergreen)"
+20,ProductSellingModelOption,Links products to selling models
+21,ProductAttributeDefinition,"Product-specific attributes (depends on Product2, AttributeDefinition)"
+22,Pricebook2,Price books
+23,PricebookEntry,"Product prices (depends on Pricebook2, Product2, ProductSellingModel)"
+24,PriceAdjustmentSchedule,Price adjustment schedules
+25,PriceAdjustmentTier,Discount tiers (depends on PriceAdjustmentSchedule)
+26,AttributeBasedAdjRule,Attribute-based pricing rules
+27,AttributeBasedAdjustment,"Attribute adjustments (depends on Schedule, Rule, Product)"

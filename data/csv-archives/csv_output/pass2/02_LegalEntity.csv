@@ -1,0 +1,4 @@
+Name*,External_ID__c*,CompanyName,Description,Status,LegalEntityStreet,LegalEntityCity,LegalEntityState,LegalEntityPostalCode,LegalEntityCountry
+US Legal Entity,LEGAL_US_001,Acme Corp USA,Primary US entity,Active,123 Main St,San Francisco,CA,94105,USA
+EU Legal Entity,LEGAL_EU_001,Acme Corp EU,European entity,Active,456 High St,London,,SW1A 1AA,UK
+APAC Legal Entity,LEGAL_APAC_001,Acme Corp APAC,Asia Pacific entity,Active,789 Central Ave,Singapore,,018956,Singapore

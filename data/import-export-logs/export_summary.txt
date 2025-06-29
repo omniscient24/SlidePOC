@@ -1,0 +1,24 @@
+REVENUE CLOUD EXPORT SUMMARY
+==================================================
+Export Date: 2025-06-20 14:13:50
+Total Records: 166
+
+Sheet Contents:
+  11_ProductCatalog: 3 records
+  12_ProductCategory: 5 records
+  08_ProductClassification: 7 records
+  09_AttributeDefinition: 20 records
+  10_AttributeCategory: 5 records
+  14_AttributePicklist: 10 records
+  15_ProductSellingModel: 9 records
+  13_Product2: 25 records
+  17_ProductAttributeDef: 17 records
+  18_AttributePicklistValue: 39 records
+  19_Pricebook2: 2 records
+  20_PricebookEntry: 19 records
+  26_ProductCategoryProduct: 5 records
+  25_ProductRelatedComponent: 0 records
+
+Bundle Products: 3
+
+Export Location: data/Revenue_Cloud_Complete_Upload_Template.xlsx

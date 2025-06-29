@@ -1,0 +1,5 @@
+Name*,External_ID__c*,Description,IsActive*,ScheduleType*,AdjustmentMethod*,EffectiveFrom*,EffectiveTo,Pricebook2.External_ID__c
+Volume Discount,PAS_001,Volume-based discounts,True,Volume,Slab,2024-01-01 00:00:00,,PRICEBOOK_STD
+Term Discount,PAS_002,Term-based discounts,True,Term,Range,2024-01-01 00:00:00,,PRICEBOOK_STD
+Bundle Discount,PAS_003,Bundle discounts,True,Bundle,Slab,2024-01-01 00:00:00,,
+Partner Discount,PAS_004,Partner discounts,True,Custom,Range,2024-01-01 00:00:00,,PRICEBOOK_PARTNER

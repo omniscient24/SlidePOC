@@ -1,0 +1,22 @@
+Id,Name,ProductCode,StockKeepingUnit,Description,IsActive,Family,Type,AvailabilityDate,BasedOnId,IsAssetizable,ConfigureDuringSale,QuantityUnitOfMeasure,IsSerialized,IsSoldOnlyWithOtherProds,TaxPolicyId,BillingPolicyId,DiscontinuedDate,EndOfLifeDate,RecordTypeId,TransferRecordMode,UnitOfMeasureId,FulfillmentQtyCalcMethod,HelpText,SpecificationType,TransferRecordMode.1,CanRamp,UsageModelType,ProductCode__c
+,DCS Essentials,CYB-DCS-ESS-BUN,SKU-CYB-DCS-ESS-BUN,Data Classification Suite - Essentials tier,True,Data Protection,Bundle,2025-06-01,,True,,Each,True,False,,,,,,,,,,,,,,PROD001
+,DCS Advanced,CYB-DCS-ADV-BUN,SKU-CYB-DCS-ADV-BUN,Data Classification Suite - Advanced tier,True,Data Protection,Bundle,2025-06-02,,True,,Each,True,False,,,,,,,,,,,,,,PROD002
+,DCS Elite,CYB-DCS-ELITE-BUN,SKU-CYB-DCS-ELITE-BUN-SAAS,Data Classification Suite - Elite tier (SaaS only),True,Data Protection,Bundle,2025-06-03,,True,,Each,True,False,,,,,,,,,,,,,,PROD003
+,Data Detection Engine,CYB-DCS-DDE-CMP,SKU-CYB-DCS-DDE-CMP,Data Detection Engine,True,Data Protection,,2025-06-04,,True,,Each,True,True,,,,,,,,,,,,,,PROD004
+,Unlimited Classification,CYB-DCS-UC-CMP,SKU-CYB-DCS-UC-CMP,Unlimited Classification,True,Data Protection,,2025-06-05,,True,,Each,True,True,,,,,,,,,,,,,,PROD005
+,DCS Analysis Collector,CYB-DCS-ACOL-CMP,SKU-CYB-DCS-ACOL-CMP,DCS Analysis Collector,True,Data Protection,,2025-06-06,,True,,,True,True,,,,,,,,,,,,,,PROD006
+,DCS Admin Console,CYB-DCS-ACON-CMP,SKU-CYB-DCS-ACON-CMP,DCS Admin Console,True,Data Protection,,2025-06-07,,True,,,True,True,,,,,,,,,,,,,,PROD007
+,DCS for Windows,CYB-DCS-FW-CMP,SKU-CYB-DCS-FW-CMP,DCS for Windows,True,Data Protection,,2025-06-08,,True,,,True,True,,,,,,,,,,,,,,PROD008
+,DCS for OWA,CYB-DCS-OWA-CMP,SKU-CYB-DCS-OWA-CMP,DCS for OWA,True,Data Protection,,2025-06-09,,True,,,True,False,,,,,,,,,,,,,,PROD009
+,Software Development Kit,CYB-DCS-SDK-CMP,SKU-CYB-DCS-SDK-CMP,DCS Software Development Kit,True,Data Protection,,2025-06-10,,True,,,True,True,,,,,,,,,,,,,,PROD010
+,DCS Getting Started Package,CYB-DCS-QS-CMP,SKU-CYB-DCS-QS-CMP,DCS Getting Started Package,True,Data Protection,,2025-06-11,,True,,,True,True,,,,,,,,,,,,,,PROD011
+,Fortra Mail for iOS,CYB-DCS-MAIL-ADD,SKU-CYB-DCS-MAIL-ADD,Fortra Mail client for iOS devices,True,Data Protection,,2025-06-12,,True,,,True,False,,,,,,,,,,,,,,PROD012
+,DCS Policy Manager Desktop,CYB-DCS-PMD-ADD,SKU-CYB-DCS-PMD-ADD,Cloud Policy Manager for Desktop,True,Data Protection,,2025-06-13,,True,,,True,False,,,,,,,,,,,,,,PROD013
+,DCS Policy Manager M365,CYB-DCS-PM365-ADD,SKU-CYB-DCS-PM365-ADD,Cloud Policy Manager for Microsoft 365,True,Data Protection,,2025-06-14,,True,,,True,False,,,,,,,,,,,,,,PROD014
+,Professional Services Package 1,CYB-DP-PS1-SVC,SKU-CYB-DP-PS1-SVC,Professional Services Package 1,True,Data Protection,,2025-06-15,,True,,,False,False,,,,,,,,,,,,,,PROD015
+,Professional Services Package 2,CYB-DP-PS2-SVC,SKU-CYB-DP-PS2-SVC,Professional Services Package 2,True,Data Protection,,2025-06-16,,True,,,False,False,,,,,,,,,,,,,,PROD016
+,Professional Services Package 3,CYB-DP-PS3-SVC,SKU-CYB-DP-PS3-SVC,Professional Services Package 3,True,Data Protection,,2025-06-17,,True,,,False,False,,,,,,,,,,,,,,PROD017
+,Training,CYB-DP-TRN-SVC,SKU-CYB-DP-TRN-SVC,Training,True,Data Protection,,2025-06-18,,True,,,False,False,,,,,,,,,,,,,,PROD018
+,Support - Tier 1,CYB-SUP-T1-SVC,SKU-CYB-SUP-T1-SVC,Support - Tier 1,True,Data Protection,,2025-06-19,,True,,,False,False,,,,,,,,,,,,,,PROD019
+,Support - Tier 2,CYB-SUP-T2-SVC,SKU-CYB-SUP-T2-SVC,Support - Tier 2,True,Data Protection,,2025-06-20,,True,,,False,False,,,,,,,,,,,,,,PROD020
+,Support - Tier 3,CYB-SUP-T3-SVC,SKU-CYB-SUP-T3-SVC,Support - Tier 3,True,Data Protection,,2025-06-21,,True,,,False,False,,,,,,,,,,,,,,PROD021

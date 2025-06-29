@@ -1,0 +1,7 @@
+External_ID__c*,PriceAdjustmentSchedule.External_ID__c*,LowerBound*,UpperBound,TierType*,TierValue*,EffectiveFrom*,EffectiveTo
+PAT_001,PAS_001,0,10,Percent,0,2024-01-01 00:00:00,
+PAT_002,PAS_001,11,50,Percent,5,2024-01-01 00:00:00,
+PAT_003,PAS_001,51,100,Percent,10,2024-01-01 00:00:00,
+PAT_004,PAS_001,101,999999,Percent,15,2024-01-01 00:00:00,
+PAT_005,PAS_002,12,23,Percent,5,2024-01-01 00:00:00,
+PAT_006,PAS_002,24,999,Percent,10,2024-01-01 00:00:00,

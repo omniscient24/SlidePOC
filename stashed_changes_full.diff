@@ -1,0 +1,1185 @@
+diff --git a/README.md b/README.md
+index affdb8e..b077cce 100644
+--- a/README.md
++++ b/README.md
+@@ -5,7 +5,7 @@ A comprehensive solution for migrating from Salesforce CPQ to Revenue Cloud with
+ ## Project Structure
+ 
+ ```
+-fortradp2Upload/
++POC/
+ ├── src/                              # Source code
+ │   ├── web-ui/                      # Web interface
+ │   ├── data-processing/             # Data processing scripts
+@@ -26,7 +26,7 @@ fortradp2Upload/
+ 
+ 1. **Launch the Web UI:**
+    ```bash
+-   python3 launch_ui.py
++   ./start_slide.sh
+    ```
+    Then open http://localhost:8080 in your browser.
+ 
+diff --git a/app/data/test_sync.py b/app/data/test_sync.py
+deleted file mode 100644
+index 9a36a9e..0000000
+--- a/app/data/test_sync.py
++++ /dev/null
+@@ -1,62 +0,0 @@
+-#!/usr/bin/env python3
+-"""
+-Test sync script to verify the sync functionality works
+-"""
+-
+-import json
+-import time
+-import sys
+-
+-def main():
+-    print("Test sync starting...")
+-    
+-    # Simulate progress updates
+-    progress_updates = [
+-        {'status': 'initializing', 'message': 'Creating backup...', 'percent': 0},
+-        {'status': 'syncing', 'current_object': 'ProductCatalog', 'completed': 0, 'total': 5, 'percent': 0, 'message': 'Querying ProductCatalog...'},
+-        {'status': 'syncing', 'current_object': 'ProductCatalog', 'completed': 1, 'total': 5, 'percent': 20, 'message': 'Writing 10 records for ProductCatalog...'},
+-        {'status': 'syncing', 'current_object': 'Product2', 'completed': 1, 'total': 5, 'percent': 20, 'message': 'Querying Product2...'},
+-        {'status': 'syncing', 'current_object': 'Product2', 'completed': 2, 'total': 5, 'percent': 40, 'message': 'Writing 50 records for Product2...'},
+-        {'status': 'syncing', 'current_object': 'Pricebook2', 'completed': 2, 'total': 5, 'percent': 40, 'message': 'Querying Pricebook2...'},
+-        {'status': 'syncing', 'current_object': 'Pricebook2', 'completed': 3, 'total': 5, 'percent': 60, 'message': 'Writing 5 records for Pricebook2...'},
+-        {'status': 'syncing', 'current_object': 'LegalEntity', 'completed': 3, 'total': 5, 'percent': 60, 'message': 'Querying LegalEntity...'},
+-        {'status': 'syncing', 'current_object': 'LegalEntity', 'completed': 4, 'total': 5, 'percent': 80, 'message': 'Writing 3 records for LegalEntity...'},
+-        {'status': 'syncing', 'current_object': 'TaxTreatment', 'completed': 4, 'total': 5, 'percent': 80, 'message': 'Querying TaxTreatment...'},
+-        {'status': 'syncing', 'current_object': 'TaxTreatment', 'completed': 5, 'total': 5, 'percent': 100, 'message': 'Writing 8 records for TaxTreatment...'},
+-    ]
+-    
+-    # Get progress file from arguments
+-    if len(sys.argv) > 1:
+-        for i, arg in enumerate(sys.argv):
+-            if arg == '--progress-file' and i + 1 < len(sys.argv):
+-                progress_file = sys.argv[i + 1]
+-                
+-                # Write progress updates
+-                for update in progress_updates:
+-                    with open(progress_file, 'w') as f:
+-                        json.dump(update, f)
+-                    print(f"Progress: {update.get('message', 'Processing...')}")
+-                    time.sleep(2)  # Simulate work
+-    
+-    # Final result
+-    result = {
+-        'success': True,
+-        'success_count': 5,
+-        'error_count': 0,
+-        'total_records': 76,
+-        'backup_path': '/Users/marcdebrey/cpq-revenue-cloud-migration/fortradp2Upload/data/templates/master/backups/test_backup.xlsx'
+-    }
+-    
+-    # Write result if output file specified
+-    if len(sys.argv) > 1:
+-        for i, arg in enumerate(sys.argv):
+-            if arg == '--output-json' and i + 1 < len(sys.argv):
+-                output_file = sys.argv[i + 1]
+-                with open(output_file, 'w') as f:
+-                    json.dump(result, f)
+-    
+-    print("Test sync completed!")
+-    return 0
+-
+-if __name__ == "__main__":
+-    sys.exit(main())
+\ No newline at end of file
+diff --git a/config/connections/connections.json b/config/connections/connections.json
+index 8f6a87c..7216f2f 100644
+--- a/config/connections/connections.json
++++ b/config/connections/connections.json
+@@ -8,7 +8,7 @@
+       "description": "Imported from Salesforce CLI",
+       "created_by": "import",
+       "created_at": "2025-06-22T14:26:49.752200",
+-      "last_used": "2025-06-22T16:04:06.836421",
++      "last_used": "2025-06-28T12:20:17.295539",
+       "status": "active",
+       "metadata": {
+         "org_id": "00Da500001HMVTvEAP",
+@@ -25,7 +25,7 @@
+       "description": "Imported from Salesforce CLI",
+       "created_by": "import",
+       "created_at": "2025-06-22T14:26:51.032265",
+-      "last_used": "2025-06-24T08:09:57.271091",
++      "last_used": "2025-06-29T09:06:51.298499",
+       "status": "active",
+       "metadata": {
+         "org_id": "00Ddp000001W6ZZEA0",
+diff --git a/data/Revenue_Cloud_Complete_Upload_Template.xlsx b/data/Revenue_Cloud_Complete_Upload_Template.xlsx
+deleted file mode 100644
+index 7c0f9f1..0000000
+Binary files a/data/Revenue_Cloud_Complete_Upload_Template.xlsx and /dev/null differ
+diff --git a/launch_ui.py b/launch_ui.py
+deleted file mode 100755
+index 5a743bd..0000000
+--- a/launch_ui.py
++++ /dev/null
+@@ -1,24 +0,0 @@
+-#!/usr/bin/env python3
+-"""
+-Launch the Revenue Cloud Migration Tool Web UI
+-"""
+-
+-import os
+-import sys
+-
+-# Add src directory to path
+-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+-
+-# Change to web-ui directory and run the server
+-os.chdir(os.path.join(os.path.dirname(__file__), 'src', 'web-ui'))
+-
+-# Import and run the web server
+-from revenue_cloud_structured_web_poc import start_server
+-
+-if __name__ == "__main__":
+-    print("Starting Revenue Cloud Migration Tool...")
+-    print("The application will open at http://localhost:8080")
+-    try:
+-        start_server()
+-    except KeyboardInterrupt:
+-        print("\nServer stopped.")
+\ No newline at end of file
+diff --git a/start.py b/start.py
+deleted file mode 100755
+index 9217dd5..0000000
+--- a/start.py
++++ /dev/null
+@@ -1,15 +0,0 @@
+-#!/usr/bin/env python3
+-"""
+-Revenue Cloud Migration Tool - Startup Script
+-"""
+-import sys
+-import os
+-
+-# Add current directory to Python path
+-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+-
+-# Import and run the server
+-from app.web.server import run_server
+-
+-if __name__ == "__main__":
+-    run_server()
+\ No newline at end of file
+diff --git a/static/css/style.css b/static/css/style.css
+index a7d7259..44193b7 100644
+--- a/static/css/style.css
++++ b/static/css/style.css
+@@ -428,7 +428,7 @@ a:hover {
+     border-bottom: 1px solid var(--border-color);
+ }
+ 
+-.data-table tr:hover {
++.data-table tr:not(.category-row):hover {
+     background: var(--background);
+ }
+ 
+diff --git a/templates/data-management.html b/templates/data-management.html
+index 51fee16..7316085 100644
+--- a/templates/data-management.html
++++ b/templates/data-management.html
+@@ -138,6 +138,34 @@
+             display: none;
+         }
+         
++        /* Sort icon styling */
++        .sort-icon svg {
++            transition: opacity 0.2s ease;
++        }
++        
++        th:hover .sort-icon svg {
++            opacity: 0.6 !important;
++        }
++        
++        th:active .sort-icon svg {
++            opacity: 1 !important;
++        }
++        
++        /* Remove border from last column */
++        .data-table th:last-child,
++        .data-table td:last-child {
++            border-right: none !important;
++        }
++        
++        /* Sync table specific - only headers have borders */
++        #sync-objects-table th {
++            border-right: 1px solid #e0e0e0 !important;
++        }
++        
++        #sync-objects-table th:last-child {
++            border-right: none !important;
++        }
++        
+         .tab-content.active {
+             display: block;
+         }
+@@ -209,9 +237,9 @@
+         }
+         
+         .category-row {
+-            background: var(--text-secondary);
++            background: #e0dfdf;
+             font-weight: 600;
+-            color: white;
++            color: black;
+             text-transform: uppercase;
+             font-size: 0.8rem;
+             letter-spacing: 0.05em;
+@@ -224,12 +252,18 @@
+         
+         /* Prevent hover effects on category rows */
+         .category-row:hover {
+-            background: var(--text-secondary) !important;
++            background: #e0dfdf !important;
++            cursor: default;
+         }
+         
+         .category-row:hover td {
+-            background: var(--text-secondary) !important;
+-            color: white !important;
++            background: #e0dfdf !important;
++            color: black !important;
++        }
++        
++        /* Override table hover for category rows */
++        .data-table .category-row:hover {
++            background: #e0dfdf !important;
+         }
+         
+         /* Modal styles */
+@@ -337,8 +371,10 @@
+             color: var(--text-primary);
+         }
+         
+-        /* Category row styling */
+-        .category-row {
++        /* Category row styling - ensure consistent background */
++        .category-row,
++        .category-row:hover,
++        .data-table .category-row:hover {
+             background: #e0dfdf !important;
+         }
+         
+@@ -356,6 +392,42 @@
+             padding: 12px;
+         }
+         
++        /* Ensure text stays black on hover */
++        .category-row:hover td,
++        tr.category-row:hover td {
++            color: black !important;
++        }
++        
++        /* Ultimate override - prevent any hover changes on category rows */
++        #sync-objects-table tbody tr.category-row,
++        #sync-objects-table tbody tr.category-row:hover,
++        #sync-objects-tbody tr.category-row,
++        #sync-objects-tbody tr.category-row:hover,
++        .data-table tbody tr.category-row,
++        .data-table tbody tr.category-row:hover {
++            background: #e0dfdf !important;
++            background-color: #e0dfdf !important;
++        }
++        
++        #sync-objects-table tbody tr.category-row td,
++        #sync-objects-table tbody tr.category-row:hover td,
++        #sync-objects-tbody tr.category-row td,
++        #sync-objects-tbody tr.category-row:hover td {
++            background: transparent !important;
++            background-color: transparent !important;
++        }
++        
++        /* Sync table header styling */
++        #sync-objects-table thead th {
++            background: #264c63 !important;
++            background-color: #264c63 !important;
++            color: white;
++        }
++        
++        #sync-objects-table thead th .filter-icon {
++            color: white;
++        }
++        
+         /* Modal header close button styling */
+         .modal-header .close-button {
+             color: white;
+@@ -379,8 +451,8 @@
+         
+         /* Workbook modal specific styles */
+         .modal-content.workbook-modal {
+-            /* Override to ensure proper sizing */
+-            width: fit-content !important;
++            /* Use most of the viewport width */
++            width: 90vw !important;
+             /* But respect min/max constraints */
+             min-width: 600px;
+             max-width: min(95vw, 1600px);
+@@ -394,16 +466,29 @@
+             overflow: auto;
+             /* Maximum dimensions to trigger scrollbars */
+             max-height: 60vh;
+-            max-width: calc(95vw - 120px); /* Account for modal padding (2 * 32px + extra) */
++            /* Full width of modal body */
++            width: 100% !important;
+             /* Minimum width to prevent collapse */
+             min-width: 0;
+         }
+         
+-        /* Ensure all modal tables respect the increased padding */
++        /* Ensure all modal tables extend full width */
+         .modal-body .table-wrapper {
+             /* Remove any negative margins that might override modal padding */
+             margin-left: 0 !important;
+             margin-right: 0 !important;
++            /* Extend full width of modal body */
++            width: 100% !important;
++        }
++        
++        /* All tables in modals should use full available width */
++        .modal-content .table-wrapper {
++            width: 100% !important;
++            margin: 0 !important;
++        }
++        
++        .modal-content .data-table {
++            width: 100% !important;
+         }
+         
+         /* Force workbook modal body to have proper padding */
+@@ -421,9 +506,9 @@
+         .workbook-modal .data-table {
+             /* Reset margin */
+             margin: 0;
+-            /* Table should size to content */
+-            width: max-content;
+-            min-width: 100%;
++            /* Table should use full width */
++            width: 100% !important;
++            table-layout: auto;
+         }
+         
+         /* Action links */
+@@ -757,57 +842,173 @@
+             fill: white;
+         }
+         
+-        /* Filter Dropdown */
++        /* Ant Design Style Filter Dropdown */
+         .filter-dropdown {
+             position: absolute;
+             background: white;
+-            border: 1px solid var(--border-color);
+-            border-radius: 4px;
+-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+-            padding: 10px;
+-            z-index: 1000;
+-            min-width: 200px;
+-            max-height: 300px;
+-            overflow-y: auto;
++            border-radius: 8px;
++            box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 
++                        0 3px 6px -4px rgba(0, 0, 0, 0.12), 
++                        0 9px 28px 8px rgba(0, 0, 0, 0.05);
++            padding: 4px 0;
++            z-index: 1050;
++            min-width: 220px;
++            max-height: 480px;
+             display: none;
++            font-size: 14px;
++        }
++        
++        /* Arrow pointing to column */
++        .filter-dropdown::before {
++            content: '';
++            position: absolute;
++            top: -6px;
++            right: var(--arrow-offset, 20px);
++            width: 12px;
++            height: 12px;
++            background: white;
++            transform: rotate(45deg);
++            box-shadow: -3px -3px 6px -2px rgba(0, 0, 0, 0.05);
+         }
+         
+         .filter-dropdown.active {
+             display: block;
++            animation: antSlideUpIn 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+         }
+         
+-        .filter-dropdown h4 {
+-            margin: 0 0 10px 0;
+-            font-size: 14px;
+-            color: var(--text-secondary);
++        @keyframes antSlideUpIn {
++            0% {
++                opacity: 0;
++                transform: translateY(-10px);
++            }
++            100% {
++                opacity: 1;
++                transform: translateY(0);
++            }
++        }
++        
++        .filter-dropdown-header {
++            padding: 12px 16px 8px;
++            font-weight: 500;
++            color: rgba(0, 0, 0, 0.88);
++            border-bottom: 1px solid #f0f0f0;
++            margin-bottom: 4px;
++        }
++        
++        .filter-dropdown-body {
++            max-height: 380px;
++            overflow-y: auto;
++            padding: 4px 0;
++        }
++        
++        .filter-dropdown-body::-webkit-scrollbar {
++            width: 6px;
++        }
++        
++        .filter-dropdown-body::-webkit-scrollbar-track {
++            background: transparent;
++        }
++        
++        .filter-dropdown-body::-webkit-scrollbar-thumb {
++            background: rgba(0, 0, 0, 0.15);
++            border-radius: 3px;
++        }
++        
++        .filter-dropdown-body::-webkit-scrollbar-thumb:hover {
++            background: rgba(0, 0, 0, 0.25);
+         }
+         
+         .filter-option {
+             display: flex;
+             align-items: center;
+-            margin-bottom: 5px;
++            padding: 5px 16px;
+             cursor: pointer;
++            transition: background-color 0.3s;
++            color: rgba(0, 0, 0, 0.88);
+         }
+         
+         .filter-option:hover {
+-            background: #f5f5f5;
++            background-color: rgba(0, 0, 0, 0.04);
+         }
+         
+         .filter-option input[type="checkbox"] {
+-            margin-right: 8px;
++            position: relative;
++            margin-right: 12px;
++            width: 16px;
++            height: 16px;
++            cursor: pointer;
++            appearance: none;
++            -webkit-appearance: none;
++            border: 1px solid #d9d9d9;
++            border-radius: 2px;
++            transition: all 0.3s;
++            background: white;
++        }
++        
++        .filter-option input[type="checkbox"]:hover {
++            border-color: #1890ff;
++        }
++        
++        .filter-option input[type="checkbox"]:checked {
++            background-color: #1890ff;
++            border-color: #1890ff;
++        }
++        
++        .filter-option input[type="checkbox"]:checked::after {
++            content: '';
++            position: absolute;
++            top: 1px;
++            left: 5px;
++            width: 4px;
++            height: 8px;
++            border: 2px solid white;
++            border-top: 0;
++            border-left: 0;
++            transform: rotate(45deg);
++        }
++        
++        .filter-option span {
++            flex: 1;
++            user-select: none;
+         }
+         
+         .filter-actions {
+-            margin-top: 10px;
+-            padding-top: 10px;
+-            border-top: 1px solid var(--border-color);
++            margin-top: 4px;
++            padding: 8px 16px;
++            border-top: 1px solid #f0f0f0;
+             display: flex;
+             justify-content: space-between;
++            gap: 8px;
+         }
+         
+         .filter-actions button {
+-            padding: 4px 8px;
+-            font-size: 12px;
++            flex: 1;
++            padding: 4px 15px;
++            font-size: 14px;
++            border-radius: 6px;
++            transition: all 0.3s;
++        }
++        
++        .filter-actions .btn-clear {
++            background: white;
++            border: 1px solid #d9d9d9;
++            color: rgba(0, 0, 0, 0.88);
++        }
++        
++        .filter-actions .btn-clear:hover {
++            border-color: #40a9ff;
++            color: #40a9ff;
++        }
++        
++        .filter-actions .btn-apply {
++            background: #1890ff;
++            border: 1px solid #1890ff;
++            color: white;
++        }
++        
++        .filter-actions .btn-apply:hover {
++            background: #40a9ff;
++            border-color: #40a9ff;
+         }
+     </style>
+ </head>
+@@ -897,10 +1098,10 @@
+                         <table class="data-table" id="sync-objects-table">
+                             <thead>
+                                 <tr>
+-                                    <th width="40">
++                                    <th width="40" style="border-right: 1px solid #f0f0f0;">
+                                         <input type="checkbox" id="sync-all" onchange="toggleAllSync()">
+                                     </th>
+-                                    <th class="filterable" style="min-width: 200px;">
++                                    <th class="filterable" style="min-width: 200px; border-right: 1px solid #f0f0f0;">
+                                         Object Name
+                                         <span class="filter-icon" onclick="showFilter(event, 'name')">
+                                             <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+@@ -908,15 +1109,10 @@
+                                             </svg>
+                                         </span>
+                                     </th>
+-                                    <th class="filterable" style="min-width: 180px;">
++                                    <th style="min-width: 180px; border-right: 1px solid #f0f0f0;">
+                                         API Name
+-                                        <span class="filter-icon" onclick="showFilter(event, 'apiName')">
+-                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+-                                                <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+-                                            </svg>
+-                                        </span>
+                                     </th>
+-                                    <th class="filterable" style="min-width: 120px;">
++                                    <th class="filterable" style="min-width: 120px; border-right: 1px solid #f0f0f0;">
+                                         Status
+                                         <span class="filter-icon" onclick="showFilter(event, 'status')">
+                                             <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+@@ -924,22 +1120,17 @@
+                                             </svg>
+                                         </span>
+                                     </th>
+-                                    <th class="filterable" style="min-width: 140px;">
++                                    <th class="filterable" style="min-width: 140px; border-right: 1px solid #f0f0f0;">
+                                         Last Synced
+                                         <span class="filter-icon" onclick="showFilter(event, 'lastSynced')">
+-                                            <svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor">
+-                                                <path d="M349 838c0 17.7 14.2 32 31.8 32h262.4c17.6 0 31.8-14.3 31.8-32V642H349v196zm531.1-684H143.9c-24.5 0-39.8 26.7-27.5 48l221.3 376h348.8l221.3-376c12.1-21.3-3.2-48-27.7-48z"/>
+-                                            </svg>
+-                                        </span>
+-                                    </th>
+-                                    <th class="filterable" style="min-width: 120px;">
+-                                        Records
+-                                        <span class="filter-icon" onclick="showFilter(event, 'records')">
+                                             <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                                                 <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                                             </svg>
+                                         </span>
+                                     </th>
++                                    <th style="min-width: 120px; border-right: 1px solid #f0f0f0;">
++                                        Records
++                                    </th>
+                                     <th style="min-width: 300px;">Actions</th>
+                                 </tr>
+                             </thead>
+@@ -1111,6 +1302,8 @@
+     </div>
+ 
+     <script>
++        console.log('Data Management script starting...');
++        
+         // Revenue Cloud objects configuration - Complete list
+         const REVENUE_CLOUD_OBJECTS = [
+             // Foundation Objects (Phase 1 - Core foundation that must be configured first)
+@@ -1167,11 +1360,17 @@
+ 
+         // Initialize page
+         window.addEventListener('DOMContentLoaded', function() {
+-            loadConnections();
+-            populateObjectLists();
+-            setupDragAndDrop();
+-            // Load actual record counts
+-            loadActualRecordCounts();
++            console.log('DOMContentLoaded - Starting data-management initialization');
++            try {
++                loadConnections();
++                populateObjectLists();
++                setupDragAndDrop();
++                // Load actual record counts
++                loadActualRecordCounts();
++                console.log('Data-management initialization complete');
++            } catch (error) {
++                console.error('Data-management initialization error:', error);
++            }
+         });
+ 
+         // Tab switching
+@@ -1212,14 +1411,39 @@
+ 
+         // Load connections
+         async function loadConnections() {
++            console.log('loadConnections called');
+             try {
+                 const response = await fetch('/api/session');
++                console.log('Session API response status:', response.status);
++                
++                if (!response.ok) {
++                    console.error('Session API returned error:', response.status, response.statusText);
++                    return;
++                }
++                
+                 const data = await response.json();
++                console.log('Session data:', data);
++                
++                if (!data.success) {
++                    console.error('Session API returned error:', data.error);
++                    showWarning('No active session. Please <a href="/login">log in</a> to continue.');
++                    return;
++                }
+                 
+                 if (data.success && data.active_connection) {
+                     activeConnection = data.active_connection;
+-                    document.getElementById('connection-selector').innerHTML = 
+-                        `<option value="${activeConnection.id}">${activeConnection.name}</option>`;
++                    const selector = document.getElementById('connection-selector');
++                    if (selector) {
++                        selector.innerHTML = 
++                            `<option value="${activeConnection.id}">${activeConnection.name}</option>`;
++                        console.log('Connection loaded:', activeConnection.name);
++                    } else {
++                        console.error('connection-selector element not found');
++                    }
++                } else {
++                    console.log('No active connection in session data');
++                    // Show warning that no connection is available
++                    showWarning('No active connection. Please log in first.');
+                 }
+             } catch (error) {
+                 console.error('Error loading connections:', error);
+@@ -1231,10 +1455,14 @@
+ 
+         // Populate object lists
+         function populateObjectLists() {
++            console.log('populateObjectLists called');
++            console.log('REVENUE_CLOUD_OBJECTS:', REVENUE_CLOUD_OBJECTS);
++            
+             // Initialize sync status from localStorage
+             const savedStatus = localStorage.getItem('objectSyncStatus');
+             if (savedStatus) {
+                 objectSyncStatus = JSON.parse(savedStatus);
++                console.log('Loaded saved sync status:', objectSyncStatus);
+             }
+             
+             // Populate sync table
+@@ -1242,16 +1470,21 @@
+             
+             // Download objects (checkbox list)
+             const downloadContainer = document.getElementById('download-objects');
+-            let downloadHtml = '';
+-            REVENUE_CLOUD_OBJECTS.forEach(obj => {
+-                downloadHtml += `
+-                    <label class="checkbox">
+-                        <input type="checkbox" name="download-object" value="${obj.apiName}">
+-                        <span>${obj.name} (${obj.apiName})</span>
+-                    </label>
+-                `;
+-            });
+-            downloadContainer.innerHTML = downloadHtml;
++            if (downloadContainer) {
++                let downloadHtml = '';
++                REVENUE_CLOUD_OBJECTS.forEach(obj => {
++                    downloadHtml += `
++                        <label class="checkbox">
++                            <input type="checkbox" name="download-object" value="${obj.apiName}">
++                            <span>${obj.name} (${obj.apiName})</span>
++                        </label>
++                    `;
++                });
++                downloadContainer.innerHTML = downloadHtml;
++                console.log('Download objects populated');
++            } else {
++                console.warn('download-objects container not found');
++            }
+         }
+         
+         // Load actual record counts from workbook
+@@ -1316,7 +1549,14 @@
+ 
+         // Populate sync table with objects
+         function populateSyncTable() {
++            console.log('populateSyncTable called');
+             const tbody = document.getElementById('sync-objects-tbody');
++            if (!tbody) {
++                console.error('sync-objects-tbody element not found!');
++                return;
++            }
++            console.log('Found tbody element:', tbody);
++            
+             let html = '';
+             let currentCategory = '';
+             
+@@ -1328,8 +1568,8 @@
+                 if (obj.category !== currentCategory) {
+                     currentCategory = obj.category;
+                     html += `
+-                        <tr class="category-row" style="background: #e0dfdf !important;" onmouseover="this.style.background='#e0dfdf'" onmouseout="this.style.background='#e0dfdf'">
+-                            <td colspan="7" style="color: black; font-weight: 600; text-transform: uppercase; padding: 12px;">${currentCategory}</td>
++                        <tr class="category-row">
++                            <td colspan="7">${currentCategory}</td>
+                         </tr>
+                     `;
+                 }
+@@ -1374,6 +1614,7 @@
+             });
+             
+             tbody.innerHTML = html;
++            console.log('Sync table populated with', REVENUE_CLOUD_OBJECTS.length, 'objects');
+             
+             // Reset filter data when table is repopulated
+             originalData = [];
+@@ -1671,6 +1912,16 @@
+             let modalContent = '';
+             let hasData = data && data.length > 0;
+             
++            // Store data globally for sorting
++            window.currentModalData = {
++                apiName: apiName,
++                originalData: data ? [...data] : [],
++                sortedData: data ? [...data] : [],
++                sortColumn: null,
++                sortDirection: null,
++                workbookInfo: workbookInfo
++            };
++            
+             // Check if this is a case where no sheet exists
+             if (workbookInfo.sheet === null && workbookInfo.message) {
+                 // Object doesn't have a sheet in the workbook
+@@ -1725,8 +1976,10 @@
+                                                         Object.keys(record).forEach(key => allKeys.add(key));
+                                                     });
+                                                     
+-                                                    // Convert to array and sort
+-                                                    return Array.from(allKeys).sort().map(key => {
++                                                    // Use default sort
++                                                    let columnsToShow = Array.from(allKeys).sort();
++                                                    
++                                                    return columnsToShow.map((key, index) => {
+                                                         // Escape HTML characters and handle special column names
+                                                         const escapedKey = key
+                                                             .replace(/&/g, '&amp;')
+@@ -1734,38 +1987,22 @@
+                                                             .replace(/>/g, '&gt;')
+                                                             .replace(/"/g, '&quot;')
+                                                             .replace(/'/g, '&#39;');
+-                                                        return `<th style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px;">${escapedKey}</th>`;
++                                                        return `<th style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px; cursor: pointer; user-select: none; border-right: 1px solid #f0f0f0; position: relative;" onclick="sortWorkbookTable('${key.replace(/'/g, "\\'")}')">`
++                                                            <div style="display: flex; align-items: center; gap: 8px;">
++                                                                <span>${escapedKey}</span>
++                                                                <span class="sort-icon" data-column="${key}" style="display: inline-flex; flex-direction: column; font-size: 10px; line-height: 1;">
++                                                                    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="opacity: 0.3;">
++                                                                        <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
++                                                                    </svg>
++                                                                </span>
++                                                            </div>
++                                                        </th>`;
+                                                     }).join('');
+                                                 })()}
+                                             </tr>
+                                         </thead>
+-                                        <tbody>
+-                                            ${(() => {
+-                                                // Get all unique keys from all records (same as headers)
+-                                                const allKeys = new Set();
+-                                                data.forEach(record => {
+-                                                    Object.keys(record).forEach(key => allKeys.add(key));
+-                                                });
+-                                                const sortedKeys = Array.from(allKeys).sort();
+-                                                
+-                                                // Map each row
+-                                                return data.slice(0, 100).map(row => `
+-                                                    <tr>
+-                                                        ${sortedKeys.map(key => {
+-                                                            const val = row[key];
+-                                                            // Escape HTML characters in values
+-                                                            const displayVal = val !== null && val !== undefined ? String(val) : '';
+-                                                            const escapedVal = displayVal
+-                                                                .replace(/&/g, '&amp;')
+-                                                                .replace(/</g, '&lt;')
+-                                                                .replace(/>/g, '&gt;')
+-                                                                .replace(/"/g, '&quot;')
+-                                                                .replace(/'/g, '&#39;');
+-                                                            return `<td style="padding: 12px 16px; min-width: 120px;">${escapedVal}</td>`;
+-                                                        }).join('')}
+-                                                    </tr>
+-                                                `).join('');
+-                                            })()}
++                                        <tbody id="workbook-table-body">
++                                            ${renderWorkbookTableBody(data)}
+                                         </tbody>
+                                     </table>
+                                 </div>
+@@ -1804,6 +2041,114 @@
+             }
+         });
+ 
++        // Render workbook table body
++        function renderWorkbookTableBody(data) {
++            if (!data || data.length === 0) return '';
++            
++            const apiName = window.currentModalData?.apiName;
++            
++            // Get all unique keys from all records (same as headers)
++            const allKeys = new Set();
++            data.forEach(record => {
++                Object.keys(record).forEach(key => allKeys.add(key));
++            });
++            
++            // Use default sort
++            let columnsToShow = Array.from(allKeys).sort();
++            
++            // Map each row
++            return data.slice(0, 100).map(row => `
++                <tr>
++                    ${columnsToShow.map(key => {
++                        const val = row[key];
++                        // Escape HTML characters in values
++                        const displayVal = val !== null && val !== undefined ? String(val) : '';
++                        const escapedVal = displayVal
++                            .replace(/&/g, '&amp;')
++                            .replace(/</g, '&lt;')
++                            .replace(/>/g, '&gt;')
++                            .replace(/"/g, '&quot;')
++                            .replace(/'/g, '&#39;');
++                        return `<td style="padding: 12px 16px; min-width: 120px; border-right: 1px solid #f0f0f0;">${escapedVal}</td>`;
++                    }).join('')}
++                </tr>
++            `).join('');
++        }
++
++        // Sort workbook table
++        function sortWorkbookTable(column) {
++            if (!window.currentModalData) return;
++            
++            const data = window.currentModalData;
++            const currentSort = data.sortColumn === column ? data.sortDirection : null;
++            
++            // Determine new sort direction
++            let newDirection;
++            if (currentSort === null) {
++                newDirection = 'asc';
++            } else if (currentSort === 'asc') {
++                newDirection = 'desc';
++            } else {
++                newDirection = null; // Reset to original order
++            }
++            
++            // Update sort state
++            data.sortColumn = newDirection ? column : null;
++            data.sortDirection = newDirection;
++            
++            // Sort data
++            if (newDirection === null) {
++                // Reset to original order
++                data.sortedData = [...data.originalData];
++            } else {
++                // Sort the data
++                data.sortedData = [...data.sortedData].sort((a, b) => {
++                    const aVal = a[column];
++                    const bVal = b[column];
++                    
++                    // Handle null/undefined values
++                    if (aVal === null || aVal === undefined) return 1;
++                    if (bVal === null || bVal === undefined) return -1;
++                    
++                    // Compare values
++                    let comparison = 0;
++                    if (typeof aVal === 'number' && typeof bVal === 'number') {
++                        comparison = aVal - bVal;
++                    } else {
++                        comparison = String(aVal).localeCompare(String(bVal));
++                    }
++                    
++                    return newDirection === 'asc' ? comparison : -comparison;
++                });
++            }
++            
++            // Update table body
++            const tbody = document.getElementById('workbook-table-body');
++            if (tbody) {
++                tbody.innerHTML = renderWorkbookTableBody(data.sortedData);
++            }
++            
++            // Update sort icons
++            document.querySelectorAll('.sort-icon').forEach(icon => {
++                const iconColumn = icon.getAttribute('data-column');
++                const svg = icon.querySelector('svg');
++                
++                if (iconColumn === column && newDirection) {
++                    // Active column
++                    svg.style.opacity = '1';
++                    if (newDirection === 'asc') {
++                        svg.innerHTML = '<path d="M8 2.5l4 4h-8l4-4z"/>';
++                    } else {
++                        svg.innerHTML = '<path d="M8 13.5l-4-4h8l-4 4z"/>';
++                    }
++                } else {
++                    // Inactive column
++                    svg.style.opacity = '0.3';
++                    svg.innerHTML = '<path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>';
++                }
++            });
++        }
++
+         // Create sync progress modal
+         function createSyncProgressModal() {
+             // Remove any existing modal
+@@ -1814,7 +2159,7 @@
+             
+             const modalHtml = `
+                 <div id="sync-progress-modal" class="modal-overlay">
+-                    <div class="modal-content">
++                    <div class="modal-content" style="width: 80vw; max-width: 1200px;">
+                         <div class="modal-header">
+                             <div>Sync Progress</div>
+                             <button class="close-button" onclick="closeSyncProgressModal()" title="Close">×</button>
+@@ -1832,13 +2177,13 @@
+                             
+                             <div id="sync-modal-details" class="mt-4">
+                                 <h4>Object Sync Status</h4>
+-                                <div class="table-wrapper" style="border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: auto; max-height: 400px;">
+-                                    <table class="data-table" style="margin: 0;">
++                                <div class="table-wrapper" style="border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: auto; max-height: 400px; width: 100%;">
++                                    <table class="data-table" style="margin: 0; width: 100%;">
+                                         <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                             <tr>
+-                                                <th>Object</th>
+-                                                <th>Status</th>
+-                                                <th>Records</th>
++                                                <th style="border-right: 1px solid #f0f0f0;">Object</th>
++                                                <th style="border-right: 1px solid #f0f0f0;">Status</th>
++                                                <th style="border-right: 1px solid #f0f0f0;">Records</th>
+                                                 <th>Progress</th>
+                                             </tr>
+                                         </thead>
+@@ -1906,7 +2251,7 @@
+             
+             const modalHtml = `
+                 <div id="upload-progress-modal" class="modal-overlay">
+-                    <div class="modal-content">
++                    <div class="modal-content" style="width: 60vw; max-width: 800px;">
+                         <div class="modal-header">
+                             <div>Upload Progress</div>
+                             <button class="close-button" onclick="closeUploadProgressModal()" title="Close" id="upload-modal-close-x" style="display: none;">×</button>
+@@ -2539,6 +2884,7 @@
+                     <p><strong>${successCount} of ${totalObjects}</strong> objects synced successfully</p>
+                     <p><strong>${totalRecords.toLocaleString()}</strong> total records retrieved</p>
+                     ${isMockData ? '<p class="text-warning"><small>Note: Using mock data as API endpoints are not yet implemented</small></p>' : ''}
++                    ${successCount > 0 ? '<p class="text-info"><small>Page will refresh in a moment to update record counts...</small></p>' : ''}
+                 </div>
+             `;
+             
+@@ -2557,6 +2903,15 @@
+             } else {
+                 showToast(`Synced ${successCount} of ${totalObjects} objects. Check details for errors.`, 'warning');
+             }
++            
++            // Refresh the page if any objects were successfully synced to update record counts
++            if (successCount > 0) {
++                // Wait a moment for the user to see the completion message
++                setTimeout(() => {
++                    console.log('Refreshing page to update record counts...');
++                    window.location.reload();
++                }, 2000); // 2 second delay
++            }
+         }
+         
+         // Legacy simulate function (keeping for reference)
+@@ -2761,6 +3116,15 @@
+             }
+         }
+         
++        function showWarning(message, useToast = true) {
++            if (useToast) {
++                showToast(message, 'warning');
++            } else {
++                // For backward compatibility
++                alert('Warning: ' + message);
++            }
++        }
++        
+         function showToast(message, type = 'info') {
+             // Create toast element
+             const toast = document.createElement('div');
+@@ -2770,7 +3134,7 @@
+                 bottom: 20px;
+                 right: 20px;
+                 padding: 16px 24px;
+-                background: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#17a2b8'};
++                background: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : type === 'warning' ? '#ff6b35' : '#17a2b8'};
+                 color: white;
+                 border-radius: 4px;
+                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+@@ -2778,7 +3142,7 @@
+                 max-width: 400px;
+                 animation: slideIn 0.3s ease-out;
+             `;
+-            toast.textContent = message;
++            toast.innerHTML = message;
+             
+             // Add to page
+             document.body.appendChild(toast);
+@@ -3349,10 +3713,40 @@
+             }
+             
+             // Position dropdown
+-            const filterIcon = event.target;
+-            const rect = filterIcon.getBoundingClientRect();
+-            dropdown.style.top = (rect.bottom + window.scrollY) + 'px';
+-            dropdown.style.left = (rect.left + window.scrollX - 150) + 'px';
++            const filterIcon = event.target.closest('.filter-icon');
++            const th = filterIcon.closest('th');
++            const thRect = th.getBoundingClientRect();
++            const iconRect = filterIcon.getBoundingClientRect();
++            
++            // Position dropdown below the header, aligned with the filter icon
++            dropdown.style.top = (thRect.bottom + window.scrollY + 8) + 'px';
++            
++            // Calculate position to align arrow with filter icon
++            const dropdownWidth = 220; // min-width of dropdown
++            const iconCenter = iconRect.left + (iconRect.width / 2) + window.scrollX;
++            
++            // Default: align arrow (20px from right) with icon center
++            let leftPosition = iconCenter - (dropdownWidth - 20);
++            
++            // Check if dropdown would go off the left edge of the screen
++            if (leftPosition < 10) {
++                leftPosition = 10;
++                // Adjust arrow position dynamically
++                const arrowOffset = iconCenter - leftPosition;
++                dropdown.style.setProperty('--arrow-offset', `${dropdownWidth - arrowOffset}px`);
++            }
++            
++            // Check if dropdown would go off the right edge of the screen
++            const rightEdge = leftPosition + dropdownWidth;
++            const windowWidth = window.innerWidth;
++            if (rightEdge > windowWidth - 10) {
++                leftPosition = windowWidth - dropdownWidth - 10;
++                // Adjust arrow position dynamically
++                const arrowOffset = iconCenter - leftPosition;
++                dropdown.style.setProperty('--arrow-offset', `${dropdownWidth - arrowOffset}px`);
++            }
++            
++            dropdown.style.left = leftPosition + 'px';
+             
+             // Show dropdown
+             dropdown.classList.add('active');
+@@ -3371,7 +3765,22 @@
+             // Get unique values for this column
+             const values = getUniqueValues(column);
+             
+-            let html = `<h4>Filter ${getColumnName(column)}</h4>`;
++            let html = `
++                <div class="filter-dropdown-header">
++                    Filter ${getColumnName(column)}
++                </div>
++                <div class="filter-dropdown-body">
++            `;
++            
++            // Add Select All option
++            const allChecked = !filterState[column] || filterState[column].length === values.length;
++            html += `
++                <label class="filter-option" style="font-weight: 500; border-bottom: 1px solid #f0f0f0; margin-bottom: 4px;">
++                    <input type="checkbox" ${allChecked ? 'checked' : ''} 
++                           onchange="toggleAllFilters('${column}', this.checked)">
++                    <span>Select All</span>
++                </label>
++            `;
+             
+             // Add filter options
+             values.forEach(value => {
+@@ -3386,9 +3795,10 @@
+             });
+             
+             html += `
++                </div>
+                 <div class="filter-actions">
+-                    <button class="btn btn-sm" onclick="clearFilter('${column}')">Clear</button>
+-                    <button class="btn btn-sm btn-primary" onclick="applyFilter('${column}')">Apply</button>
++                    <button class="btn-clear" onclick="clearFilter('${column}')">Clear</button>
++                    <button class="btn-apply" onclick="applyFilter('${column}')">Apply</button>
+                 </div>
+             `;
+             
+@@ -3455,6 +3865,35 @@
+             } else {
+                 filterState[column] = filterState[column].filter(v => v !== value);
+             }
++            
++            // Update Select All checkbox state
++            const dropdown = document.getElementById(`filter-dropdown-${column}`);
++            if (dropdown) {
++                const selectAllCheckbox = dropdown.querySelector('input[type="checkbox"]:first-child');
++                const allValues = getUniqueValues(column);
++                selectAllCheckbox.checked = filterState[column].length === allValues.length;
++            }
++        }
++        
++        function toggleAllFilters(column, checked) {
++            if (checked) {
++                // Select all values
++                filterState[column] = getUniqueValues(column);
++            } else {
++                // Deselect all values
++                filterState[column] = [];
++            }
++            
++            // Update all checkboxes in the dropdown
++            const dropdown = document.getElementById(`filter-dropdown-${column}`);
++            if (dropdown) {
++                const checkboxes = dropdown.querySelectorAll('.filter-option input[type="checkbox"]');
++                checkboxes.forEach((checkbox, index) => {
++                    if (index > 0) { // Skip the Select All checkbox
++                        checkbox.checked = checked;
++                    }
++                });
++            }
+         }
+         
+         function clearFilter(column) {

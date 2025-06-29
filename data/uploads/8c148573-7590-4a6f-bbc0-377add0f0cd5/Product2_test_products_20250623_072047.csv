@@ -1,0 +1,6 @@
+Name,ProductCode,Description,IsActive,Family
+Test Product 1,PROD-001,This is a test product,TRUE,Software
+Test Product 2,PROD-002,Another test product,TRUE,Hardware
+Test Product 3,PROD-003,Third test product,FALSE,Services
+Revenue Cloud License,RC-LIC-001,Revenue Cloud user license,TRUE,Software
+Implementation Services,RC-IMP-001,Revenue Cloud implementation,TRUE,Services
