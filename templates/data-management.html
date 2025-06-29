@@ -1815,54 +1815,28 @@
                                                             .replace(/>/g, '&gt;')
                                                             .replace(/"/g, '&quot;')
                                                             .replace(/'/g, '&#39;');
-                                                        return `<th class="draggable-column" draggable="true" data-column="${key}" data-index="${index}" style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px; border-right: 1px solid #e0e0e0;">${escapedKey}</th>`;
+                                                        
+                                                        // Don't add sort functionality to Id column
+                                                        const isSortable = key.toLowerCase() !== 'id';
+                                                        const sortableClass = isSortable ? 'sortable-column' : '';
+                                                        const sortClick = isSortable ? `onclick="sortModalTable('${key.replace(/'/g, "\\'")}')"` : '';
+                                                        
+                                                        return `<th class="draggable-column ${sortableClass}" draggable="true" data-column="${key}" data-index="${index}" ${sortClick} style="white-space: nowrap; padding: 12px 16px; text-align: left; min-width: 120px; border-right: 1px solid #e0e0e0; cursor: ${isSortable ? 'pointer' : 'move'}; user-select: none;">
+                                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                                <span>${escapedKey}</span>
+                                                                ${isSortable ? `<span class="sort-icon" data-column="${key}" style="display: inline-flex; flex-direction: column; font-size: 10px; line-height: 1;">
+                                                                    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="opacity: 0.3;">
+                                                                        <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
+                                                                    </svg>
+                                                                </span>` : ''}
+                                                            </div>
+                                                        </th>`;
                                                     }).join('');
                                                 })()}
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            ${(() => {
-                                                // Get all unique keys from all records (same as headers)
-                                                const allKeys = new Set();
-                                                data.forEach(record => {
-                                                    Object.keys(record).forEach(key => allKeys.add(key));
-                                                });
-                                                
-                                                // Get saved column order from localStorage
-                                                const savedOrder = localStorage.getItem(`columnOrder_${apiName}`);
-                                                let columnsToShow = Array.from(allKeys).sort();
-                                                
-                                                if (savedOrder) {
-                                                    try {
-                                                        const orderArray = JSON.parse(savedOrder);
-                                                        // Validate saved columns still exist
-                                                        const validColumns = orderArray.filter(col => allKeys.has(col));
-                                                        // Add any new columns that aren't in saved order
-                                                        const newColumns = columnsToShow.filter(col => !validColumns.includes(col));
-                                                        columnsToShow = [...validColumns, ...newColumns];
-                                                    } catch (e) {
-                                                        console.error('Error loading column order:', e);
-                                                    }
-                                                }
-                                                
-                                                // Map each row
-                                                return data.slice(0, 100).map(row => `
-                                                    <tr>
-                                                        ${columnsToShow.map(key => {
-                                                            const val = row[key];
-                                                            // Escape HTML characters in values
-                                                            const displayVal = val !== null && val !== undefined ? String(val) : '';
-                                                            const escapedVal = displayVal
-                                                                .replace(/&/g, '&amp;')
-                                                                .replace(/</g, '&lt;')
-                                                                .replace(/>/g, '&gt;')
-                                                                .replace(/"/g, '&quot;')
-                                                                .replace(/'/g, '&#39;');
-                                                            return `<td style="padding: 12px 16px; min-width: 120px; border-right: 1px solid #e0e0e0;">${escapedVal}</td>`;
-                                                        }).join('')}
-                                                    </tr>
-                                                `).join('');
-                                            })()}
+                                        <tbody id="modal-table-body">
+                                            ${renderModalTableBody(data, apiName)}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1882,6 +1856,16 @@
             
             // Add modal to page
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Store data globally for sorting
+            window.currentModalData = {
+                apiName: apiName,
+                originalData: data ? [...data] : [],
+                sortedData: data ? [...data] : [],
+                sortColumn: null,
+                sortDirection: null,
+                workbookInfo: workbookInfo
+            };
             
             // Initialize column dragging if table has data
             if (hasData) {
@@ -3787,6 +3771,29 @@
                     row.innerHTML = '';
                     newCells.forEach(cell => row.appendChild(cell));
                 });
+                
+                // If data is sorted, we need to refresh the sort icons
+                if (window.currentModalData && window.currentModalData.sortColumn) {
+                    const sortedColumn = window.currentModalData.sortColumn;
+                    const sortDirection = window.currentModalData.sortDirection;
+                    
+                    // Update sort icons after reordering
+                    setTimeout(() => {
+                        document.querySelectorAll('#workbook-modal .sort-icon').forEach(icon => {
+                            const iconColumn = icon.getAttribute('data-column');
+                            const svg = icon.querySelector('svg');
+                            
+                            if (iconColumn === sortedColumn && sortDirection) {
+                                svg.style.opacity = '1';
+                                if (sortDirection === 'asc') {
+                                    svg.innerHTML = '<path d="M8 2.5l4 4h-8l4-4z"/>';
+                                } else {
+                                    svg.innerHTML = '<path d="M8 13.5l-4-4h8l-4 4z"/>';
+                                }
+                            }
+                        });
+                    }, 50);
+                }
             }
         };
         
@@ -3800,6 +3807,126 @@
                 closeWorkbookModal();
                 setTimeout(() => viewBtn.click(), 300);
             }
+        }
+        
+        // Render modal table body
+        function renderModalTableBody(data, apiName) {
+            if (!data || data.length === 0) return '';
+            
+            // Get all unique keys from all records
+            const allKeys = new Set();
+            data.forEach(record => {
+                Object.keys(record).forEach(key => allKeys.add(key));
+            });
+            
+            // Get saved column order from localStorage
+            const savedOrder = localStorage.getItem(`columnOrder_${apiName}`);
+            let columnsToShow = Array.from(allKeys).sort();
+            
+            if (savedOrder) {
+                try {
+                    const orderArray = JSON.parse(savedOrder);
+                    // Validate saved columns still exist
+                    const validColumns = orderArray.filter(col => allKeys.has(col));
+                    // Add any new columns that aren't in saved order
+                    const newColumns = columnsToShow.filter(col => !validColumns.includes(col));
+                    columnsToShow = [...validColumns, ...newColumns];
+                } catch (e) {
+                    console.error('Error loading column order:', e);
+                }
+            }
+            
+            // Map each row
+            return data.slice(0, 100).map(row => `
+                <tr>
+                    ${columnsToShow.map(key => {
+                        const val = row[key];
+                        // Escape HTML characters in values
+                        const displayVal = val !== null && val !== undefined ? String(val) : '';
+                        const escapedVal = displayVal
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#39;');
+                        return `<td style="padding: 12px 16px; min-width: 120px; border-right: 1px solid #e0e0e0;">${escapedVal}</td>`;
+                    }).join('')}
+                </tr>
+            `).join('');
+        }
+        
+        // Sort modal table
+        function sortModalTable(column) {
+            if (!window.currentModalData) return;
+            
+            const data = window.currentModalData;
+            const currentSort = data.sortColumn === column ? data.sortDirection : null;
+            
+            // Determine new sort direction
+            let newDirection;
+            if (currentSort === null) {
+                newDirection = 'asc';
+            } else if (currentSort === 'asc') {
+                newDirection = 'desc';
+            } else {
+                newDirection = null; // Reset to original order
+            }
+            
+            // Update sort state
+            data.sortColumn = newDirection ? column : null;
+            data.sortDirection = newDirection;
+            
+            // Sort data
+            if (newDirection === null) {
+                // Reset to original order
+                data.sortedData = [...data.originalData];
+            } else {
+                // Sort the data
+                data.sortedData = [...data.sortedData].sort((a, b) => {
+                    const aVal = a[column];
+                    const bVal = b[column];
+                    
+                    // Handle null/undefined values
+                    if (aVal === null || aVal === undefined) return 1;
+                    if (bVal === null || bVal === undefined) return -1;
+                    
+                    // Compare values
+                    let comparison = 0;
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        comparison = aVal - bVal;
+                    } else {
+                        comparison = String(aVal).localeCompare(String(bVal));
+                    }
+                    
+                    return newDirection === 'asc' ? comparison : -comparison;
+                });
+            }
+            
+            // Update table body
+            const tbody = document.getElementById('modal-table-body');
+            if (tbody) {
+                tbody.innerHTML = renderModalTableBody(data.sortedData, data.apiName);
+            }
+            
+            // Update sort icons
+            document.querySelectorAll('#workbook-modal .sort-icon').forEach(icon => {
+                const iconColumn = icon.getAttribute('data-column');
+                const svg = icon.querySelector('svg');
+                
+                if (iconColumn === column && newDirection) {
+                    // Active column
+                    svg.style.opacity = '1';
+                    if (newDirection === 'asc') {
+                        svg.innerHTML = '<path d="M8 2.5l4 4h-8l4-4z"/>';
+                    } else {
+                        svg.innerHTML = '<path d="M8 13.5l-4-4h8l-4 4z"/>';
+                    }
+                } else {
+                    // Inactive column
+                    svg.style.opacity = '0.3';
+                    svg.innerHTML = '<path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>';
+                }
+            });
         }
     </script>
     
