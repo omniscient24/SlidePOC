@@ -370,6 +370,28 @@
             font-size: 12px;
             border-radius: 4px;
             cursor: pointer;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .modal-filter-dropdown .btn-clear {
+            background: white;
+            color: #333;
+        }
+        
+        .modal-filter-dropdown .btn-clear:hover {
+            background: #f5f5f5;
+            border-color: #40a9ff;
+        }
+        
+        .modal-filter-dropdown .btn-apply {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+        
+        .modal-filter-dropdown .btn-apply:hover {
+            background: #40a9ff;
+            border-color: #40a9ff;
         }
         
         .category-row:hover td {
@@ -1920,7 +1942,7 @@
                                                         // Don't add sort functionality to Id column
                                                         const isSortable = key.toLowerCase() !== 'id';
                                                         const sortableClass = isSortable ? 'sortable-column' : '';
-                                                        const sortClick = isSortable ? `onclick="sortModalTable('${key.replace(/'/g, "\\'")}')"` : '';
+                                                        const sortClick = isSortable ? `onclick="event.target.closest('.modal-filter-icon') ? event.stopPropagation() : sortModalTable('${key.replace(/'/g, "\\'")}')"` : '';
                                                         
                                                         // Check if this column should have a filter
                                                         const filterableColumns = ['Type', 'Family', 'IsActive', 'IsRequired', 'DataType', 'IsDefault', 'Status'];
@@ -4119,7 +4141,15 @@
         function updateModalFilter(column, value, checked) {
             const data = window.currentModalData;
             if (!data.activeFilters[column]) {
-                data.activeFilters[column] = [];
+                // Initialize with all values if this is the first time
+                const uniqueValues = new Set();
+                data.originalData.forEach(row => {
+                    const val = row[column];
+                    if (val !== null && val !== undefined) {
+                        uniqueValues.add(String(val));
+                    }
+                });
+                data.activeFilters[column] = Array.from(uniqueValues);
             }
             
             if (checked) {
@@ -4142,14 +4172,22 @@
         
         // Toggle all modal filters
         function toggleAllModalFilters(column, checked) {
+            const data = window.currentModalData;
             const dropdown = document.querySelector('.modal-filter-dropdown.active');
             if (!dropdown) return;
+            
+            if (checked) {
+                // When checking all, remove the filter (show all values)
+                delete data.activeFilters[column];
+            } else {
+                // When unchecking all, set empty array (hide all values)
+                data.activeFilters[column] = [];
+            }
             
             const checkboxes = dropdown.querySelectorAll('.filter-option input[type="checkbox"]');
             checkboxes.forEach((cb, index) => {
                 if (index > 0) { // Skip the "Select All" checkbox
                     cb.checked = checked;
-                    updateModalFilter(column, cb.value, checked);
                 }
             });
         }
@@ -4173,7 +4211,10 @@
             // Filter data based on active filters
             data.filteredData = data.originalData.filter(row => {
                 for (const [column, allowedValues] of Object.entries(data.activeFilters)) {
-                    if (allowedValues.length === 0) continue;
+                    // If no allowed values, hide all rows for this filter
+                    if (allowedValues.length === 0) {
+                        return false;
+                    }
                     
                     const value = String(row[column] || '');
                     if (!allowedValues.includes(value)) {
@@ -4212,10 +4253,23 @@
                 tbody.innerHTML = renderModalTableBody(data.sortedData, data.apiName);
             }
             
-            // Update filter icons
+            // Update filter icons - only show active if filter is actually filtering
             document.querySelectorAll('.modal-filter-icon').forEach(icon => {
                 const column = icon.getAttribute('data-column');
-                if (data.activeFilters[column] && data.activeFilters[column].length > 0) {
+                const hasFilter = data.activeFilters[column] && data.activeFilters[column].length > 0;
+                
+                // Check if this filter is actually filtering (not showing all values)
+                const uniqueValues = new Set();
+                data.originalData.forEach(row => {
+                    const val = row[column];
+                    if (val !== null && val !== undefined) {
+                        uniqueValues.add(String(val));
+                    }
+                });
+                const allValuesCount = uniqueValues.size;
+                const isFiltering = hasFilter && data.activeFilters[column].length < allValuesCount;
+                
+                if (isFiltering) {
                     icon.classList.add('active');
                 } else {
                     icon.classList.remove('active');
