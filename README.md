@@ -108,18 +108,30 @@ The View modals in the Data Management page now include:
 
 ### Data Management Delete Functionality
 
-The Data Management page now supports bulk record deletion with the following features:
+The Data Management page now supports advanced bulk record deletion with comprehensive dependency management:
 
 - **Bulk Selection**: Select multiple records using checkboxes in View modals
 - **Delete Records Button**: Dynamic button showing count of selected records
-- **Dependency Checking**: Automatic detection of related records that would block deletion
-- **Cascade Delete**: Option to delete records along with their dependencies when needed
-- **Modal-Based Error Handling**: All errors displayed in formatted modal dialogs with:
+- **Smart Dependency Checking**: Automatic detection of related records that would block deletion
+- **Hierarchical Dependency Visualization**:
+  - Interactive tree-view showing all related records
+  - Drill-down capability to explore nested dependencies
+  - Record counts and details for each relationship level
+  - Expand/collapse controls for managing complex dependency chains
+- **Advanced Cascade Delete**:
+  - Visual preview of all records that will be deleted
+  - Transaction-based deletion with automatic rollback on errors
+  - Progress tracking for multi-record cascade operations
+  - Intelligent deletion ordering based on object relationships
+- **Enhanced Modal-Based Error Handling**:
+  - All errors displayed in formatted modal dialogs
   - Clear error descriptions in plain English
-  - Suggested solutions for common issues
-  - Related record listings for dependency errors
+  - Context-aware suggested solutions
+  - Detailed dependency information with record names and relationships
+  - No toast notifications - all feedback through consistent modal interface
 - **Excel Synchronization**: Automatic Excel file updates after successful deletions
 - **View Refresh**: Automatic view refresh to show updated data after operations
+- **Configurable Object Display**: Custom fields shown per object type for better context
 
 ### Salesforce Data Synchronization
 

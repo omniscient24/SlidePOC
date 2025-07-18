@@ -547,12 +547,14 @@ a:hover {
 .modal-content {
     background: var(--white);
     border-radius: var(--border-radius-lg);
-    min-width: 1645px;
-    max-width: min(95vw, 2240px);
-    width: fit-content;
-    max-height: 90vh;
-    overflow: auto;
+    min-width: 600px;
+    max-width: 800px;
+    width: 90vw;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
     box-shadow: var(--shadow-lg);
+    z-index: 1001;
 }
 
 .modal-header {
@@ -563,10 +565,59 @@ a:hover {
     font-size: var(--font-size-lg);
     font-weight: 600;
     border-radius: var(--border-radius) var(--border-radius) 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.modal-header .close-button {
+    background: none;
+    border: none;
+    color: var(--white);
+    font-size: 24px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-header .close-button:hover {
+    opacity: 1;
 }
 
 .modal-body {
     padding: var(--space-lg) var(--space-xl);
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Wide modal for tables and data views */
+.modal-content.modal-wide {
+    min-width: 1200px;
+    max-width: min(95vw, 1600px);
+    width: fit-content;
+}
+
+/* Upload modal specific styles */
+.modal-content.modal-upload {
+    min-width: 600px;
+    max-width: 700px;
+}
+
+/* Ensure upload zones are properly visible in modals */
+.modal-body .upload-zone {
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: var(--space-md) 0;
 }
 
 /* Ensure tables in modals have proper scrolling */

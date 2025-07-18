@@ -48,11 +48,30 @@ This will present you with options:
 - **Sync Data**: Pull latest data from Salesforce to Excel files
 - **Excel Integration**: Direct Excel file opening at specific sheets
 
+### Enhanced Delete Functionality
+- **Bulk Selection**: Select multiple records using checkboxes in View modals
+- **Smart Dependency Detection**: Automatically identifies related records that would block deletion
+- **Hierarchical Dependency Visualization**: 
+  - Tree-view display of all related records
+  - Drill-down capability to explore nested dependencies
+  - Shows record counts and details for each relationship
+  - Interactive expand/collapse for complex dependency chains
+- **Cascade Delete Options**:
+  - Choose to delete parent records with all their dependencies
+  - Visual confirmation showing all records that will be deleted
+  - Transaction-based deletion with automatic rollback on errors
+  - Progress tracking for multi-record deletions
+- **Dependency Details Display**:
+  - Configurable fields shown per object type
+  - Related record names, types, and key attributes
+  - Clear parent-child relationship indicators
+
 ### Enhanced Error Handling
 - **Modal Dialogs**: All errors displayed in user-friendly modal windows
 - **Plain English Messages**: Technical errors translated to understandable language
 - **Suggested Solutions**: Context-aware recommendations for resolving issues
-- **Dependency Visualization**: Clear display of related records blocking operations
+- **Dependency Visualization**: Hierarchical display of related records blocking operations
+- **No Toast Notifications**: All feedback through modal dialogs for consistency
 
 ### Advantages
 - No installation required (runs in browser)

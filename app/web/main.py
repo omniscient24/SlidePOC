@@ -11,6 +11,7 @@ import json
 import threading
 import os
 import sys
+import time
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
 
@@ -2651,6 +2652,7 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 print(f"[DELETE] Received delete request for {object_name} with {len(record_ids)} records")
                 print(f"[DELETE] Record IDs: {record_ids}")
+                print(f"[DELETE] Cascade delete: {cascade_delete}")
                 
                 # Validate record IDs
                 valid_record_ids = [rid for rid in record_ids if rid and rid != 'undefined' and rid != 'null']
@@ -2692,7 +2694,152 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                     # Use Salesforce CLI command
                     CLI_COMMAND = 'sf'
                     
-                    for record_id in record_ids:
+                    # Define object relationships for cascade delete
+                    cascade_relationships = {
+                        'ProductCatalog': [
+                            {'object': 'ProductCategory', 'field': 'CatalogId', 'deleteFirst': True}
+                        ],
+                        'ProductCategory': [
+                            {'object': 'ProductCategoryProduct', 'field': 'ProductCategoryId', 'deleteFirst': True}
+                        ],
+                        'Product2': [
+                            {'object': 'ProductAttributeDefinition', 'field': 'ProductId', 'deleteFirst': True},
+                            {'object': 'PricebookEntry', 'field': 'Product2Id', 'deleteFirst': True},
+                            {'object': 'ProductCategoryProduct', 'field': 'ProductId', 'deleteFirst': True}
+                        ],
+                        'AttributeDefinition': [
+                            {'object': 'ProductAttributeDefinition', 'field': 'AttributeDefinitionId', 'deleteFirst': True},
+                            {'object': 'AttributePicklistValue', 'field': 'AttributeDefinitionId', 'deleteFirst': True}
+                        ],
+                        'AttributePicklist': [
+                            {'object': 'AttributePicklistValue', 'field': 'AttributePicklistId', 'deleteFirst': True}
+                        ],
+                        'Pricebook2': [
+                            {'object': 'PricebookEntry', 'field': 'Pricebook2Id', 'deleteFirst': True}
+                        ],
+                        'ProductClassification': [
+                            {'object': 'Product2', 'field': 'ProductClassificationId', 'deleteFirst': True},
+                            {'object': 'ProductClassificationAttr', 'field': 'ProductClassificationId', 'deleteFirst': True}
+                        ]
+                    }
+                    
+                    # If cascade delete is enabled, handle related records first
+                    if cascade_delete and object_name in cascade_relationships:
+                        print(f"[DELETE] Processing cascade delete for {object_name}")
+                        cascade_errors = []
+                        cascade_deleted = []
+                        
+                        # Track deletion order for potential rollback
+                        deletion_log = []
+                        
+                        for rel in cascade_relationships[object_name]:
+                            if not rel.get('deleteFirst', True):
+                                continue
+                                
+                            rel_object = rel['object']
+                            rel_field = rel['field']
+                            
+                            for record_id in valid_record_ids:
+                                # Query for related records
+                                query = f"SELECT Id FROM {rel_object} WHERE {rel_field} = '{record_id}'"
+                                cmd = [
+                                    CLI_COMMAND, 'data', 'query',
+                                    '--query', query,
+                                    '--target-org', connection_alias,
+                                    '--json'
+                                ]
+                                
+                                print(f"[DELETE] Checking related {rel_object} records")
+                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                                
+                                if result.returncode == 0:
+                                    try:
+                                        data = json.loads(result.stdout)
+                                        if 'result' in data and 'records' in data['result']:
+                                            related_records = data['result']['records']
+                                            
+                                            # Delete each related record
+                                            for related in related_records:
+                                                related_id = related['Id']
+                                                del_cmd = [
+                                                    CLI_COMMAND, 'data', 'delete', 'record',
+                                                    '--sobject', rel_object,
+                                                    '--record-id', related_id,
+                                                    '--target-org', connection_alias,
+                                                    '--json'
+                                                ]
+                                                
+                                                print(f"[DELETE] Deleting related {rel_object} record: {related_id}")
+                                                del_result = subprocess.run(del_cmd, capture_output=True, text=True, timeout=30)
+                                                
+                                                if del_result.returncode == 0:
+                                                    cascade_deleted.append({
+                                                        'object': rel_object,
+                                                        'recordId': related_id,
+                                                        'parentId': record_id
+                                                    })
+                                                    deletion_log.append({
+                                                        'timestamp': time.time(),
+                                                        'object': rel_object,
+                                                        'recordId': related_id,
+                                                        'success': True
+                                                    })
+                                                else:
+                                                    try:
+                                                        error_data = json.loads(del_result.stdout)
+                                                        error_msg = error_data.get('message', 'Unknown error')
+                                                    except:
+                                                        error_msg = del_result.stderr or 'Failed to delete related record'
+                                                    
+                                                    cascade_errors.append({
+                                                        'object': rel_object,
+                                                        'recordId': related_id,
+                                                        'error': error_msg
+                                                    })
+                                                    
+                                                    # If cascade delete fails, stop the process
+                                                    print(f"[DELETE] Cascade delete failed for {rel_object} record {related_id}: {error_msg}")
+                                                    print(f"[DELETE] Stopping cascade delete process to prevent partial deletion")
+                                                    
+                                                    # Add all parent records to errors to prevent their deletion
+                                                    errors.append({
+                                                        'recordId': record_id,
+                                                        'message': f'Cascade delete failed: Could not delete related {rel_object} record ({related_id}). {error_msg}',
+                                                        'solution': 'Fix the issue with the related record and try again, or delete it manually first.'
+                                                    })
+                                                    
+                                                    # Skip remaining deletions for this parent record
+                                                    break
+                                    except:
+                                        pass
+                        
+                        # Log cascade results
+                        if cascade_deleted:
+                            print(f"[DELETE] Cascade deleted {len(cascade_deleted)} related records")
+                        if cascade_errors:
+                            print(f"[DELETE] Failed to cascade delete {len(cascade_errors)} related records")
+                            # Add cascade errors to main errors list
+                            for ce in cascade_errors:
+                                errors.append({
+                                    'recordId': ce['recordId'],
+                                    'message': f"Failed to delete related {ce['object']} record: {ce['error']}",
+                                    'solution': 'Check permissions or try deleting this record manually'
+                                })
+                    
+                    # Now proceed with main record deletion
+                    # Skip records that had cascade delete failures
+                    failed_parent_ids = set()
+                    if cascade_delete and cascade_errors:
+                        # Extract parent IDs from errors
+                        for err in errors:
+                            if 'Cascade delete failed' in err.get('message', ''):
+                                failed_parent_ids.add(err['recordId'])
+                    
+                    for record_id in valid_record_ids:
+                        # Skip if this record had cascade delete failures
+                        if record_id in failed_parent_ids:
+                            print(f"[DELETE] Skipping deletion of {record_id} due to cascade delete failures")
+                            continue
                         try:
                             print(f"[DELETE] Deleting record {record_id} from {object_name}")
                             
@@ -2811,6 +2958,11 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                         'deletedCount': deleted_count,
                         'errors': errors
                     }
+                    
+                    # Add cascade delete info if applicable
+                    if cascade_delete and 'cascade_deleted' in locals():
+                        response['cascadeDeleted'] = cascade_deleted
+                        response['cascadeDeletedCount'] = len(cascade_deleted)
             
             except Exception as e:
                 response = {
@@ -2851,6 +3003,10 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                     ],
                     'ProductCategory': [
                         {'object': 'ProductCategoryProduct', 'field': 'ProductCategoryId'}
+                    ],
+                    'ProductClassification': [
+                        {'object': 'Product2', 'field': 'ProductClassificationId'},
+                        {'object': 'ProductClassificationAttr', 'field': 'ProductClassificationId'}
                     ]
                 }
                 
@@ -2865,9 +3021,22 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                         rel_object = rel['object']
                         rel_field = rel['field']
                         
+                        # Define fields to query for each object type
+                        object_fields = {
+                            'Product2': 'Id, Name, ProductCode, IsActive, Family',
+                            'ProductAttributeDefinition': 'Id, AttributeDefinitionId, ProductId, Sequence',
+                            'PricebookEntry': 'Id, Product2Id, Pricebook2Id, UnitPrice, IsActive',
+                            'ProductCategoryProduct': 'Id, ProductId, ProductCategoryId',
+                            'ProductCategory': 'Id, Name, Description',
+                            'AttributePicklistValue': 'Id, AttributeDefinitionId, AttributePicklistId, Name, Code'
+                        }
+                        
+                        # Get fields for this related object
+                        fields = object_fields.get(rel_object, 'Id, Name')
+                        
                         # Query for related records
                         for record_id in record_ids:
-                            query = f"SELECT Id, Name FROM {rel_object} WHERE {rel_field} = '{record_id}'"
+                            query = f"SELECT {fields} FROM {rel_object} WHERE {rel_field} = '{record_id}'"
                             cmd = [
                                 CLI_COMMAND, 'data', 'query',
                                 '--query', query,
@@ -2875,6 +3044,7 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                                 '--json'
                             ]
                             
+                            print(f"[CHECK-DEPS] Query: {query}")
                             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
                             
                             if result.returncode == 0:
@@ -2882,11 +3052,19 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                                     data = json.loads(result.stdout)
                                     if 'result' in data and 'records' in data['result']:
                                         records = data['result']['records']
+                                        print(f"[CHECK-DEPS] Found {len(records)} {rel_object} records")
                                         if records:
+                                            # Remove attributes field
+                                            for rec in records:
+                                                if 'attributes' in rec:
+                                                    del rec['attributes']
+                                            
                                             related_records.append({
                                                 'objectName': rel_object,
+                                                'parentId': record_id,
                                                 'count': len(records),
-                                                'records': records[:5]  # Show first 5
+                                                'records': records,  # Return all records
+                                                'hasMore': False  # We'll implement pagination if needed
                                             })
                                 except:
                                     pass
@@ -2901,6 +3079,104 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                 response = {
                     'hasRelatedRecords': False,
                     'relatedRecords': [],
+                    'error': str(e)
+                }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        elif self.path == '/api/objects/check-deep-dependencies':
+            # Check for dependencies of a specific record (drill-down)
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            object_name = data.get('objectName')
+            record_id = data.get('recordId')
+            
+            try:
+                print(f"[CHECK-DEEP-DEPS] Checking deep dependencies for {object_name} record: {record_id}")
+                
+                # Same relationships as above
+                relationships = {
+                    'Product2': [
+                        {'object': 'ProductAttributeDefinition', 'field': 'ProductId'},
+                        {'object': 'PricebookEntry', 'field': 'Product2Id'},
+                        {'object': 'ProductCategoryProduct', 'field': 'ProductId'}
+                    ],
+                    'ProductCategory': [
+                        {'object': 'ProductCategoryProduct', 'field': 'ProductCategoryId'}
+                    ],
+                    'ProductCategoryProduct': [
+                        {'object': 'Product2', 'field': 'Id', 'lookupField': 'ProductId'},
+                        {'object': 'ProductCategory', 'field': 'Id', 'lookupField': 'ProductCategoryId'}
+                    ],
+                    'ProductClassification': [
+                        {'object': 'Product2', 'field': 'ProductClassificationId'},
+                        {'object': 'ProductClassificationAttr', 'field': 'ProductClassificationId'}
+                    ]
+                }
+                
+                related_records = []
+                CLI_COMMAND = 'sf'
+                connection_alias = 'fortradp2'
+                
+                if object_name in relationships:
+                    for rel in relationships[object_name]:
+                        rel_object = rel['object']
+                        rel_field = rel['field']
+                        lookup_field = rel.get('lookupField', rel_field)
+                        
+                        # Define fields to query
+                        object_fields = {
+                            'Product2': 'Id, Name, ProductCode, IsActive, Family',
+                            'ProductAttributeDefinition': 'Id, AttributeDefinitionId, ProductId, Sequence',
+                            'PricebookEntry': 'Id, Product2Id, Pricebook2Id, UnitPrice, IsActive',
+                            'ProductCategoryProduct': 'Id, ProductId, ProductCategoryId',
+                            'ProductCategory': 'Id, Name, Description'
+                        }
+                        
+                        fields = object_fields.get(rel_object, 'Id, Name')
+                        query = f"SELECT {fields} FROM {rel_object} WHERE {lookup_field} = '{record_id}'"
+                        
+                        cmd = [
+                            CLI_COMMAND, 'data', 'query',
+                            '--query', query,
+                            '--target-org', connection_alias,
+                            '--json'
+                        ]
+                        
+                        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                        
+                        if result.returncode == 0:
+                            try:
+                                data = json.loads(result.stdout)
+                                if 'result' in data and 'records' in data['result']:
+                                    records = data['result']['records']
+                                    if records:
+                                        for rec in records:
+                                            if 'attributes' in rec:
+                                                del rec['attributes']
+                                        
+                                        related_records.append({
+                                            'objectName': rel_object,
+                                            'parentId': record_id,
+                                            'count': len(records),
+                                            'records': records
+                                        })
+                            except:
+                                pass
+                
+                response = {
+                    'hasRelatedRecords': len(related_records) > 0,
+                    'relatedRecords': related_records
+                }
+                
+            except Exception as e:
+                response = {
+                    'hasRelatedRecords': False,
                     'error': str(e)
                 }
             
@@ -2959,11 +3235,70 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                         'Product2': 'Id, Name, ProductCode, StockKeepingUnit, Description, IsActive, Family, AvailabilityDate, BasedOnId, IsAssetizable, ConfigureDuringSale, QuantityUnitOfMeasure, UnitOfMeasureId, HelpText, IsSoldOnlyWithOtherProds, TaxPolicyId, DiscontinuedDate, EndOfLifeDate',
                         'ProductClassification': 'Id, Name, Code, Status',
                         'AttributeDefinition': 'Id, Name, Label, Description, IsActive, IsRequired, DefaultValue, Code, PicklistId, DefaultHelpText, ValueDescription, SourceSystemIdentifier',
+                        'AttributeCategory': 'Id, Name, Code, Description',
+                        'TaxEngine': 'Id, TaxEngineName',  # TaxEngine uses TaxEngineName instead of Name
+                        'TaxPolicy': 'Id, Name',
+                        'TaxTreatment': 'Id, Name',
+                        'LegalEntity': 'Id, Name',
+                        'BillingPolicy': 'Id, Name',
+                        'BillingTreatment': 'Id, Name',
+                        'CostBook': 'Id, Name',
+                        'Pricebook2': 'Id, Name, IsActive, Description',
+                        'PricebookEntry': 'Id, Pricebook2Id, Product2Id, UnitPrice, IsActive, UseStandardPrice, ProductSellingModelId',
                         # Add more as needed
                     }
                     
                     # Get fields for this object or use a basic set
-                    fields = field_mappings.get(object_name, 'Id, Name')
+                    fields = field_mappings.get(object_name)
+                    
+                    # If no field mapping exists, try to discover fields dynamically
+                    if not fields:
+                        print(f"[SYNC] No field mapping for {object_name}, attempting field discovery")
+                        
+                        # Try to describe the object to get field names
+                        describe_cmd = [
+                            CLI_COMMAND, 'sobject', 'describe',
+                            '--sobject', object_name,
+                            '--target-org', connection_alias,
+                            '--json'
+                        ]
+                        
+                        describe_result = subprocess.run(describe_cmd, capture_output=True, text=True, timeout=30)
+                        
+                        if describe_result.returncode == 0:
+                            try:
+                                describe_data = json.loads(describe_result.stdout)
+                                if 'result' in describe_data and 'fields' in describe_data['result']:
+                                    # Get common fields that are likely to exist
+                                    available_fields = []
+                                    field_names = [f['name'] for f in describe_data['result']['fields']]
+                                    
+                                    # Priority list of fields to include
+                                    priority_fields = ['Id', 'Name', 'Code', 'Description', 'IsActive', 
+                                                     'CreatedDate', 'LastModifiedDate']
+                                    
+                                    # Add fields in priority order if they exist
+                                    for field in priority_fields:
+                                        if field in field_names:
+                                            available_fields.append(field)
+                                    
+                                    # If no Name field, look for alternatives
+                                    if 'Name' not in available_fields:
+                                        name_alternatives = [f for f in field_names if 'Name' in f]
+                                        if name_alternatives:
+                                            available_fields.extend(name_alternatives[:2])  # Add up to 2 name-like fields
+                                    
+                                    if available_fields:
+                                        fields = ', '.join(available_fields)
+                                        print(f"[SYNC] Discovered fields for {object_name}: {fields}")
+                                    else:
+                                        fields = 'Id'  # Fallback to just Id
+                                else:
+                                    fields = 'Id, Name'  # Default fallback
+                            except:
+                                fields = 'Id, Name'  # Default fallback
+                        else:
+                            fields = 'Id, Name'  # Default fallback
                     
                     # Build query command
                     cmd = [
@@ -2987,6 +3322,15 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                                 for record in records:
                                     if 'attributes' in record:
                                         del record['attributes']
+                                    
+                                    # Normalize name fields - if there's no 'Name' field but there's a field containing 'Name', use it
+                                    if 'Name' not in record:
+                                        # Look for fields containing 'Name'
+                                        name_fields = [k for k in record.keys() if 'Name' in k and k != 'Id']
+                                        if name_fields:
+                                            # Use the first name-like field as 'Name'
+                                            record['Name'] = record.get(name_fields[0], '')
+                                            print(f"[SYNC] Normalized {name_fields[0]} to Name for {object_name}")
                                 
                                 print(f"[SYNC] Retrieved {len(records)} records from Salesforce")
                                 

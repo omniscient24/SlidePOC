@@ -15,16 +15,26 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from app.services.connection_manager import connection_manager
 from app.services.session_manager import session_manager
 from app.services.file_upload_service import file_upload_service
-from config.settings.app_config import HOST, PORT, TEMPLATES_ROOT, STATIC_ROOT
+from app.services.sync_service import sync_service
+from app.services.upload_service import upload_service
+from app.services.sync_status_service import sync_status_service
+from config.settings.app_config import HOST, PORT, TEMPLATES_ROOT, STATIC_ROOT, DATA_ROOT
 
 class SimpleHandler(BaseHTTPRequestHandler):
     """Simple request handler without complex inheritance"""
+    
+    def log_message(self, format, *args):
+        """Override to add timestamp to logs"""
+        import datetime
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{timestamp}] {format % args}")
     
     def do_GET(self):
         """Handle GET requests"""
         path = urlparse(self.path).path
         
         try:
+            print(f"[DEBUG] GET request for: {path}")
             # Route handling
             if path == '/login':
                 self.serve_login_page()
@@ -33,7 +43,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
             elif path == '/api/session':
                 self.handle_get_session()
             elif path.startswith('/api/workbook/'):
-                if path.startswith('/api/workbook/view'):
+                if path.startswith('/api/workbook/export'):
+                    self.handle_export_workbook()
+                elif path.startswith('/api/workbook/view'):
                     self.handle_view_workbook()
                 elif path.startswith('/api/workbook/download'):
                     self.handle_download_workbook()
@@ -55,11 +67,15 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     self.redirect('/login')
             elif path == '/data-management':
                 # Check auth for data management
+                print("[DEBUG] Checking auth for data-management page")
                 cookie = self.headers.get('Cookie', '')
                 session_id = session_manager.get_session_cookie(cookie)
+                print(f"[DEBUG] Session ID: {session_id}")
                 if session_id and session_manager.is_session_valid(session_id):
+                    print("[DEBUG] Session valid, serving data-management page")
                     self.serve_data_management_page()
                 else:
+                    print("[DEBUG] No valid session, redirecting to login")
                     self.redirect('/login')
             elif path == '/connections':
                 # Check auth for connections page
@@ -67,6 +83,14 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 session_id = session_manager.get_session_cookie(cookie)
                 if session_id and session_manager.is_session_valid(session_id):
                     self.serve_connections_page()
+                else:
+                    self.redirect('/login')
+            elif path == '/sync':
+                # Check auth for sync page
+                cookie = self.headers.get('Cookie', '')
+                session_id = session_manager.get_session_cookie(cookie)
+                if session_id and session_manager.is_session_valid(session_id):
+                    self.serve_sync_page()
                 else:
                     self.redirect('/login')
             else:
@@ -88,6 +112,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 self.handle_file_upload()
             elif path == '/api/sync':
                 self.handle_sync()
+            elif path == '/api/sync-status':
+                self.handle_sync_status()
             elif path == '/api/logout':
                 self.handle_logout()
             elif path.startswith('/api/connections/'):
@@ -214,6 +240,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
             session = session_manager.get_session(session_id)
             connection_manager.set_active_connection(session, connection_id)
             
+            # Save the updated session back
+            session_manager.update_session(session_id, session)
+            
             # Send response with session cookie
             response = {
                 'success': True,
@@ -294,17 +323,26 @@ class SimpleHandler(BaseHTTPRequestHandler):
     def serve_data_management_page(self):
         """Serve the data management page"""
         try:
+            print("[DEBUG] serve_data_management_page called")
             file_path = TEMPLATES_ROOT / 'data-management.html'
+            print(f"[DEBUG] Looking for template at: {file_path}")
+            print(f"[DEBUG] File exists: {file_path.exists()}")
+            
             with open(file_path, 'rb') as f:
                 content = f.read()
+            
+            print(f"[DEBUG] Read {len(content)} bytes from template")
             
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.send_header('Content-Length', len(content))
             self.end_headers()
             self.wfile.write(content)
+            print("[DEBUG] Successfully served data-management page")
         except Exception as e:
-            print(f"Error serving data management page: {e}")
+            print(f"[ERROR] Error serving data management page: {e}")
+            import traceback
+            traceback.print_exc()
             self.send_error(500)
     
     def serve_connections_page(self):
@@ -323,11 +361,29 @@ class SimpleHandler(BaseHTTPRequestHandler):
             print(f"Error serving connections page: {e}")
             self.send_error(500)
     
+    def serve_sync_page(self):
+        """Serve the sync management page"""
+        try:
+            # Read the main.py file to get the SYNC_PAGE_HTML
+            from app.web.main import SYNC_PAGE_HTML
+            content = SYNC_PAGE_HTML.encode()
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            print(f"Error serving sync page: {e}")
+            self.send_error(500)
+    
     def handle_get_session(self):
         """Get current session info"""
         try:
+            print("[DEBUG] handle_get_session called")
             cookie = self.headers.get('Cookie', '')
             session_id = session_manager.get_session_cookie(cookie)
+            print(f"[DEBUG] Session cookie extracted: {session_id}")
             
             if session_id:
                 session = session_manager.get_session(session_id)
@@ -392,64 +448,174 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 environ=environ
             )
             
-            # Get file and form fields
-            if 'file' not in form:
+            # Check if using workbook
+            use_workbook = form.getvalue('useWorkbook', 'false') == 'true'
+            
+            if use_workbook:
+                # Use the workbook file directly
+                workbook_path = form.getvalue('workbookPath', '')
+                if not workbook_path:
+                    workbook_path = str(DATA_ROOT / 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+                
+                # Get form fields
+                object_name = form.getvalue('object', '')
+                operation = form.getvalue('operation', 'upsert')
+                external_id = form.getvalue('externalId', '')
+                
+                if not object_name:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Object name required'
+                    })
+                    return
+                
+                # Use the workbook directly
+                saved_file_path = workbook_path
+                
+            else:
+                # Get file and form fields
+                if 'file' not in form:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'No file provided'
+                    })
+                    return
+                
+                file_item = form['file']
+                if not file_item.filename:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'No file selected'
+                    })
+                    return
+                
+                # Get other form fields
+                object_name = form.getvalue('object', '')
+                operation = form.getvalue('operation', 'upsert')
+                external_id = form.getvalue('externalId', '')
+            
+                if not object_name:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Object name required'
+                    })
+                    return
+                
+                # Read file data
+                file_data = file_item.file.read()
+                filename = file_item.filename
+                
+                # Validate file
+                valid, error = file_upload_service.validate_file(filename, len(file_data))
+                if not valid:
+                    self.send_json_response({
+                        'success': False,
+                        'error': error
+                    })
+                    return
+                
+                # Save and process file
+                success, result = file_upload_service.save_upload(
+                    file_data, filename, object_name, session_id
+                )
+                
+                if not success:
+                    self.send_json_response({
+                        'success': False,
+                        'error': result.get('error', 'Upload failed')
+                    })
+                    return
+                
+                # Get the saved file path
+                saved_file_path = result['file_path']
+            
+            # Get session data to get connection alias
+            session_data = session_manager.get_session(session_id)
+            print(f"[DEBUG] Session data: {session_data}")
+            
+            if not session_data:
                 self.send_json_response({
                     'success': False,
-                    'error': 'No file provided'
+                    'error': 'No session data found'
+                })
+                return
+                
+            if 'active_connection_alias' not in session_data:
+                print(f"[DEBUG] Session keys: {list(session_data.keys())}")
+                self.send_json_response({
+                    'success': False,
+                    'error': 'No active connection alias in session'
                 })
                 return
             
-            file_item = form['file']
-            if not file_item.filename:
-                self.send_json_response({
-                    'success': False,
-                    'error': 'No file selected'
-                })
-                return
+            connection_alias = session_data['active_connection_alias']
+            print(f"[DEBUG] Connection alias: {connection_alias}")
             
-            # Get other form fields
-            object_name = form.getvalue('object', '')
-            operation = form.getvalue('operation', 'upsert')
-            external_id = form.getvalue('externalId', '')
-            
-            if not object_name:
-                self.send_json_response({
-                    'success': False,
-                    'error': 'Object name required'
-                })
-                return
-            
-            # Read file data
-            file_data = file_item.file.read()
-            filename = file_item.filename
-            
-            # Validate file
-            valid, error = file_upload_service.validate_file(filename, len(file_data))
-            if not valid:
-                self.send_json_response({
-                    'success': False,
-                    'error': error
-                })
-                return
-            
-            # Save and process file
-            success, result = file_upload_service.save_upload(
-                file_data, filename, object_name, session_id
+            # Upload to Salesforce and update workbook with results
+            upload_success, upload_result = upload_service.upload_to_salesforce(
+                saved_file_path,
+                object_name,
+                operation,
+                external_id,
+                connection_alias
             )
             
-            if success:
-                self.send_json_response({
-                    'success': True,
-                    'message': f'File uploaded successfully',
-                    'recordCount': result['metadata']['record_count'],
-                    'file_path': result['file_path'],
-                    'preview': result['preview']
-                })
+            # Check if this is a partial success (some records succeeded, some failed)
+            is_partial_success = (not upload_success and 
+                                upload_result.get('partial_success') and 
+                                upload_result.get('records_processed', 0) > upload_result.get('records_failed', 0))
+            
+            if upload_success or is_partial_success:
+                # Update sync status
+                records_processed = upload_result.get('records_processed', 0)
+                records_failed = upload_result.get('records_failed', 0)
+                upload_message = upload_result.get('message', 'Upload completed successfully')
+                
+                sync_status_service.update_upload_status(
+                    object_name=object_name,
+                    upload_success=upload_success,
+                    records_processed=records_processed,
+                    records_failed=records_failed,
+                    upload_message=upload_message
+                )
+                
+                # Handle workbook vs file upload responses
+                if use_workbook:
+                    response_data = {
+                        'success': True,
+                        'message': upload_result.get('message', 'Upload completed successfully'),
+                        'recordCount': upload_result.get('records_processed', 0),
+                        'file_path': saved_file_path,
+                        'preview': None,  # No preview for workbook
+                        'salesforce_result': upload_result
+                    }
+                else:
+                    # Combine results from file save and Salesforce upload
+                    response_data = {
+                        'success': True,
+                        'message': upload_result.get('message', 'Upload completed successfully'),
+                        'recordCount': result['metadata']['record_count'],
+                        'file_path': result['file_path'],
+                        'preview': result['preview'],
+                        'salesforce_result': upload_result
+                    }
+                
+                # Add specific fields based on operation type
+                if operation == 'upsert':
+                    response_data['records_processed'] = upload_result.get('records_processed', 0)
+                    response_data['records_failed'] = upload_result.get('records_failed', 0)
+                    response_data['records_created'] = upload_result.get('records_created', 0)
+                    
+                    # Add failure details if available
+                    if 'failure_details' in upload_result:
+                        response_data['failure_details'] = upload_result['failure_details']
+                
+                self.send_json_response(response_data)
             else:
                 self.send_json_response({
                     'success': False,
-                    'error': result.get('error', 'Upload failed')
+                    'error': upload_result.get('error', 'Salesforce upload failed'),
+                    'details': upload_result.get('details', '')
                 })
             
         except Exception as e:
@@ -462,6 +628,33 @@ class SimpleHandler(BaseHTTPRequestHandler):
     def handle_sync(self):
         """Handle data sync request"""
         try:
+            # Get session to retrieve connection info
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Authentication required'
+                })
+                return
+            
+            session = session_manager.get_session(session_id)
+            if not session:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Invalid session'
+                })
+                return
+            
+            # Get active connection
+            connection = connection_manager.get_active_connection(session)
+            if not connection:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'No active connection'
+                })
+                return
+            
             # Read request body
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length)
@@ -475,19 +668,78 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 })
                 return
             
-            # For now, return a placeholder response
-            # TODO: Implement actual sync functionality
-            job_id = str(uuid.uuid4())
+            # Get connection alias
+            connection_alias = connection.get('cli_alias')
             
-            self.send_json_response({
-                'success': True,
-                'jobId': job_id,
-                'message': f'Sync started for {len(objects)} objects'
-            })
+            # Perform sync using sync service
+            print(f"[SYNC] Starting sync for {len(objects)} objects using connection {connection_alias}")
+            success, result = sync_service.sync_objects(objects, connection_alias)
+            
+            # Update sync status for each successfully synced object
+            if 'synced' in result:
+                for synced_obj in result['synced']:
+                    object_name = synced_obj.get('object')
+                    record_count = synced_obj.get('recordCount', 0)
+                    if object_name:
+                        sync_status_service.update_sync_status(
+                            object_name=object_name,
+                            record_count=record_count,
+                            sync_success=True
+                        )
+            
+            if success:
+                self.send_json_response({
+                    'success': True,
+                    'synced': result.get('synced', []),
+                    'failed': result.get('failed', []),
+                    'message': f'Sync completed for {len(objects)} objects'
+                })
+            else:
+                self.send_json_response({
+                    'success': False,
+                    'synced': result.get('synced', []),
+                    'failed': result.get('failed', []),
+                    'error': 'Some objects failed to sync'
+                })
             
         except Exception as e:
             print(f"Error handling sync: {e}")
-            self.send_error(500)
+            self.send_json_response({
+                'success': False,
+                'error': f'Sync error: {str(e)}'
+            })
+    
+    def handle_sync_status(self):
+        """Handle sync status request"""
+        try:
+            # Get session to ensure user is authenticated
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Authentication required'
+                })
+                return
+            
+            # Get sync status
+            all_status = sync_status_service.get_all_status()
+            summary = sync_status_service.get_sync_summary()
+            
+            self.send_json_response({
+                'success': True,
+                'status': all_status,
+                'summary': summary
+            })
+            
+        except Exception as e:
+            print(f"Error handling sync status: {e}")
+            import traceback
+            traceback.print_exc()
+            self.send_json_response({
+                'success': False,
+                'error': f'Sync status error: {str(e)}'
+            })
     
     def handle_logout(self):
         """Handle logout"""
@@ -666,7 +918,14 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 'ProductRelatedComponent': '25_ProductRelatedComponent',
                 'ProductCategoryProduct': '26_ProductCategoryProduct',
                 'AttributeBasedAdjRule': '23_AttributeBasedAdjRule',
-                'AttributeBasedAdjustment': '24_AttributeBasedAdj'
+                'AttributeBasedAdjustment': '24_AttributeBasedAdj',
+                # Transaction objects
+                'Order': '27_Order',
+                'OrderItem': '28_OrderItem',
+                'Asset': '29_Asset',
+                'AssetAction': '30_AssetAction',
+                'AssetActionSource': '31_AssetActionSource',
+                'Contract': '32_Contract'
             }
             
             # Get sheet name
@@ -685,9 +944,12 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
             try:
                 # Read the specific sheet
-                print(f"Reading sheet {sheet_name} from {workbook_path}")
+                print(f"[VIEW] Reading sheet {sheet_name} from {workbook_path}")
+                print(f"[VIEW] File modified time: {os.path.getmtime(workbook_path)}")
                 df = pd.read_excel(workbook_path, sheet_name=sheet_name)
-                print(f"Successfully read {len(df)} rows")
+                print(f"[VIEW] Successfully read {len(df)} rows")
+                print(f"[VIEW] Columns: {list(df.columns[:5])}")
+                print(f"[VIEW] First ID: {df.iloc[0]['Id'] if len(df) > 0 and 'Id' in df.columns else 'No ID column'}")
                 
                 # Remove any rows that are completely empty
                 df = df.dropna(how='all')
@@ -695,14 +957,16 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 # Convert to records format
                 records = df.to_dict('records')
                 
-                # Clean up the records (remove NaN values)
+                # Clean up the records (convert NaN to None/null but keep all columns)
                 cleaned_records = []
                 for record in records:
                     cleaned_record = {}
                     for key, value in record.items():
-                        if pd.notna(value):
+                        if pd.isna(value):
+                            cleaned_record[key] = None  # Keep the key but with None value
+                        else:
                             cleaned_record[key] = value
-                    if cleaned_record:  # Only add if record has data
+                    if any(v is not None for v in cleaned_record.values()):  # Only add if record has at least one non-null value
                         cleaned_records.append(cleaned_record)
                 
                 print(f"Returning {len(cleaned_records)} cleaned records")
@@ -726,6 +990,106 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
         except Exception as e:
             print(f"Error viewing workbook: {e}")
+            self.send_error(500)
+    
+    def handle_export_workbook(self):
+        """Export workbook sheet data as Excel file for upload"""
+        try:
+            # Parse query parameters
+            from urllib.parse import parse_qs
+            query_string = self.path.split('?')[1] if '?' in self.path else ''
+            params = parse_qs(query_string)
+            
+            object_name = params.get('object', [''])[0]
+            if not object_name:
+                self.send_error(400, "Object name required")
+                return
+            
+            # Import pandas and openpyxl
+            import pandas as pd
+            from io import BytesIO
+            import os
+            
+            # Path to the main workbook
+            server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+            
+            if not os.path.exists(workbook_path):
+                self.send_error(404, "Workbook not found")
+                return
+            
+            # Map object names to sheet names (from sync_service)
+            sheet_mapping = {
+                'ProductCatalog': '11_ProductCatalog',
+                'ProductCategory': '12_ProductCategory',
+                'Product2': '13_Product2',
+                'ProductClassification': '08_ProductClassification',
+                'AttributeDefinition': '09_AttributeDefinition',
+                'AttributeCategory': '10_AttributeCategory',
+                'AttributePicklist': '14_AttributePicklist',
+                'AttributePicklistValue': '18_AttributePicklistValue',
+                'ProductAttributeDefinition': '17_ProductAttributeDef',
+                'Pricebook2': '19_Pricebook2',
+                'PricebookEntry': '20_PricebookEntry',
+                'CostBook': '01_CostBook',
+                'CostBookEntry': '15_CostBookEntry',
+                'PriceAdjustmentSchedule': '21_PriceAdjustmentSchedule',
+                'PriceAdjustmentTier': '22_PriceAdjustmentTier',
+                'LegalEntity': '02_LegalEntity',
+                'TaxEngine': '03_TaxEngine',
+                'TaxPolicy': '04_TaxPolicy',
+                'TaxTreatment': '05_TaxTreatment',
+                'BillingPolicy': '06_BillingPolicy',
+                'BillingTreatment': '07_BillingTreatment',
+                'ProductSellingModel': '15_ProductSellingModel',
+                'ProductComponentGroup': '14_ProductComponentGroup',
+                'ProductRelatedComponent': '25_ProductRelatedComponent',
+                'ProductCategoryProduct': '26_ProductCategoryProduct',
+                'AttributeBasedAdjRule': '23_AttributeBasedAdjRule',
+                'AttributeBasedAdjustment': '24_AttributeBasedAdj',
+                # Transaction objects
+                'Order': '27_Order',
+                'OrderItem': '28_OrderItem',
+                'Asset': '29_Asset',
+                'AssetAction': '30_AssetAction',
+                'AssetActionSource': '31_AssetActionSource',
+                'Contract': '32_Contract'
+            }
+            
+            sheet_name = sheet_mapping.get(object_name)
+            if not sheet_name:
+                self.send_error(400, f"No sheet mapping for {object_name}")
+                return
+            
+            try:
+                # Read the specific sheet
+                df = pd.read_excel(workbook_path, sheet_name=sheet_name)
+                
+                # Remove empty rows
+                df = df.dropna(how='all')
+                
+                # Create Excel file in memory with just this sheet's data
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, sheet_name=object_name, index=False)
+                
+                # Get the Excel data
+                excel_data = output.getvalue()
+                
+                # Send response
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                self.send_header('Content-Disposition', f'attachment; filename="{object_name}_upload_data.xlsx"')
+                self.send_header('Content-Length', len(excel_data))
+                self.end_headers()
+                self.wfile.write(excel_data)
+                
+            except Exception as e:
+                print(f"Error exporting sheet {sheet_name}: {e}")
+                self.send_error(500, f"Failed to export data: {str(e)}")
+            
+        except Exception as e:
+            print(f"Error in export workbook: {e}")
             self.send_error(500)
     
     def handle_download_workbook(self):
@@ -792,7 +1156,18 @@ class SimpleHandler(BaseHTTPRequestHandler):
     def handle_get_object_counts(self):
         """Get actual record counts from workbook"""
         try:
-            import pandas as pd
+            print("[DEBUG] handle_get_object_counts called")
+            try:
+                import pandas as pd
+                print("[DEBUG] pandas imported successfully")
+            except ImportError as e:
+                print(f"[ERROR] Failed to import pandas: {e}")
+                self.send_json_response({
+                    'success': False,
+                    'error': 'pandas not installed',
+                    'counts': {}
+                })
+                return
             import os
             
             # Path to the main workbook
@@ -833,7 +1208,14 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     'ProductRelatedComponent': '25_ProductRelatedComponent',
                     'ProductCategoryProduct': '26_ProductCategoryProduct',
                     'AttributeBasedAdjRule': '23_AttributeBasedAdjRule',
-                    'AttributeBasedAdjustment': '24_AttributeBasedAdj'
+                    'AttributeBasedAdjustment': '24_AttributeBasedAdj',
+                    # Transaction objects
+                    'Order': '27_Order',
+                    'OrderItem': '28_OrderItem',
+                    'Asset': '29_Asset',
+                    'AssetAction': '30_AssetAction',
+                    'AssetActionSource': '31_AssetActionSource',
+                    'Contract': '32_Contract'
                 }
                 
                 # Read workbook once
@@ -853,9 +1235,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
                         counts[api_name] = 0
                 
                 # Add 0 counts for objects without sheet mappings
-                # These are transaction objects that don't have upload templates
-                unmapped_objects = ['Order', 'OrderItem', 'Asset', 'AssetAction', 
-                                  'AssetActionSource', 'Contract', 'ProductSellingModelOption']
+                # ProductSellingModelOption already has a sheet, so not including it
+                unmapped_objects = []
                 for obj in unmapped_objects:
                     counts[obj] = 0
             
@@ -884,9 +1265,12 @@ def main():
 ╚══════════════════════════════════════════════════════════╝
     """)
     
+    print(f"[DEBUG] Creating HTTPServer on {HOST}:{PORT}")
     server = HTTPServer((HOST, PORT), SimpleHandler)
+    print(f"[DEBUG] Server created successfully")
     
     try:
+        print(f"[DEBUG] Starting server.serve_forever()")
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n\nShutting down server...")

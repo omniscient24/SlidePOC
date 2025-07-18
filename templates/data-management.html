@@ -2597,10 +2597,35 @@ a:hover {
                     hideLoading();
                     closeDeleteConfirmModal();
                     
+                    // Build cascade delete info if applicable
+                    let cascadeInfo = '';
+                    if (result.cascadeDeletedCount && result.cascadeDeletedCount > 0) {
+                        // Group cascade deleted records by object type
+                        const cascadeByObject = {};
+                        result.cascadeDeleted.forEach(item => {
+                            if (!cascadeByObject[item.object]) {
+                                cascadeByObject[item.object] = [];
+                            }
+                            cascadeByObject[item.object].push(item.recordId);
+                        });
+                        
+                        cascadeInfo = `
+                            <div class="alert alert-info" style="margin-top: 10px;">
+                                <strong>Cascade Delete Summary:</strong><br>
+                                Additionally deleted ${result.cascadeDeletedCount} related record(s):
+                                <ul style="margin: 5px 0 0 20px;">
+                                    ${Object.entries(cascadeByObject).map(([obj, ids]) => 
+                                        `<li><strong>${obj}</strong>: ${ids.length} record(s)</li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    
                     // Show success message
                     const successHtml = `
                         <div class="modal-overlay active" id="success-modal" style="z-index: 3000;">
-                            <div class="modal-content" style="max-width: 500px; z-index: 3001;">
+                            <div class="modal-content" style="max-width: 600px; z-index: 3001;">
                                 <div class="modal-header">
                                     <span>Success</span>
                                     <button class="close-button" onclick="document.getElementById('success-modal').remove()">×</button>
@@ -2609,6 +2634,7 @@ a:hover {
                                     <div class="alert alert-success">
                                         Successfully deleted ${result.deletedCount} record(s).
                                     </div>
+                                    ${cascadeInfo}
                                     <p style="margin-top: 10px;">The view will be refreshed to show the updated data.</p>
                                 </div>
                                 <div class="modal-footer">
@@ -2634,8 +2660,8 @@ a:hover {
             }
         }
         
-        // Show deletion errors in modal
-        function showDeleteErrors(errors, apiName) {
+        // Show deletion errors in modal with enhanced visualization
+        async function showDeleteErrors(errors, apiName) {
             // Check if errors are due to related records
             const hasRelationshipErrors = errors.some(err => 
                 err.message.includes('associated with') || 
@@ -2643,9 +2669,57 @@ a:hover {
                 err.message.includes('DELETE_FAILED')
             );
             
+            // If we have relationship errors, fetch detailed dependency information
+            let detailedDependencies = null;
+            if (hasRelationshipErrors) {
+                const recordIds = errors.map(e => e.recordId).filter(id => id);
+                console.log('Fetching dependencies for records:', recordIds);
+                
+                if (recordIds.length > 0) {
+                    try {
+                        const response = await fetch('/api/objects/check-dependencies', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                objectName: apiName,
+                                recordIds: recordIds
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Dependencies response:', data);
+                            if (data.hasRelatedRecords) {
+                                detailedDependencies = data.relatedRecords;
+                                console.log('Found detailed dependencies:', detailedDependencies);
+                            }
+                        } else {
+                            console.error('Failed to fetch dependencies, status:', response.status);
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch detailed dependencies:', e);
+                    }
+                }
+            }
+            
+            // Create dependency tree HTML
+            let dependencyTreeHtml = '';
+            if (detailedDependencies) {
+                dependencyTreeHtml = `
+                    <div class="dependency-tree" style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 15px;">Related Records Hierarchy</h4>
+                        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; background: #f8f9fa;">
+                            ${renderDependencyTree(detailedDependencies, apiName, errors.map(e => e.recordId))}
+                        </div>
+                    </div>
+                `;
+            }
+            
             const errorHtml = `
                 <div class="modal-overlay active" id="delete-error-modal" style="z-index: 3000;">
-                    <div class="modal-content" style="max-width: 700px; z-index: 3001;">
+                    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto; z-index: 3001;">
                         <div class="modal-header">
                             <span>Delete Errors</span>
                             <button class="close-button" onclick="document.getElementById('delete-error-modal').remove()">×</button>
@@ -2655,7 +2729,7 @@ a:hover {
                                 // Parse the error message to extract related objects
                                 let relatedInfo = '';
                                 const match = err.message.match(/associated with the following (.+?):\s*(.+)/);
-                                if (match) {
+                                if (match && !detailedDependencies) {
                                     const relatedType = match[1];
                                     const relatedItems = match[2].split(',').map(item => item.trim());
                                     const displayItems = relatedItems.slice(0, 5);
@@ -2681,6 +2755,8 @@ a:hover {
                                     </div>
                                 `;
                             }).join('')}
+                            
+                            ${dependencyTreeHtml}
                             
                             ${hasRelationshipErrors ? `
                                 <div class="alert alert-info" style="margin-top: 20px;">
@@ -2777,18 +2853,44 @@ a:hover {
                 hideLoading();
                 
                 if (result.success) {
+                    // Build cascade delete info if applicable
+                    let cascadeInfo = '';
+                    if (result.cascadeDeletedCount && result.cascadeDeletedCount > 0) {
+                        // Group cascade deleted records by object type
+                        const cascadeByObject = {};
+                        result.cascadeDeleted.forEach(item => {
+                            if (!cascadeByObject[item.object]) {
+                                cascadeByObject[item.object] = [];
+                            }
+                            cascadeByObject[item.object].push(item.recordId);
+                        });
+                        
+                        cascadeInfo = `
+                            <div class="alert alert-info" style="margin-top: 10px;">
+                                <strong>Related Records Deleted:</strong>
+                                <ul style="margin: 5px 0 0 20px;">
+                                    ${Object.entries(cascadeByObject).map(([obj, ids]) => 
+                                        `<li><strong>${obj}</strong>: ${ids.length} record(s)</li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    
                     // Show success message
                     const successHtml = `
                         <div class="modal-overlay active" id="success-modal" style="z-index: 3000;">
-                            <div class="modal-content" style="max-width: 500px; z-index: 3001;">
+                            <div class="modal-content" style="max-width: 600px; z-index: 3001;">
                                 <div class="modal-header">
                                     <span>Success</span>
                                     <button class="close-button" onclick="document.getElementById('success-modal').remove()">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="alert alert-success">
-                                        Successfully deleted ${result.deletedCount} record(s) and all related records.
+                                        Successfully deleted ${result.deletedCount} primary record(s).
                                     </div>
+                                    ${cascadeInfo}
+                                    <p style="margin-top: 10px;">All related records have been removed. The view will be refreshed.</p>
                                 </div>
                                 <div class="modal-footer">
                                     <button class="btn btn-primary" onclick="document.getElementById('success-modal').remove()">OK</button>
@@ -2808,6 +2910,162 @@ a:hover {
             } catch (error) {
                 hideLoading();
                 showModalError('Failed to perform cascade delete: ' + error.message);
+            }
+        }
+        
+        // Render dependency tree with drill-down capability
+        function renderDependencyTree(dependencies, parentObject, parentIds) {
+            let html = '<div class="dependency-tree-container">';
+            
+            // Group dependencies by object type
+            const groupedDeps = {};
+            dependencies.forEach(dep => {
+                if (!groupedDeps[dep.objectName]) {
+                    groupedDeps[dep.objectName] = [];
+                }
+                groupedDeps[dep.objectName].push(dep);
+            });
+            
+            // Render each object type group
+            Object.entries(groupedDeps).forEach(([objName, deps]) => {
+                const totalCount = deps.reduce((sum, d) => sum + d.count, 0);
+                const depId = `dep-${objName}-${Date.now()}`;
+                
+                html += `
+                    <div class="dependency-group" style="margin-bottom: 15px;">
+                        <div class="dependency-header" style="display: flex; align-items: center; padding: 10px; background: #e9ecef; border-radius: 4px; cursor: pointer;" onclick="toggleDependencyGroup('${depId}')">
+                            <i class="anticon" style="margin-right: 8px;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                    <path d="M7 10l5 5 5-5z"/>
+                                </svg>
+                            </i>
+                            <strong>${objName}</strong>
+                            <span style="margin-left: 10px; color: #6c757d;">(${totalCount} record${totalCount !== 1 ? 's' : ''})</span>
+                        </div>
+                        <div id="${depId}" class="dependency-details" style="display: none; margin-top: 10px; padding-left: 25px;">
+                `;
+                
+                // Render individual records
+                deps.forEach(dep => {
+                    dep.records.forEach(record => {
+                        const recordInfo = formatRecordInfo(objName, record);
+                        const hasChildren = checkIfHasChildren(objName);
+                        
+                        html += `
+                            <div class="related-record" style="padding: 8px; margin-bottom: 5px; background: white; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        ${recordInfo}
+                                    </div>
+                                    ${hasChildren ? `
+                                        <button class="btn btn-sm" style="padding: 2px 8px;" onclick="drillDownRecord('${objName}', '${record.Id}')">
+                                            View Dependencies →
+                                        </button>
+                                    ` : ''}
+                                </div>
+                                <div id="drill-${objName}-${record.Id}" class="drill-down-container" style="margin-top: 10px; display: none;">
+                                    <!-- Drill-down content loaded here -->
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // Format record information based on object type
+        function formatRecordInfo(objectName, record) {
+            const fieldConfig = {
+                'Product2': ['Name', 'ProductCode', 'Family', 'IsActive'],
+                'ProductAttributeDefinition': ['AttributeDefinitionId', 'Sequence'],
+                'PricebookEntry': ['UnitPrice', 'IsActive'],
+                'ProductCategory': ['Name', 'Description'],
+                'AttributePicklistValue': ['Name', 'Code']
+            };
+            
+            const fields = fieldConfig[objectName] || ['Name'];
+            let info = `<strong>ID:</strong> ${record.Id}`;
+            
+            fields.forEach(field => {
+                if (record[field] !== undefined && record[field] !== null) {
+                    info += ` | <strong>${field}:</strong> ${record[field]}`;
+                }
+            });
+            
+            return info;
+        }
+        
+        // Check if object type has children
+        function checkIfHasChildren(objectName) {
+            const hasChildrenObjects = ['Product2', 'ProductCategory', 'ProductCategoryProduct'];
+            return hasChildrenObjects.includes(objectName);
+        }
+        
+        // Toggle dependency group visibility
+        function toggleDependencyGroup(depId) {
+            const detailsDiv = document.getElementById(depId);
+            const header = detailsDiv.previousElementSibling;
+            const icon = header.querySelector('svg');
+            
+            if (detailsDiv.style.display === 'none') {
+                detailsDiv.style.display = 'block';
+                icon.innerHTML = '<path d="M7 14l5-5 5 5z"/>';
+            } else {
+                detailsDiv.style.display = 'none';
+                icon.innerHTML = '<path d="M7 10l5 5 5-5z"/>';
+            }
+        }
+        
+        // Drill down into a specific record's dependencies
+        async function drillDownRecord(objectName, recordId) {
+            const container = document.getElementById(`drill-${objectName}-${recordId}`);
+            
+            // Toggle visibility
+            if (container.style.display === 'block') {
+                container.style.display = 'none';
+                return;
+            }
+            
+            // Show loading
+            container.innerHTML = '<div style="padding: 10px; color: #6c757d;">Loading dependencies...</div>';
+            container.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/objects/check-deep-dependencies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        objectName: objectName,
+                        recordId: recordId
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.hasRelatedRecords) {
+                        container.innerHTML = `
+                            <div style="border-left: 3px solid #007bff; padding-left: 15px;">
+                                ${renderDependencyTree(data.relatedRecords, objectName, [recordId])}
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = '<div style="padding: 10px; color: #6c757d;">No dependencies found.</div>';
+                    }
+                } else {
+                    container.innerHTML = '<div style="padding: 10px; color: #dc3545;">Failed to load dependencies.</div>';
+                }
+            } catch (error) {
+                container.innerHTML = '<div style="padding: 10px; color: #dc3545;">Error loading dependencies.</div>';
             }
         }
         
