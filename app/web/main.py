@@ -604,6 +604,47 @@ DATA_MANAGEMENT_HTML = """
         .sync-button:hover {
             background-color: #219a52;
         }
+        
+        /* Sync Status Indicators */
+        .sync-status-indicator {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 5px;
+            min-width: 80px;
+        }
+        
+        .sync-status-indicator[data-status="Synced"] {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .sync-status-indicator[data-status="Not Synced"] {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .sync-status-indicator[data-status="Partially Synced"] {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .sync-status-indicator[data-status="Upload Failed"] {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .sync-status-indicator[data-status="Modified"] {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
     </style>
 </head>
 <body>
@@ -652,10 +693,11 @@ DATA_MANAGEMENT_HTML = """
                 </div>
             </div>
             
-            <div class="object-card" data-category="products" onclick="manageObject('Product2')">
+            <div class="object-card" data-category="products" data-object="Product2" onclick="manageObject('Product2')">
                 <div class="object-header">
                     <div class="object-title">Product</div>
                     <div class="object-count">0 records</div>
+                    <div class="sync-status-indicator" data-status="Not Synced">Not Synced</div>
                 </div>
                 <div class="object-description">Product master records</div>
                 <div class="object-actions">
@@ -678,10 +720,11 @@ DATA_MANAGEMENT_HTML = """
                 </div>
             </div>
             
-            <div class="object-card" data-category="products" onclick="manageObject('ProductSellingModel')">
+            <div class="object-card" data-category="products" data-object="ProductSellingModel" onclick="manageObject('ProductSellingModel')">
                 <div class="object-header">
                     <div class="object-title">Product Selling Model</div>
                     <div class="object-count">0 records</div>
+                    <div class="sync-status-indicator" data-status="Not Synced">Not Synced</div>
                 </div>
                 <div class="object-description">Product selling configurations</div>
                 <div class="object-actions">
@@ -810,10 +853,11 @@ DATA_MANAGEMENT_HTML = """
                 </div>
             </div>
             
-            <div class="object-card" data-category="pricing" onclick="manageObject('PricebookEntry')">
+            <div class="object-card" data-category="pricing" data-object="PricebookEntry" onclick="manageObject('PricebookEntry')">
                 <div class="object-header">
                     <div class="object-title">Price Book Entry</div>
                     <div class="object-count">0 records</div>
+                    <div class="sync-status-indicator" data-status="Not Synced">Not Synced</div>
                 </div>
                 <div class="object-description">Product pricing entries</div>
                 <div class="object-actions">
@@ -1155,6 +1199,581 @@ DATA_MANAGEMENT_HTML = """
 """
 
 # HTML content for object editor
+# HTML content for sync page
+SYNC_PAGE_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Revenue Cloud - Sync Manager</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 2em;
+        }
+        .back-link {
+            color: #3498db;
+            text-decoration: none;
+            font-size: 1.1em;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .sync-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #219a52;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .objects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .object-card {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fff;
+            transition: all 0.3s;
+        }
+        .object-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .object-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .object-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .object-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .object-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .sync-status-indicator {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            min-width: 80px;
+        }
+        .sync-status-indicator[data-status="Synced"] {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .sync-status-indicator[data-status="Not Synced"] {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .sync-status-indicator[data-status="Partially Synced"] {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .sync-status-indicator[data-status="Upload Failed"] {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .sync-status-indicator[data-status="Modified"] {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .last-sync {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .progress-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .progress-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            min-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Sync Manager</h1>
+            <a href="/" class="back-link">← Back to Dashboard</a>
+        </div>
+        
+        <div class="sync-controls">
+            <div>
+                <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
+                <button class="btn btn-secondary" onclick="selectNone()">Select None</button>
+                <button class="btn btn-primary" onclick="syncSelected()">Sync Selected</button>
+            </div>
+            <div>
+                <span id="selected-count">0 objects selected</span>
+            </div>
+        </div>
+        
+        <div class="objects-grid" id="objects-grid">
+            <!-- Objects will be loaded here dynamically -->
+        </div>
+    </div>
+    
+    <div id="progress-overlay" class="progress-overlay">
+        <div class="progress-box">
+            <h3>🔄 Syncing Objects</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p id="progress-text">Initializing...</p>
+            <p id="current-object"></p>
+        </div>
+    </div>
+    
+    <script>
+        const objectCategories = [
+            {
+                category: 'Product Configuration',
+                objects: [
+                    {name: 'ProductCatalog', title: 'Product Catalog', description: 'Product catalog definitions'},
+                    {name: 'ProductCategory', title: 'Product Category', description: 'Product categorization structure'},
+                    {name: 'Product2', title: 'Product', description: 'Product master records'},
+                    {name: 'ProductSellingModel', title: 'Product Selling Model', description: 'Product selling configurations'},
+                    {name: 'ProductSellingModelOption', title: 'Product Selling Model Option', description: 'Product selling model options'},
+                    {name: 'ProductClassification', title: 'Product Classification', description: 'Product classification data'}
+                ]
+            },
+            {
+                category: 'Pricing & Attributes',
+                objects: [
+                    {name: 'Pricebook2', title: 'Price Book', description: 'Price book definitions'},
+                    {name: 'PricebookEntry', title: 'Price Book Entry', description: 'Product pricing entries'},
+                    {name: 'AttributeDefinition', title: 'Attribute Definition', description: 'Product attribute definitions'},
+                    {name: 'AttributePicklist', title: 'Attribute Picklist', description: 'Attribute picklist definitions'},
+                    {name: 'ProductAttributeDef', title: 'Product Attribute Definition', description: 'Product-specific attributes'}
+                ]
+            },
+            {
+                category: 'Financial Configuration',
+                objects: [
+                    {name: 'LegalEntity', title: 'Legal Entity', description: 'Company legal entities'},
+                    {name: 'TaxTreatment', title: 'Tax Treatment', description: 'Tax treatment configurations'},
+                    {name: 'BillingPolicy', title: 'Billing Policy', description: 'Billing policy configurations'}
+                ]
+            },
+            {
+                category: 'Transactions',
+                objects: [
+                    {name: 'Order', title: 'Order', description: 'Sales orders and transactions'},
+                    {name: 'OrderItem', title: 'Order Item', description: 'Line items in orders'},
+                    {name: 'Asset', title: 'Asset', description: 'Customer assets and subscriptions'},
+                    {name: 'AssetAction', title: 'Asset Action', description: 'Actions performed on assets'},
+                    {name: 'AssetActionSource', title: 'Asset Action Source', description: 'Source references for asset actions'},
+                    {name: 'Contract', title: 'Contract', description: 'Customer contracts'}
+                ]
+            },
+            {
+                category: 'Fulfillment Configuration',
+                objects: [
+                    {name: 'Location', title: 'Location', description: 'Physical locations and warehouses'},
+                    {name: 'AssociatedLocation', title: 'Associated Location', description: 'Location relationships'},
+                    {name: 'OrderDeliveryMethod', title: 'Order Delivery Method', description: 'Available delivery methods'}
+                ]
+            },
+            {
+                category: 'Fulfillment Plans',
+                objects: [
+                    {name: 'WorkPlanTemplate', title: 'Work Plan Template', description: 'Reusable fulfillment workflows'},
+                    {name: 'WorkPlanTemplateEntry', title: 'Work Plan Template Entry', description: 'Steps in fulfillment workflows'},
+                    {name: 'WorkPlan', title: 'Work Plan', description: 'Active fulfillment plans'}
+                ]
+            },
+            {
+                category: 'Fulfillment Operations',
+                objects: [
+                    {name: 'FulfillmentOrder', title: 'Fulfillment Order', description: 'Order fulfillment records'},
+                    {name: 'FulfillmentOrderLineItem', title: 'Fulfillment Order Line Item', description: 'Items being fulfilled'},
+                    {name: 'OrderDeliveryGroup', title: 'Order Delivery Group', description: 'Delivery groupings'},
+                    {name: 'Shipment', title: 'Shipment', description: 'Shipment tracking records'},
+                    {name: 'ShipmentItem', title: 'Shipment Item', description: 'Items in shipments'}
+                ]
+            },
+            {
+                category: 'Fulfillment Workflow',
+                objects: [
+                    {name: 'FulfillmentStepDefinitionGroup', title: 'Fulfillment Step Definition Group', description: 'Groups of fulfillment steps'},
+                    {name: 'FulfillmentStepDefinition', title: 'Fulfillment Step Definition', description: 'Fulfillment step templates'},
+                    {name: 'FulfillmentStep', title: 'Fulfillment Step', description: 'Active fulfillment steps'},
+                    {name: 'FulfillmentAsset', title: 'Fulfillment Asset', description: 'Assets tracked during fulfillment'},
+                    {name: 'FulfillmentAssetAttribute', title: 'Fulfillment Asset Attribute', description: 'Fulfillment asset metadata'},
+                    {name: 'FulfillmentOrderItemAdjustment', title: 'Fulfillment Order Item Adjustment', description: 'Price adjustments for fulfillment'},
+                    {name: 'FulfillmentOrderItemTax', title: 'Fulfillment Order Item Tax', description: 'Tax calculations for fulfillment'}
+                ]
+            }
+        ];
+        
+        // Flatten objects for backward compatibility
+        const objects = objectCategories.flatMap(cat => cat.objects);
+        
+        let syncStatuses = {};
+        
+        function loadObjects() {
+            const grid = document.getElementById('objects-grid');
+            grid.innerHTML = objectCategories.map((category, catIndex) => `
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(event, ${catIndex})">
+                        <div class="category-title">
+                            <input type="checkbox" class="category-checkbox" 
+                                data-category="${catIndex}" 
+                                onclick="toggleCategorySelection(event, ${catIndex})"
+                                onchange="updateSelectedCount()">
+                            <span>${category.category}</span>
+                            <span class="category-count">(${category.objects.length} objects)</span>
+                        </div>
+                    </div>
+                    <div class="category-objects" id="category-objects-${catIndex}">
+                        ${category.objects.map(obj => `
+                            <div class="object-card">
+                                <div class="object-header">
+                                    <div class="object-title">${obj.title}</div>
+                                    <input type="checkbox" class="object-checkbox" 
+                                        data-object="${obj.name}" 
+                                        data-category="${catIndex}"
+                                        onchange="updateObjectSelection(this); updateSelectedCount()">
+                                </div>
+                                <div class="object-description">${obj.description}</div>
+                                <div class="object-status">
+                                    <div class="sync-status-indicator" data-status="Not Synced">Not Synced</div>
+                                    <div class="last-sync" id="last-sync-${obj.name}">Never synced</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+            
+            loadSyncStatus();
+        }
+        
+        function loadSyncStatus() {
+            fetch('/api/sync-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        syncStatuses = data.status.objects;
+                        updateSyncStatusIndicators();
+                    }
+                })
+                .catch(error => console.error('Error loading sync status:', error));
+        }
+        
+        function updateSyncStatusIndicators() {
+            objects.forEach(obj => {
+                const status = syncStatuses[obj.name];
+                if (status) {
+                    const indicator = document.querySelector(`[data-object="${obj.name}"]`).closest('.object-card').querySelector('.sync-status-indicator');
+                    const lastSyncEl = document.getElementById(`last-sync-${obj.name}`);
+                    
+                    indicator.textContent = status.status || 'Not Synced';
+                    indicator.setAttribute('data-status', status.status || 'Not Synced');
+                    
+                    if (status.last_sync) {
+                        const lastSync = new Date(status.last_sync);
+                        lastSyncEl.textContent = `Last sync: ${lastSync.toLocaleString()}`;
+                    }
+                }
+            });
+        }
+        
+        function selectAll() {
+            // Check all object checkboxes
+            document.querySelectorAll('.object-checkbox').forEach(cb => {
+                cb.checked = true;
+            });
+            // Check all category checkboxes
+            document.querySelectorAll('.category-checkbox').forEach(cb => {
+                cb.checked = true;
+                cb.indeterminate = false;
+            });
+            updateSelectedCount();
+        }
+        
+        function selectNone() {
+            // Uncheck all object checkboxes
+            document.querySelectorAll('.object-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            // Uncheck all category checkboxes
+            document.querySelectorAll('.category-checkbox').forEach(cb => {
+                cb.checked = false;
+                cb.indeterminate = false;
+            });
+            updateSelectedCount();
+        }
+        
+        function toggleCategory(event, categoryIndex) {
+            // Prevent checkbox from being triggered when clicking on header
+            if (event.target.type !== 'checkbox') {
+                const categoryObjects = document.getElementById(`category-objects-${categoryIndex}`);
+                // This could be used to collapse/expand categories if desired
+            }
+        }
+        
+        function toggleCategorySelection(event, categoryIndex) {
+            event.stopPropagation();
+            const categoryCheckbox = event.target;
+            const isChecked = categoryCheckbox.checked;
+            
+            // Get all object checkboxes in this category
+            const objectCheckboxes = document.querySelectorAll(`#category-objects-${categoryIndex} .object-checkbox`);
+            
+            // Set all object checkboxes to match category checkbox state
+            objectCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            
+            updateSelectedCount();
+        }
+        
+        function updateObjectSelection(objectCheckbox) {
+            const categoryIndex = objectCheckbox.getAttribute('data-category');
+            const categoryCheckbox = document.querySelector(`.category-checkbox[data-category="${categoryIndex}"]`);
+            
+            // Get all object checkboxes in this category
+            const objectCheckboxes = document.querySelectorAll(`#category-objects-${categoryIndex} .object-checkbox`);
+            const checkedCount = Array.from(objectCheckboxes).filter(cb => cb.checked).length;
+            
+            // Update category checkbox state
+            if (checkedCount === 0) {
+                categoryCheckbox.checked = false;
+                categoryCheckbox.indeterminate = false;
+            } else if (checkedCount === objectCheckboxes.length) {
+                categoryCheckbox.checked = true;
+                categoryCheckbox.indeterminate = false;
+            } else {
+                categoryCheckbox.checked = false;
+                categoryCheckbox.indeterminate = true;
+            }
+        }
+        
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.object-checkbox:checked').length;
+            document.getElementById('selected-count').textContent = `${selected} objects selected`;
+        }
+        
+        function syncSelected() {
+            const selectedObjects = Array.from(document.querySelectorAll('.object-checkbox:checked'))
+                .map(cb => cb.getAttribute('data-object'));
+            
+            if (selectedObjects.length === 0) {
+                alert('Please select at least one object to sync.');
+                return;
+            }
+            
+            if (!confirm(`Sync ${selectedObjects.length} selected objects?`)) {
+                return;
+            }
+            
+            startSync(selectedObjects);
+        }
+        
+        function startSync(objectsToSync) {
+            showProgress();
+            updateProgress({percent: 10, current_object: 'Starting sync...'});
+            
+            fetch('/api/sync', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    objects: objectsToSync
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideProgress();
+                
+                // Always uncheck successfully synced objects, regardless of overall success
+                let successfulObjects = [];
+                if (data.synced && data.synced.length > 0) {
+                    successfulObjects = data.synced.map(s => s.object);
+                    successfulObjects.forEach(objName => {
+                        const checkbox = document.querySelector(`[data-object="${objName}"]`);
+                        if (checkbox) {
+                            checkbox.checked = false;
+                            console.log(`Unchecked checkbox for ${objName}`);
+                            // Update the category checkbox state
+                            updateObjectSelection(checkbox);
+                        }
+                    });
+                }
+                
+                updateSelectedCount();
+                loadSyncStatus();
+                
+                // Show appropriate message based on results
+                if (data.success) {
+                    let message = 'Sync completed successfully!\n\n';
+                    if (data.synced && data.synced.length > 0) {
+                        message += `✅ Successfully synced: ${data.synced.map(s => s.object).join(', ')}\n`;
+                    }
+                    if (data.failed && data.failed.length > 0) {
+                        message += `❌ Failed to sync: ${data.failed.map(f => f.object).join(', ')}\n`;
+                    }
+                    alert(message);
+                } else {
+                    let errorMessage = 'Sync operation completed with some issues:\n\n';
+                    if (data.synced && data.synced.length > 0) {
+                        errorMessage += `✅ Successfully synced: ${data.synced.map(s => s.object).join(', ')}\n\n`;
+                    }
+                    if (data.failed && data.failed.length > 0) {
+                        errorMessage += `❌ Failed to sync:\n${data.failed.map(f => `• ${f.object}: ${f.error}`).join('\n')}`;
+                    }
+                    if (data.error) {
+                        errorMessage += `\n\nError: ${data.error}`;
+                    }
+                    alert(errorMessage);
+                }
+            })
+            .catch(error => {
+                hideProgress();
+                alert('Error starting sync: ' + error);
+            });
+        }
+        
+        function updateProgress(data) {
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            const currentObject = document.getElementById('current-object');
+            
+            if (data.percent !== undefined) {
+                progressFill.style.width = data.percent + '%';
+                progressText.textContent = `${data.percent}% Complete`;
+            }
+            
+            if (data.current_object) {
+                currentObject.textContent = `Syncing: ${data.current_object}`;
+            }
+        }
+        
+        function showProgress() {
+            document.getElementById('progress-overlay').style.display = 'flex';
+        }
+        
+        function hideProgress() {
+            document.getElementById('progress-overlay').style.display = 'none';
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadObjects();
+        });
+    </script>
+</body>
+</html>
+"""
+
 OBJECT_EDITOR_HTML = """
 <!DOCTYPE html>
 <html>
@@ -1316,6 +1935,46 @@ OBJECT_EDITOR_HTML = """
             overflow-y: auto;
             display: none;
             margin-top: 20px;
+        }
+        .category-section {
+            margin-bottom: 30px;
+        }
+        .category-header {
+            background-color: #ecf0f1;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .category-header:hover {
+            background-color: #d5dbdb;
+        }
+        .category-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .category-checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+        }
+        .category-count {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+        .category-objects {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
         }
     </style>
 </head>
@@ -1510,6 +2169,54 @@ OBJECT_EDITOR_HTML = """
             messageDiv.style.display = 'block';
             statusDiv.appendChild(messageDiv);
         }
+        
+        // Load sync status for objects
+        function loadSyncStatus() {
+            fetch('/api/sync-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateSyncStatusIndicators(data.status.objects);
+                        console.log('Sync status loaded:', data.summary);
+                    } else {
+                        console.error('Failed to load sync status:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading sync status:', error);
+                });
+        }
+        
+        // Update sync status indicators on object cards
+        function updateSyncStatusIndicators(objects) {
+            const objectCards = document.querySelectorAll('.object-card[data-object]');
+            
+            objectCards.forEach(card => {
+                const objectName = card.getAttribute('data-object');
+                const indicator = card.querySelector('.sync-status-indicator');
+                
+                if (indicator && objects[objectName]) {
+                    const status = objects[objectName].status || 'Not Synced';
+                    indicator.textContent = status;
+                    indicator.setAttribute('data-status', status);
+                }
+            });
+        }
+        
+        // Refresh sync status after upload
+        function refreshSyncStatus() {
+            setTimeout(() => {
+                loadSyncStatus();
+            }, 1000); // Wait 1 second for server to update
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSyncStatus();
+            
+            // Refresh sync status every 30 seconds
+            setInterval(loadSyncStatus, 30000);
+        });
     </script>
 </body>
 </html>
@@ -1536,7 +2243,15 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            self.wfile.write(DATA_MANAGEMENT_HTML.encode())
+            # Load template from file instead of hardcoded HTML
+            templates_path = Path(__file__).parent.parent.parent / "templates"
+            template_file = templates_path / "data-management.html"
+            if template_file.exists():
+                with open(template_file, 'r', encoding='utf-8') as f:
+                    template_content = f.read()
+                self.wfile.write(template_content.encode())
+            else:
+                self.wfile.write(DATA_MANAGEMENT_HTML.encode())
         
         elif parsed_path.path == '/object-editor':
             query_params = parse_qs(parsed_path.query)
@@ -1548,6 +2263,201 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             html = OBJECT_EDITOR_HTML.replace('{{object_name}}', object_name).replace('{{phase}}', phase)
             self.wfile.write(html.encode())
+        
+        elif parsed_path.path == '/api/session':
+            # Return current session/connection information
+            response = {
+                'success': True,
+                'active_connection': {
+                    'id': 'fortradp2',
+                    'name': 'fortradp2',
+                    'username': org,
+                    'instance_url': 'https://fortradp2.my.salesforce.com'
+                }
+            }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+        
+        elif parsed_path.path == '/api/objects/counts':
+            # Return object record counts from the workbook
+            response = {
+                'success': True,
+                'counts': {}
+            }
+            
+            try:
+                import pandas as pd
+                xl = pd.ExcelFile(workbook)
+                
+                # Map of object names to sheet names
+                sheet_mapping = {
+                    'LegalEntity': '02_LegalEntity',
+                    'TaxEngine': '03_TaxEngine',
+                    'TaxPolicy': '04_TaxPolicy',
+                    'TaxTreatment': '05_TaxTreatment',
+                    'CostBook': '01_CostBook',
+                    'BillingPolicy': '06_BillingPolicy',
+                    'BillingTreatment': '07_BillingTreatment',
+                    'ProductCatalog': '11_ProductCatalog',
+                    'Product2': '13_Product2',
+                    # Add more mappings as needed
+                }
+                
+                for obj_name, sheet_name in sheet_mapping.items():
+                    if sheet_name in xl.sheet_names:
+                        df = pd.read_excel(xl, sheet_name=sheet_name)
+                        response['counts'][obj_name] = len(df)
+                    else:
+                        response['counts'][obj_name] = 0
+                        
+            except Exception as e:
+                # If pandas is not available or error reading, return empty counts
+                pass
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+        
+        elif parsed_path.path == '/api/workbook/view':
+            # View workbook data for a specific object
+            query_params = parse_qs(parsed_path.query)
+            object_name = query_params.get('object', [''])[0]
+            
+            if not object_name:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'success': False, 'error': 'No object specified'}).encode())
+                return
+            
+            try:
+                import pandas as pd
+                
+                # Object to sheet mapping - corrected based on actual sheet names
+                sheet_mapping = {
+                    'LegalEntity': '02_LegalEntity',
+                    'TaxEngine': '03_TaxEngine',
+                    'TaxPolicy': '04_TaxPolicy',
+                    'TaxTreatment': '05_TaxTreatment',
+                    'CostBook': '01_CostBook',
+                    'BillingPolicy': '06_BillingPolicy',
+                    'BillingTreatment': '07_BillingTreatment',
+                    'ProductCatalog': '11_ProductCatalog',
+                    'ProductCategory': '12_ProductCategory',
+                    'ProductClassification': '08_ProductClassification',
+                    'Product2': '13_Product2',
+                    'ProductSellingModel': '15_ProductSellingModel',
+                    'ProductSellingModelOption': '16_ProductSellingModelOption',  # May not exist
+                    'ProductCategoryProduct': '26_ProductCategoryProduct',
+                    'ProductComponentGroup': '14_ProductComponentGroup',
+                    'ProductRelatedComponent': '25_ProductRelatedComponent',
+                    'AttributeDefinition': '09_AttributeDefinition',
+                    'AttributeCategory': '10_AttributeCategory',
+                    'AttributePicklist': '14_AttributePicklist',
+                    'AttributePicklistValue': '18_AttributePicklistValue',
+                    'ProductAttributeDefinition': '17_ProductAttributeDef',
+                    'Pricebook2': '19_Pricebook2',
+                    'PricebookEntry': '20_PricebookEntry',
+                    'CostBookEntry': '15_CostBookEntry',
+                    'PriceAdjustmentSchedule': '21_PriceAdjustmentSchedule',
+                    'PriceAdjustmentTier': '22_PriceAdjustmentTier',
+                    'AttributeBasedAdjRule': '23_AttributeBasedAdjRule',
+                    'AttributeBasedAdjustment': '24_AttributeBasedAdj',
+                    'Order': '29_Order',  # May not exist
+                    'OrderItem': '30_OrderItem',  # May not exist
+                    'Asset': '31_Asset',  # May not exist
+                    'AssetAction': '32_AssetAction',  # May not exist
+                    'AssetActionSource': '33_AssetActionSource',  # May not exist
+                    'Contract': '34_Contract'  # May not exist
+                }
+                
+                # Get sheet name for the object
+                sheet_name = sheet_mapping.get(object_name)
+                
+                if not sheet_name:
+                    # If no mapping found, return empty data with message
+                    response = {
+                        'success': True,
+                        'data': [],
+                        'workbook': workbook,
+                        'sheet': None,
+                        'message': f'No sheet mapping found for {object_name}'
+                    }
+                else:
+                    # Try to read the sheet from the workbook
+                    try:
+                        # Check if workbook exists
+                        if not os.path.exists(workbook):
+                            response = {
+                                'success': False,
+                                'error': f'Workbook not found: {workbook}'
+                            }
+                        else:
+                            # Read the Excel sheet
+                            df = pd.read_excel(workbook, sheet_name=sheet_name)
+                            
+                            # Remove asterisks from column names if present
+                            df.columns = df.columns.str.replace('*', '', regex=False)
+                            
+                            # Convert DataFrame to list of dictionaries
+                            records = df.to_dict('records')
+                            
+                            # Convert NaN values to None for proper JSON serialization
+                            for record in records:
+                                for key, value in record.items():
+                                    if pd.isna(value):
+                                        record[key] = None
+                                    elif isinstance(value, (pd.Timestamp, pd.DatetimeTZDtype)):
+                                        record[key] = str(value)
+                            
+                            response = {
+                                'success': True,
+                                'data': records,
+                                'workbook': workbook,
+                                'sheet': sheet_name,
+                                'message': f'Loaded {len(records)} records from {sheet_name}'
+                            }
+                    except ValueError as e:
+                        # Sheet doesn't exist
+                        response = {
+                            'success': True,
+                            'data': [],
+                            'workbook': workbook,
+                            'sheet': None,
+                            'message': f'Sheet {sheet_name} not found in workbook'
+                        }
+                    except Exception as e:
+                        response = {
+                            'success': False,
+                            'error': f'Error reading sheet: {str(e)}'
+                        }
+                
+            except ImportError:
+                response = {
+                    'success': False,
+                    'error': 'pandas is not installed. Run: pip install pandas openpyxl'
+                }
+            except Exception as e:
+                response = {
+                    'success': False,
+                    'error': f'Unexpected error: {str(e)}'
+                }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+        
+        elif parsed_path.path == '/api/workbook/open':
+            # Open workbook in system's default application
+            self.send_response(404)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'success': False, 'error': 'Not implemented'}).encode())
         
         elif parsed_path.path.startswith('/api/sync/progress/'):
             # Get progress for a sync session
@@ -1659,6 +2569,61 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                 'session_id': session_id,
                 'message': 'Sync started'
             }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        elif self.path == '/api/workbook/open':
+            # Open workbook in system's default application
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            workbook_path = data.get('path', workbook)
+            sheet_name = data.get('sheet', '')
+            api_name = data.get('apiName', '')
+            
+            try:
+                # Use subprocess to open the file with the default application
+                import subprocess
+                import sys
+                
+                if sys.platform == 'darwin':  # macOS
+                    if sheet_name:
+                        # Use AppleScript to open Excel at specific sheet
+                        applescript = f'''
+                        tell application "Microsoft Excel"
+                            open "{workbook_path}"
+                            activate
+                            tell active workbook
+                                try
+                                    activate object worksheet "{sheet_name}"
+                                on error
+                                    -- Sheet not found, just open the workbook
+                                end try
+                            end tell
+                        end tell
+                        '''
+                        subprocess.Popen(['osascript', '-e', applescript])
+                    else:
+                        subprocess.Popen(['open', workbook_path])
+                elif sys.platform == 'win32':  # Windows
+                    # On Windows, we can't easily open at a specific sheet
+                    subprocess.Popen(['start', '', workbook_path], shell=True)
+                else:  # Linux
+                    subprocess.Popen(['xdg-open', workbook_path])
+                
+                response = {
+                    'success': True,
+                    'message': f'Opening {api_name} sheet in {os.path.basename(workbook_path)}'
+                }
+            except Exception as e:
+                response = {
+                    'success': False,
+                    'error': f'Failed to open spreadsheet: {str(e)}'
+                }
             
             self.send_response(200)
             self.send_header('Content-type', 'application/json')

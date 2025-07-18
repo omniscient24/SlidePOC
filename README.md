@@ -80,6 +80,32 @@ Each phase folder contains:
 - **Real-time Status Updates**: Live progress tracking during sync operations
 - **Error Handling**: Comprehensive error messages and recovery options
 
+### Data Management View Modal Enhancements
+
+The View modals in the Data Management page now include:
+
+- **Column Reordering**: Drag and drop table columns to reorder them. Column order is persisted in local storage
+- **Column Sorting**: Click column headers to sort ascending/descending (all columns except Id)
+- **Column Filtering**: Filter dropdowns on Type, Family, IsActive, IsRequired, DataType, IsDefault, and Status columns
+- **Visual Enhancements**:
+  - Vertical separators between columns for better readability
+  - Wider modals (40% increase) for improved data visibility
+  - Darker, more visible sort and filter icons
+  - Reset Columns button to restore original column order
+  - Reduced checkbox sizes on object category rows for better proportions
+- **Improved Filter Behavior**:
+  - Filter dropdowns stay open when selecting/deselecting checkboxes
+  - Only close on Apply, Clear, or clicking outside
+  - Proper boolean value handling (true/false filtering works correctly)
+  - Search within filter options
+- **Data Preservation**: All Excel columns preserved, even with null values
+- **Responsive Design**: Minimum table height ensures filter dropdowns remain accessible
+- **Excel Integration**: 
+  - View Spreadsheet button opens Excel directly at the correct sheet for each object
+  - Automatic sheet navigation using AppleScript (macOS)
+  - Graceful handling of missing sheets with informative messages
+- **Org Connection Display**: Current Salesforce org shown in header with wider dropdown for better visibility
+
 ## Documentation
 
 - [Upload Guide](docs/REVENUE_CLOUD_UPLOAD_GUIDE.md) - Detailed upload instructions
