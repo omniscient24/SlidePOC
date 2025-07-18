@@ -2748,6 +2748,24 @@ a:hover {
                         console.log('Found related type:', relatedType);
                         console.log('Items list:', itemsList);
                         
+                        // Look for common patterns that indicate end of the list
+                        // The list typically ends before "Your attempt", "Solution:", or similar phrases
+                        const listEndPatterns = [
+                            /^(.*?)(?:Your attempt|Solution:|Warning:|Error:|The following|These)/i,
+                            /^(.*?)(?:\.\s*[A-Z])/  // Period followed by capital letter (new sentence)
+                        ];
+                        
+                        for (const pattern of listEndPatterns) {
+                            const match = itemsList.match(pattern);
+                            if (match && match[1]) {
+                                itemsList = match[1];
+                                break;
+                            }
+                        }
+                        
+                        // Remove any trailing punctuation
+                        itemsList = itemsList.replace(/[.;]+$/, '');
+                        
                         // Split by commas but handle various formats
                         let relatedItems = itemsList.split(',').map(item => item.trim());
                         
@@ -2762,14 +2780,19 @@ a:hover {
                                     return null;
                                 }
                                 
-                                // Skip items that are just dots
-                                if (item === '...' || item === '..' || item === '.') {
+                                // Skip items that are just dots or ellipsis
+                                if (item === '...' || item === '..' || item === '.' || item === '') {
+                                    return null;
+                                }
+                                
+                                // Skip items that look like error messages (contain "attempt to delete")
+                                if (item.includes('attempt to delete') || item.includes('could not be completed')) {
                                     return null;
                                 }
                                 
                                 return item;
                             })
-                            .filter(item => item && item.length > 0);
+                            .filter(item => item && item.length > 0 && item.length < 100); // Reasonable length for a product name
                         
                         console.log('Filtered items:', relatedItems);
                         
