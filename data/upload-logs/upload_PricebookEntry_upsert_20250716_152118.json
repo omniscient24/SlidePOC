@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-07-16T15:21:18.687566",
+  "object": "PricebookEntry",
+  "operation": "upsert",
+  "result": {
+    "success": true,
+    "partial_success": true,
+    "job_id": "750dp00000C0GlpAAF",
+    "records_processed": 10,
+    "records_failed": 10,
+    "records_created": 0,
+    "message": "Upload completed with errors: 0 succeeded, 10 failed.\n\nError Summary:\n\n\u2022 FIELD_INTEGRITY_EXCEPTION (8 records)\n  FIELD_INTEGRITY_EXCEPTION:Couldn\u2019t save this price book entry. When an active price book entry is related to a product and a product selling model, the product and product selling model must be active.:--\n\n\u2022 UNKNOWN_EXCEPTION (1 records)\n  UNKNOWN_EXCEPTION:common.exception.SqlNoDataFoundException: ERROR: query returned no rows\n  Where: PL/sdb function bashful.cproductaccess.check_pb_entry_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying,character) line 16 (SFSQL 1024) at SQL statement\nPL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 732 (SFSQL 3334) at RETURN\nPL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment\n\nSQLException while executing plsql statement: {call cAccess.check_entity_access_proc_ncu(?,?,?,?,?,?,gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?))}(EXCLUDED, EXCLUDED, 01udp000000zjTG, EXCLUDED, true, false, true, false, true, false)\n\nSQLState: P0002\nWhere: PL/sdb function bashful.cproductaccess.check_pb_entry_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying,character) line 16 (SFSQL 1024) at SQL statement\nPL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 732 (SFSQL 3334) at RETURN\nPL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment\nFile: plsdb_exec.c, Routine: exec_stmt_execsql_body, Line: 3881\n; [conn=STANDARD:1:1:3469464:1]:--\n\nTo resolve field permission issues:\n1. Check field-level security settings in Setup > Object Manager > [Object] > Fields & Relationships\n2. Ensure your profile or permission set has 'Edit' access to these fields\n3. For Revenue Cloud specific fields, ensure Revenue Cloud features are enabled",
+    "failure_details": {
+      "FIELD_INTEGRITY_EXCEPTION": {
+        "count": 8,
+        "message": "FIELD_INTEGRITY_EXCEPTION:Couldn\u2019t save this price book entry. When an active price book entry is related to a product and a product selling model, the product and product selling model must be active.:--",
+        "example_records": []
+      },
+      "UNKNOWN_EXCEPTION": {
+        "count": 1,
+        "message": "UNKNOWN_EXCEPTION:common.exception.SqlNoDataFoundException: ERROR: query returned no rows\n  Where: PL/sdb function bashful.cproductaccess.check_pb_entry_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying,character) line 16 (SFSQL 1024) at SQL statement\nPL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 732 (SFSQL 3334) at RETURN\nPL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment\n\nSQLException while executing plsql statement: {call cAccess.check_entity_access_proc_ncu(?,?,?,?,?,?,gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?))}(EXCLUDED, EXCLUDED, 01udp000000zjTG, EXCLUDED, true, false, true, false, true, false)\n\nSQLState: P0002\nWhere: PL/sdb function bashful.cproductaccess.check_pb_entry_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying,character) line 16 (SFSQL 1024) at SQL statement\nPL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 732 (SFSQL 3334) at RETURN\nPL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment\nFile: plsdb_exec.c, Routine: exec_stmt_execsql_body, Line: 3881\n; [conn=STANDARD:1:1:3469464:1]:--",
+        "example_records": []
+      }
+    }
+  }
+}

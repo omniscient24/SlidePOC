@@ -3007,6 +3007,9 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                     'ProductClassification': [
                         {'object': 'Product2', 'field': 'ProductClassificationId'},
                         {'object': 'ProductClassificationAttr', 'field': 'ProductClassificationId'}
+                    ],
+                    'ProductAttribute': [
+                        {'object': 'ProductAttributeDefinition', 'field': 'AttributeDefinitionId'}
                     ]
                 }
                 

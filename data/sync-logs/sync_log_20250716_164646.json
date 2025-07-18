@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-07-16T16:46:46.833325",
+  "results": {
+    "success": false,
+    "synced": [],
+    "failed": [
+      {
+        "object": "Asset",
+        "error": "No sheet mapping found for Asset"
+      },
+      {
+        "object": "Contract",
+        "error": "No sheet mapping found for Contract"
+      }
+    ],
+    "messages": []
+  }
+}

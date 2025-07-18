@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-07-16T10:10:25.330107",
+  "results": {
+    "success": false,
+    "synced": [],
+    "failed": [
+      {
+        "object": "Product2",
+        "error": "Failed to download records from Salesforce"
+      }
+    ],
+    "messages": []
+  }
+}

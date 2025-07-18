@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-07-16T14:20:39.306549",
+  "object": "Product2",
+  "operation": "upsert",
+  "result": {
+    "success": true,
+    "job_id": null,
+    "records_processed": 0,
+    "records_failed": 0,
+    "records_created": 0,
+    "message": "Processed 0 records, 0 failed"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-07-16T16:50:02.195304",
+  "results": {
+    "success": true,
+    "synced": [
+      {
+        "object": "ProductCategoryProduct",
+        "recordCount": 27,
+        "message": "Successfully synced 27 ProductCategoryProduct records"
+      },
+      {
+        "object": "ProductComponentGroup",
+        "recordCount": 5,
+        "message": "Successfully synced 5 ProductComponentGroup records"
+      },
+      {
+        "object": "ProductRelatedComponent",
+        "recordCount": 17,
+        "message": "Successfully synced 17 ProductRelatedComponent records"
+      },
+      {
+        "object": "AttributeDefinition",
+        "recordCount": 20,
+        "message": "Successfully synced 20 AttributeDefinition records"
+      },
+      {
+        "object": "AttributeCategory",
+        "recordCount": 5,
+        "message": "Successfully synced 5 AttributeCategory records"
+      },
+      {
+        "object": "AttributePicklist",
+        "recordCount": 10,
+        "message": "Successfully synced 10 AttributePicklist records"
+      },
+      {
+        "object": "AttributePicklistValue",
+        "recordCount": 39,
+        "message": "Successfully synced 39 AttributePicklistValue records"
+      },
+      {
+        "object": "ProductAttributeDefinition",
+        "recordCount": 17,
+        "message": "Successfully synced 17 ProductAttributeDefinition records"
+      }
+    ],
+    "failed": [],
+    "messages": []
+  }
+}

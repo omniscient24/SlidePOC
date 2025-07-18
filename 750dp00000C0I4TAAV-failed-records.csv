@@ -1,0 +1,9 @@
+"sf__Id","sf__Error",Id,Name,SellingModelType,Status,PricingTermUnit,PricingTerm
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zJEAQ","Evergreen - Monthly","Evergreen","Active","Months","1.0"
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zKEAQ","Evergreen - Quarterly","Evergreen","Active","Quarterly","1.0"
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zLEAQ","Evergreen - Semi-Annual","Evergreen","Active","Semi-Annual","1.0"
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zMEAQ","Evergreen - Yearly","Evergreen","Active","Annual","1.0"
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zOEAQ","Term Based - Monthly","TermDefined","Active","Months","1.0"
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zPEAQ","Term Based - Quarterly","TermDefined","Active","Quarterly","1.0"
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zQEAQ","Term Based - Semi-Annual","TermDefined","Active","Semi-Annual","1.0"
+"","INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --","0jPdp00000000zREAQ","Term Based - Yearly","TermDefined","Active","Annual","1.0"

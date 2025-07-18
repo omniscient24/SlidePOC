@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-07-16T16:11:39.890648",
+  "object": "PricebookEntry",
+  "operation": "upsert",
+  "result": {
+    "success": true,
+    "partial_success": true,
+    "job_id": "750dp00000C0KMPAA3",
+    "records_processed": 1,
+    "records_failed": 1,
+    "records_created": 0,
+    "message": "Processed 1 records, 1 failed"
+  }
+}

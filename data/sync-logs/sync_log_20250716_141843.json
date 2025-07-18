@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-07-16T14:18:43.605310",
+  "results": {
+    "success": true,
+    "synced": [
+      {
+        "object": "ProductCatalog",
+        "recordCount": 4,
+        "message": "Successfully synced 4 ProductCatalog records"
+      },
+      {
+        "object": "Product2",
+        "recordCount": 35,
+        "message": "Successfully synced 35 Product2 records"
+      }
+    ],
+    "failed": [],
+    "messages": []
+  }
+}

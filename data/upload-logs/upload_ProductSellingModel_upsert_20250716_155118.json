@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-07-16T15:51:18.276987",
+  "object": "ProductSellingModel",
+  "operation": "upsert",
+  "result": {
+    "success": true,
+    "partial_success": true,
+    "job_id": "750dp00000C0I4TAAV",
+    "records_processed": 8,
+    "records_failed": 8,
+    "records_created": 0,
+    "message": "Upload completed with errors: 0 succeeded, 8 failed.\n\nError Summary:\n\n\u2022 INVALID_FIELD (8 records)\n  INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --\n\nTo resolve field permission issues:\n1. Check field-level security settings in Setup > Object Manager > [Object] > Fields & Relationships\n2. Ensure your profile or permission set has 'Edit' access to these fields\n3. For Revenue Cloud specific fields, ensure Revenue Cloud features are enabled",
+    "failure_details": {
+      "INVALID_FIELD": {
+        "count": 8,
+        "message": "INVALID_FIELD:Failed to deserialize field at col 5. Due to, '1.0' is not a valid value for the type xsd:int:PricingTerm --",
+        "example_records": []
+      }
+    }
+  }
+}

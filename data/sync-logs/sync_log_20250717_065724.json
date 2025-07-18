@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-07-17T06:57:24.357489",
+  "results": {
+    "success": true,
+    "synced": [
+      {
+        "object": "Order",
+        "recordCount": 3,
+        "message": "Successfully synced 3 Order records"
+      },
+      {
+        "object": "OrderItem",
+        "recordCount": 24,
+        "message": "Successfully synced 24 OrderItem records"
+      },
+      {
+        "object": "Asset",
+        "recordCount": 25,
+        "message": "Successfully synced 25 Asset records"
+      },
+      {
+        "object": "AssetAction",
+        "recordCount": 25,
+        "message": "Successfully synced 25 AssetAction records"
+      },
+      {
+        "object": "AssetActionSource",
+        "recordCount": 25,
+        "message": "Successfully synced 25 AssetActionSource records"
+      },
+      {
+        "object": "Contract",
+        "recordCount": 1,
+        "message": "Successfully synced 1 Contract records"
+      }
+    ],
+    "failed": [],
+    "messages": []
+  }
+}

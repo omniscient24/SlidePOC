@@ -1,0 +1,23 @@
+"sf__Id","sf__Error",Id,Pricebook2Id,Product2Id,UnitPrice,IsActive,UseStandardPrice,ProductSellingModelId
+"01udp000000zivXAAQ","FIELD_INTEGRITY_EXCEPTION:Couldn’t save this price book entry. When an active price book entry is related to a product and a product selling model, the product and product selling model must be active.:--","01udp000000zivXAAQ","01sa5000001vuxlAAA","01tdp000006HfprAAC","250.0","true","false","0jPdp00000000zREAQ"
+"","UNKNOWN_EXCEPTION:common.exception.SqlNoDataFoundException: ERROR: query returned no rows
+  Where: PL/sdb function bashful.cproductaccess.check_pb_entry_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying,character) line 16 (SFSQL 1024) at SQL statement
+PL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 732 (SFSQL 3334) at RETURN
+PL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment
+
+SQLException while executing plsql statement: {call cAccess.check_entity_access_proc_ncu(?,?,?,?,?,?,gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?))}(EXCLUDED, EXCLUDED, 01udp000000zjTG, EXCLUDED, true, false, true, false, true, false)
+
+SQLState: P0002
+Where: PL/sdb function bashful.cproductaccess.check_pb_entry_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying,character) line 16 (SFSQL 1024) at SQL statement
+PL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 732 (SFSQL 3334) at RETURN
+PL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment
+File: plsdb_exec.c, Routine: exec_stmt_execsql_body, Line: 3881
+; [conn=STANDARD:1:1:3469464:1]:--","01udp000000zjTGAAY","01sa5000001vuxlAAA","01tdp000006JEGlAAO","5000.0","true","false","0jPdp00000000zREAQ"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","","01sa5000001vuxlAAA","01tdp000006iM1fAAE","0.0","true","false","0jPdp00000000zREAQ"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","","01sa5000001vuxlAAA","01tdp000006iM1gAAE","0.0","true","false","0jPdp00000000zREAQ"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","","01sa5000001vuxlAAA","01tdp000006iM1hAAE","0.0","true","false","0jPdp00000000zREAQ"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","","01sa5000001vuxlAAA","01tdp000006iM1iAAE","0.0","true","false","0jPdp00000000zNEAQ"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","","01sa5000001vuxlAAA","01tdp000006iM1jAAE","0.0","true","false","0jPdp00000000zNEAQ"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","","01sa5000001vuxlAAA","01tdp000006iM1kAAE","0.0","true","false","0jPdp00000000zNEAQ"
+"","FIELD_INTEGRITY_EXCEPTION:Couldn’t create this price book entry. First add a product selling model option to the related product and product selling model.:--","","01sa5000001vuxlAAA","01tdp000006iM1lAAE","0.0","true","false","0jPdp00000000zNEAQ"
+"","DUPLICATE_VALUE:This price definition already exists in this price book:--","","01sa5000001vuxlAAA","01tdp000006iM1mAAE","0.0","false","false",""

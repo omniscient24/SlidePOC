@@ -1,0 +1,17 @@
+"sf__Id","sf__Error",Id,Name,Description,IsActive,IsStandard,IsArchived,ValidFrom,ValidTo
+"","UNKNOWN_EXCEPTION:common.exception.SqlNoDataFoundException: ERROR: query returned no rows
+  Where: PL/sdb function bashful.cproductaccess.check_pb_edit_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying) line 30 (SFSQL 389) at SQL statement
+PL/sdb function bashful.cproductaccess.check_pricebook_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying) line 16 (SFSQL 564) at RETURN
+PL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 728 (SFSQL 3333) at RETURN
+PL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment
+
+SQLException while executing plsql statement: {call cAccess.check_entity_access_proc_ncu(?,?,?,?,?,?,gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?),gUtil.gtypes_bool_to_boolean(?))}(EXCLUDED, EXCLUDED, 01sdp000001Uf5C, EXCLUDED, true, false, true, false, true, false)
+
+SQLState: P0002
+Where: PL/sdb function bashful.cproductaccess.check_pb_edit_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying) line 30 (SFSQL 389) at SQL statement
+PL/sdb function bashful.cproductaccess.check_pricebook_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,integer,character varying) line 16 (SFSQL 564) at RETURN
+PL/sdb function bashful.caccess.check_entity_access_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 728 (SFSQL 3333) at RETURN
+PL/sdb function bashful.caccess.check_entity_access_proc_ncu(bashful.userinfo,bashful.btsettingsinfo,character varying,numeric,character varying,character varying,boolean,boolean,boolean,boolean) line 8 (SFSQL 3066) at assignment
+File: plsdb_exec.c, Routine: exec_stmt_execsql_body, Line: 3881
+; [conn=STANDARD:1:1:3498686:1]:--","01sdp000001Uf5CAAS","Standard","Standard Price Book","false","false","false","",""
+"01sa5000001vuxlAAA","INVALID_FIELD_FOR_INSERT_UPDATE:Unable to create/update fields: IsStandard, IsArchived. Please check the security settings of this field and verify that it is read/write for your profile or permission set.:IsStandard IsArchived --","01sa5000001vuxlAAA","Standard Price Book","Fortra Price Book","true","true","false","",""

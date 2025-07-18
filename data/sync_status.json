@@ -1,0 +1,47 @@
+{
+  "last_updated": "2025-07-17T06:57:24.358416",
+  "objects": {
+    "Product2": {
+      "last_sync": "2025-07-17T06:34:13.768861",
+      "record_count": 34,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "Order": {
+      "last_sync": "2025-07-17T06:57:24.357733",
+      "record_count": 3,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "OrderItem": {
+      "last_sync": "2025-07-17T06:57:24.357982",
+      "record_count": 24,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "Asset": {
+      "last_sync": "2025-07-17T06:57:24.358091",
+      "record_count": 25,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AssetAction": {
+      "last_sync": "2025-07-17T06:57:24.358201",
+      "record_count": 25,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AssetActionSource": {
+      "last_sync": "2025-07-17T06:57:24.358300",
+      "record_count": 25,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "Contract": {
+      "last_sync": "2025-07-17T06:57:24.358415",
+      "record_count": 1,
+      "sync_success": true,
+      "status": "Synced"
+    }
+  }
+}

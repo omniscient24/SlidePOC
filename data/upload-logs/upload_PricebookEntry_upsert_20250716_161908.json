@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-07-16T16:19:08.334544",
+  "object": "PricebookEntry",
+  "operation": "upsert",
+  "result": {
+    "success": true,
+    "partial_success": true,
+    "job_id": "750dp00000C0L7BAAV",
+    "records_processed": 2,
+    "records_failed": 2,
+    "records_created": 0,
+    "message": "Upload completed with errors: 0 succeeded, 2 failed.\n\nError Summary:\n\n\u2022 FIELD_INTEGRITY_EXCEPTION (2 records)\n  FIELD_INTEGRITY_EXCEPTION:Price Book ID: id value of incorrect type: 01tdp000006JEGlAAO:Pricebook2Id --\n\nTo resolve field permission issues:\n1. Check field-level security settings in Setup > Object Manager > [Object] > Fields & Relationships\n2. Ensure your profile or permission set has 'Edit' access to these fields\n3. For Revenue Cloud specific fields, ensure Revenue Cloud features are enabled",
+    "failure_details": {
+      "FIELD_INTEGRITY_EXCEPTION": {
+        "count": 2,
+        "message": "FIELD_INTEGRITY_EXCEPTION:Price Book ID: id value of incorrect type: 01tdp000006JEGlAAO:Pricebook2Id --",
+        "example_records": []
+      }
+    }
+  }
+}

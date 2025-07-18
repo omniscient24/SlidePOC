@@ -2664,9 +2664,12 @@ a:hover {
         async function showDeleteErrors(errors, apiName) {
             // Check if errors are due to related records
             const hasRelationshipErrors = errors.some(err => 
-                err.message.includes('associated with') || 
-                err.message.includes('FIELD_INTEGRITY_EXCEPTION') ||
-                err.message.includes('DELETE_FAILED')
+                err.message && (
+                    err.message.includes('associated with') || 
+                    err.message.includes('FIELD_INTEGRITY_EXCEPTION') ||
+                    err.message.includes('DELETE_FAILED') ||
+                    err.message.includes('related')
+                )
             );
             
             // If we have relationship errors, fetch detailed dependency information
@@ -2674,6 +2677,8 @@ a:hover {
             if (hasRelationshipErrors) {
                 const recordIds = errors.map(e => e.recordId).filter(id => id);
                 console.log('Fetching dependencies for records:', recordIds);
+                console.log('API Name:', apiName);
+                console.log('Errors:', errors);
                 
                 if (recordIds.length > 0) {
                     try {
@@ -2706,7 +2711,7 @@ a:hover {
             
             // Create dependency tree HTML
             let dependencyTreeHtml = '';
-            if (detailedDependencies) {
+            if (detailedDependencies && detailedDependencies.length > 0) {
                 dependencyTreeHtml = `
                     <div class="dependency-tree" style="margin-top: 20px;">
                         <h4 style="margin-bottom: 15px;">Related Records Hierarchy</h4>
@@ -2715,6 +2720,41 @@ a:hover {
                         </div>
                     </div>
                 `;
+            } else if (hasRelationshipErrors) {
+                // If we have relationship errors but no detailed dependencies, 
+                // create a simplified view from the error messages
+                const relatedFromErrors = [];
+                errors.forEach(err => {
+                    const match = err.message.match(/associated with the following (.+?)[:.]?\s*(.+)/);
+                    if (match) {
+                        const relatedType = match[1];
+                        const relatedItemsText = match[2];
+                        let relatedItems = relatedItemsText.split(/[,;]/).map(item => item.trim()).filter(item => item);
+                        
+                        if (relatedItems.length > 0) {
+                            relatedFromErrors.push({
+                                objectName: relatedType,
+                                parentId: err.recordId,
+                                count: relatedItems.length,
+                                records: relatedItems.map((name, idx) => ({ 
+                                    Id: `${err.recordId}-${idx}`, // Generate a temporary ID
+                                    Name: name 
+                                }))
+                            });
+                        }
+                    }
+                });
+                
+                if (relatedFromErrors.length > 0) {
+                    dependencyTreeHtml = `
+                        <div class="dependency-tree" style="margin-top: 20px;">
+                            <h4 style="margin-bottom: 15px;">Related Records</h4>
+                            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; background: #f8f9fa;">
+                                ${renderDependencyTree(relatedFromErrors, apiName, errors.map(e => e.recordId))}
+                            </div>
+                        </div>
+                    `;
+                }
             }
             
             const errorHtml = `
@@ -2728,10 +2768,20 @@ a:hover {
                             ${errors.map(err => {
                                 // Parse the error message to extract related objects
                                 let relatedInfo = '';
-                                const match = err.message.match(/associated with the following (.+?):\s*(.+)/);
-                                if (match && !detailedDependencies) {
+                                const match = err.message.match(/associated with the following (.+?)[:.]?\s*(.+)/);
+                                if (match) {
                                     const relatedType = match[1];
-                                    const relatedItems = match[2].split(',').map(item => item.trim());
+                                    const relatedItemsText = match[2];
+                                    
+                                    // Parse the related items - they might be listed differently
+                                    let relatedItems = [];
+                                    if (relatedItemsText.includes(',')) {
+                                        relatedItems = relatedItemsText.split(',').map(item => item.trim());
+                                    } else {
+                                        // Might be a different format
+                                        relatedItems = relatedItemsText.split(/\s*[,;]\s*/).map(item => item.trim()).filter(item => item);
+                                    }
+                                    
                                     const displayItems = relatedItems.slice(0, 5);
                                     const remainingCount = relatedItems.length - 5;
                                     
@@ -2985,22 +3035,30 @@ a:hover {
         function formatRecordInfo(objectName, record) {
             const fieldConfig = {
                 'Product2': ['Name', 'ProductCode', 'Family', 'IsActive'],
+                'products': ['Name', 'ProductCode', 'Family', 'IsActive'], // Handle lowercase
                 'ProductAttributeDefinition': ['AttributeDefinitionId', 'Sequence'],
+                'AttributeDefinition': ['Name', 'Code', 'DataType', 'IsActive'],
                 'PricebookEntry': ['UnitPrice', 'IsActive'],
                 'ProductCategory': ['Name', 'Description'],
                 'AttributePicklistValue': ['Name', 'Code']
             };
             
             const fields = fieldConfig[objectName] || ['Name'];
-            let info = `<strong>ID:</strong> ${record.Id}`;
+            let info = '';
+            
+            // Only show ID if it's a real Salesforce ID
+            if (record.Id && !record.Id.includes('-')) {
+                info = `<strong>ID:</strong> ${record.Id}`;
+            }
             
             fields.forEach(field => {
                 if (record[field] !== undefined && record[field] !== null) {
-                    info += ` | <strong>${field}:</strong> ${record[field]}`;
+                    if (info) info += ' | ';
+                    info += `<strong>${field}:</strong> ${record[field]}`;
                 }
             });
             
-            return info;
+            return info || record.Name || 'Unknown Record';
         }
         
         // Check if object type has children

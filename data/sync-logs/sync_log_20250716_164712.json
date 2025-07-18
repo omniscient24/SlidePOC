@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-07-16T16:47:12.485224",
+  "results": {
+    "success": true,
+    "synced": [
+      {
+        "object": "CostBookEntry",
+        "recordCount": 0,
+        "message": "Successfully synced 0 CostBookEntry records"
+      }
+    ],
+    "failed": [],
+    "messages": []
+  }
+}

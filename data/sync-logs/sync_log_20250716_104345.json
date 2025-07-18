@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-07-16T10:43:45.034626",
+  "results": {
+    "success": true,
+    "synced": [
+      {
+        "object": "Product2",
+        "recordCount": 25,
+        "message": "Successfully synced 25 Product2 records"
+      },
+      {
+        "object": "TaxPolicy",
+        "recordCount": 1,
+        "message": "Successfully synced 1 TaxPolicy records"
+      }
+    ],
+    "failed": [],
+    "messages": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-07-16T16:24:29.785748",
+  "results": {
+    "success": true,
+    "synced": [
+      {
+        "object": "PricebookEntry",
+        "recordCount": 31,
+        "message": "Successfully synced 31 PricebookEntry records"
+      }
+    ],
+    "failed": [],
+    "messages": []
+  }
+}

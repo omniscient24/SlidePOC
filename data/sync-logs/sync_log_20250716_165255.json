@@ -1,0 +1,45 @@
+{
+  "timestamp": "2025-07-16T16:52:55.677809",
+  "results": {
+    "success": true,
+    "synced": [
+      {
+        "object": "TaxEngine",
+        "recordCount": 0,
+        "message": "Successfully synced 0 TaxEngine records"
+      },
+      {
+        "object": "ProductSellingModel",
+        "recordCount": 9,
+        "message": "Successfully synced 9 ProductSellingModel records"
+      },
+      {
+        "object": "ProductSellingModelOption",
+        "recordCount": 34,
+        "message": "Successfully synced 34 ProductSellingModelOption records"
+      },
+      {
+        "object": "Pricebook2",
+        "recordCount": 1,
+        "message": "Successfully synced 1 Pricebook2 records"
+      },
+      {
+        "object": "PriceAdjustmentTier",
+        "recordCount": 0,
+        "message": "Successfully synced 0 PriceAdjustmentTier records"
+      },
+      {
+        "object": "AttributeBasedAdjRule",
+        "recordCount": 0,
+        "message": "Successfully synced 0 AttributeBasedAdjRule records"
+      },
+      {
+        "object": "AttributeBasedAdjustment",
+        "recordCount": 0,
+        "message": "Successfully synced 0 AttributeBasedAdjustment records"
+      }
+    ],
+    "failed": [],
+    "messages": []
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-07-17T06:48:04.899017",
+  "results": {
+    "success": false,
+    "synced": [],
+    "failed": [
+      {
+        "object": "Order",
+        "error": "No sheet mapping found for Order"
+      },
+      {
+        "object": "OrderItem",
+        "error": "No sheet mapping found for OrderItem"
+      },
+      {
+        "object": "Asset",
+        "error": "No sheet mapping found for Asset"
+      },
+      {
+        "object": "AssetAction",
+        "error": "No sheet mapping found for AssetAction"
+      },
+      {
+        "object": "AssetActionSource",
+        "error": "No sheet mapping found for AssetActionSource"
+      },
+      {
+        "object": "Contract",
+        "error": "No sheet mapping found for Contract"
+      }
+    ],
+    "messages": []
+  }
+}

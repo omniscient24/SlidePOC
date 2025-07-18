@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-07-16T16:46:55.219242",
+  "results": {
+    "success": false,
+    "synced": [],
+    "failed": [
+      {
+        "object": "Order",
+        "error": "No sheet mapping found for Order"
+      }
+    ],
+    "messages": []
+  }
+}
