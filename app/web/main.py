@@ -2720,6 +2720,9 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                         'ProductClassification': [
                             {'object': 'Product2', 'field': 'ProductClassificationId', 'deleteFirst': True},
                             {'object': 'ProductClassificationAttr', 'field': 'ProductClassificationId', 'deleteFirst': True}
+                        ],
+                        'ProductClassificationAttr': [
+                            {'object': 'ProductAttributeDefinition', 'field': 'ProductClassificationAttrId', 'deleteFirst': True}
                         ]
                     }
                     
@@ -2770,6 +2773,93 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                                                 ]
                                                 
                                                 print(f"[DELETE] Deleting related {rel_object} record: {related_id}")
+                                                
+                                                # First, recursively delete any dependencies of this related record
+                                                if rel_object in cascade_relationships:
+                                                    print(f"[DELETE] Checking for nested dependencies of {rel_object} record {related_id}")
+                                                    
+                                                    # Recursively handle nested cascade deletes
+                                                    nested_request = {
+                                                        'objectName': rel_object,
+                                                        'recordIds': [related_id],
+                                                        'cascadeDelete': True,
+                                                        'connectionAlias': connection_alias
+                                                    }
+                                                    
+                                                    # Inline recursive cascade delete for nested dependencies
+                                                    nested_deleted = []
+                                                    nested_errors = []
+                                                    
+                                                    for nested_rel in cascade_relationships[rel_object]:
+                                                        if not nested_rel.get('deleteFirst', True):
+                                                            continue
+                                                        
+                                                        nested_rel_object = nested_rel['object']
+                                                        nested_rel_field = nested_rel['field']
+                                                        
+                                                        # Query for nested related records
+                                                        nested_query = f"SELECT Id FROM {nested_rel_object} WHERE {nested_rel_field} = '{related_id}'"
+                                                        nested_cmd = [
+                                                            CLI_COMMAND, 'data', 'query',
+                                                            '--query', nested_query,
+                                                            '--target-org', connection_alias,
+                                                            '--json'
+                                                        ]
+                                                        
+                                                        print(f"[DELETE] Checking nested {nested_rel_object} records for {rel_object} {related_id}")
+                                                        nested_result = subprocess.run(nested_cmd, capture_output=True, text=True, timeout=30)
+                                                        
+                                                        if nested_result.returncode == 0:
+                                                            try:
+                                                                nested_data = json.loads(nested_result.stdout)
+                                                                if 'result' in nested_data and 'records' in nested_data['result']:
+                                                                    nested_records = nested_data['result']['records']
+                                                                    
+                                                                    for nested_record in nested_records:
+                                                                        nested_record_id = nested_record['Id']
+                                                                        nested_del_cmd = [
+                                                                            CLI_COMMAND, 'data', 'delete', 'record',
+                                                                            '--sobject', nested_rel_object,
+                                                                            '--record-id', nested_record_id,
+                                                                            '--target-org', connection_alias,
+                                                                            '--json'
+                                                                        ]
+                                                                        
+                                                                        print(f"[DELETE] Deleting nested {nested_rel_object} record: {nested_record_id}")
+                                                                        nested_del_result = subprocess.run(nested_del_cmd, capture_output=True, text=True, timeout=30)
+                                                                        
+                                                                        if nested_del_result.returncode == 0:
+                                                                            nested_deleted.append({
+                                                                                'object': nested_rel_object,
+                                                                                'recordId': nested_record_id,
+                                                                                'parentId': related_id
+                                                                            })
+                                                                        else:
+                                                                            try:
+                                                                                nested_error_data = json.loads(nested_del_result.stdout)
+                                                                                nested_error_msg = nested_error_data.get('message', 'Unknown error')
+                                                                            except:
+                                                                                nested_error_msg = nested_del_result.stderr or 'Failed to delete nested record'
+                                                                            
+                                                                            nested_errors.append({
+                                                                                'object': nested_rel_object,
+                                                                                'recordId': nested_record_id,
+                                                                                'error': nested_error_msg
+                                                                            })
+                                                                            print(f"[DELETE] Failed to delete nested {nested_rel_object} {nested_record_id}: {nested_error_msg}")
+                                                            except:
+                                                                pass
+                                                    
+                                                    if nested_errors:
+                                                        # If nested delete failed, propagate the error
+                                                        for ne in nested_errors:
+                                                            cascade_errors.append(ne)
+                                                        continue
+                                                    
+                                                    # Add nested deletions to our tracking
+                                                    cascade_deleted.extend(nested_deleted)
+                                                
+                                                # Now delete the related record itself
                                                 del_result = subprocess.run(del_cmd, capture_output=True, text=True, timeout=30)
                                                 
                                                 if del_result.returncode == 0:

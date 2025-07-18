@@ -142,6 +142,12 @@ The Sync Data functionality includes:
 - **Field Mapping**: Intelligent field mapping for each Revenue Cloud object
 - **Error Recovery**: Graceful handling of sync failures with detailed error messages
 - **Progress Tracking**: Visual indicators for sync status per object
+- **Enhanced Table Features**:
+  - **Column Sorting**: Click column headers to sort data ascending/descending
+  - **Status Filtering**: Filter objects by sync status (Synced, Not Synced, Empty)
+  - **Visual Enhancements**: Improved icon visibility with drop shadows and proper contrast
+  - **Column Separators**: Subtle vertical lines between columns for better readability
+  - **Improved Category Rows**: Fixed hover behavior to maintain consistent styling
 
 ## Documentation
 

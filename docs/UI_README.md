@@ -73,6 +73,15 @@ This will present you with options:
 - **Dependency Visualization**: Hierarchical display of related records blocking operations
 - **No Toast Notifications**: All feedback through modal dialogs for consistency
 
+### Sync Table Enhancements
+- **Column Sorting**: All columns except checkbox are sortable - click headers to toggle between ascending/descending
+- **Status Filtering**: Filter dropdown on Status column to show specific sync states
+- **Improved Visual Design**:
+  - High-contrast white icons with drop shadows for visibility on blue headers
+  - Subtle vertical column separators (80% height with opacity)
+  - Fixed category row hover states - no background color changes
+- **Consistent Icon Behavior**: Sort and filter icons maintain constant visibility without hover effects
+
 ### Advantages
 - No installation required (runs in browser)
 - Can be accessed remotely

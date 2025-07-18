@@ -664,12 +664,12 @@ a:hover {
         
         /* Prevent hover effects on category rows */
         .category-row:hover {
-            background: var(--text-secondary) !important;
+            background: #e0dfdf !important;
         }
         
         .category-row:hover td {
-            background: var(--text-secondary) !important;
-            color: white !important;
+            background: #e0dfdf !important;
+            color: black !important;
         }
         
         /* Modal styles */
@@ -787,6 +787,77 @@ a:hover {
         .data-table tr.category-row:hover,
         tr.category-row:hover {
             background: #e0dfdf !important;
+        }
+        
+        /* Extra specificity to ensure no hover effects on category rows */
+        table#sync-objects-table tbody tr.category-row:hover,
+        div.sync-table-wrapper table tbody tr.category-row:hover,
+        .sync-table-wrapper .data-table tr.category-row:hover,
+        #sync-tab .category-row:hover {
+            background: #e0dfdf !important;
+            background-color: #e0dfdf !important;
+        }
+        
+        /* Ensure all category row cells maintain their style on hover */
+        .category-row:hover td,
+        tr.category-row:hover td,
+        #sync-objects-table tr.category-row:hover td {
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        
+        /* Make sync table sort and filter icons more visible on blue background */
+        #sync-objects-table thead th {
+            background: #0066cc;
+            color: white;
+            position: relative;
+        }
+        
+        /* Add vertical separators using pseudo-elements for 80% height */
+        #sync-objects-table thead th:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 10%;
+            height: 80%;
+            width: 1px;
+            background: rgba(208, 208, 208, 0.6);
+        }
+        
+        #sync-objects-table tbody td {
+            position: relative;
+        }
+        
+        #sync-objects-table tbody td:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 10%;
+            height: 80%;
+            width: 1px;
+            background: rgba(232, 232, 232, 0.8);
+        }
+        
+        #sync-objects-table .sort-icon svg {
+            opacity: 1 !important;
+            fill: white !important;
+            /* Add drop shadow for better contrast */
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+        }
+        
+        #sync-objects-table .modal-filter-icon svg {
+            opacity: 1 !important;
+            fill: white !important;
+            /* Add drop shadow for better contrast */
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+        }
+        
+        /* Alternative: Make icons brighter using filters */
+        #sync-objects-table .sort-icon svg path,
+        #sync-objects-table .modal-filter-icon svg path {
+            fill: white !important;
+            stroke: rgba(0, 0, 0, 0.3);
+            stroke-width: 0.5px;
         }
         
         .category-row td {
@@ -915,12 +986,6 @@ a:hover {
             margin-left: 12px;
             display: inline-flex;
             align-items: center;
-            opacity: 0.4;
-            transition: opacity 0.2s;
-        }
-        
-        .modal-filter-icon:hover {
-            opacity: 0.8;
         }
         
         .modal-filter-dropdown {
@@ -1018,14 +1083,7 @@ a:hover {
             cursor: pointer !important;
         }
         
-        .sort-icon {
-            opacity: 0.3;
-            transition: opacity 0.2s;
-        }
         
-        .sortable-column:hover .sort-icon {
-            opacity: 0.6;
-        }
         
         /* Action links */
         .action-link {
@@ -1389,11 +1447,61 @@ a:hover {
                                     <th width="40">
                                         <input type="checkbox" id="sync-all" onchange="toggleAllSync()">
                                     </th>
-                                    <th>Object Name</th>
-                                    <th>API Name</th>
-                                    <th>Status</th>
-                                    <th>Last Synced</th>
-                                    <th>Records</th>
+                                    <th class="sortable-column" onclick="sortSyncTable('name')" style="cursor: pointer; user-select: none;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span>Object Name</span>
+                                            <span class="sort-icon" data-column="name" style="display: inline-flex;">
+                                                <svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" >
+                                                    <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="sortable-column" onclick="sortSyncTable('apiName')" style="cursor: pointer; user-select: none;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span>API Name</span>
+                                            <span class="sort-icon" data-column="apiName" style="display: inline-flex;">
+                                                <svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" >
+                                                    <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="sortable-column" onclick="sortSyncTable('status')" style="cursor: pointer; user-select: none;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span>Status</span>
+                                            <span class="sort-icon" data-column="status" style="display: inline-flex;">
+                                                <svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" >
+                                                    <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
+                                                </svg>
+                                            </span>
+                                            <span class="modal-filter-icon" data-column="status" onclick="showSyncFilter(event, 'status')">
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#ffffff" >
+                                                    <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="sortable-column" onclick="sortSyncTable('lastSynced')" style="cursor: pointer; user-select: none;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span>Last Synced</span>
+                                            <span class="sort-icon" data-column="lastSynced" style="display: inline-flex;">
+                                                <svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" >
+                                                    <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="sortable-column" onclick="sortSyncTable('recordCount')" style="cursor: pointer; user-select: none;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span>Records</span>
+                                            <span class="sort-icon" data-column="recordCount" style="display: inline-flex;">
+                                                <svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" >
+                                                    <path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
                                     <th style="min-width: 300px;">Actions</th>
                                 </tr>
                             </thead>
@@ -1774,72 +1882,11 @@ a:hover {
 
         // Populate sync table with objects
         function populateSyncTable() {
-            const tbody = document.getElementById('sync-objects-tbody');
-            let html = '';
-            let currentCategory = '';
-            
             // Fix any incorrect statuses before displaying
             fixEmptyObjectStatuses();
             
-            REVENUE_CLOUD_OBJECTS.forEach((obj, index) => {
-                // Add category row if category changed
-                if (obj.category !== currentCategory) {
-                    currentCategory = obj.category;
-                    html += `
-                        <tr class="category-row" style="background: #e0dfdf !important;" onmouseover="this.style.background='#e0dfdf'" onmouseout="this.style.background='#e0dfdf'">
-                            <td style="color: black; font-weight: 600; text-transform: uppercase; padding: 12px; width: 40px;">
-                                <input type="checkbox" class="category-checkbox" data-category="${currentCategory}" 
-                                       onchange="toggleCategorySelection('${currentCategory}')" 
-                                       style="width: 14px; height: 14px; cursor: pointer;">
-                            </td>
-                            <td colspan="6" style="color: black; font-weight: 600; text-transform: uppercase; padding: 12px;">${currentCategory}</td>
-                        </tr>
-                    `;
-                }
-                
-                const status = objectSyncStatus[obj.apiName] || {
-                    status: 'not-synced',
-                    lastSynced: null,
-                    recordCount: 0
-                };
-                
-                // Ensure status is correct based on record count
-                if (status.status === 'synced' && status.recordCount === 0) {
-                    status.status = 'empty';
-                }
-                
-                html += `
-                    <tr class="object-row">
-                        <td>
-                            <input type="checkbox" name="sync-object" value="${obj.apiName}" id="sync-${obj.apiName}">
-                        </td>
-                        <td>${obj.name}</td>
-                        <td><code>${obj.apiName}</code></td>
-                        <td>
-                            <span class="status-badge ${status.status}" id="status-${obj.apiName}">
-                                ${formatStatus(status.status)}
-                            </span>
-                        </td>
-                        <td id="last-sync-${obj.apiName}">${formatLastSynced(status.lastSynced)}</td>
-                        <td id="record-count-${obj.apiName}">${status.recordCount || '-'}</td>
-                        <td>
-                            <div class="object-actions">
-                                <a class="action-link" onclick="viewWorkbook('${obj.apiName}')" title="View records in workbook">View</a>
-                                <a class="action-link" onclick="downloadWorkbook('${obj.apiName}')" title="Download as Excel file">Download</a>
-                                <a class="action-link" onclick="uploadSingleObject('${obj.apiName}')" title="Upload data from file">Upload</a>
-                                <a class="action-link" onclick="syncSingleObject('${obj.apiName}')" title="Sync from Salesforce">Sync</a>
-                                <a class="action-link" onclick="openObjectManager('${obj.apiName}')" title="Open in Salesforce Object Manager">Object Manager</a>
-                                <a class="action-link" onclick="validateObject('${obj.apiName}')" title="Validate object data">Validate</a>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tbody.innerHTML = html;
-            
-            // Update status summary
-            updateStatusSummary();
+            // Use the new render function
+            renderSyncTable();
         }
         
         // Update status summary counts
@@ -1904,6 +1951,282 @@ a:hover {
             document.querySelectorAll('input[name="sync-object"]').forEach(cb => {
                 cb.checked = selectAll;
             });
+        }
+
+        // Store sync table sort state
+        let syncTableSortState = {
+            column: null,
+            direction: null
+        };
+
+        // Store sync table filter state
+        let syncTableFilterState = {
+            status: []
+        };
+
+        // Sort sync table
+        function sortSyncTable(column) {
+            // Determine sort direction
+            if (syncTableSortState.column === column) {
+                // Toggle direction
+                syncTableSortState.direction = syncTableSortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New column, default to ascending
+                syncTableSortState.column = column;
+                syncTableSortState.direction = 'asc';
+            }
+
+            // Update sort icons
+            document.querySelectorAll('#sync-objects-table .sort-icon').forEach(icon => {
+                const iconColumn = icon.dataset.column;
+                if (iconColumn === column) {
+                    // Update arrow direction
+                    if (syncTableSortState.direction === 'asc') {
+                        icon.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" ><path d="M8 2.5l4 4h-8l4-4z"/></svg>';
+                    } else {
+                        icon.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" ><path d="M8 13.5l-4-4h8l-4 4z"/></svg>';
+                    }
+                } else {
+                    icon.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="#ffffff" ><path d="M8 2.5l4 4h-8l4-4z M8 13.5l-4-4h8l-4 4z"/></svg>';
+                }
+            });
+
+            // Re-render the table with sorted data
+            renderSyncTable(true);
+        }
+
+        // Show sync filter dropdown
+        function showSyncFilter(event, column) {
+            event.stopPropagation();
+            
+            // Remove any existing filter dropdowns
+            document.querySelectorAll('.sync-filter-dropdown').forEach(d => d.remove());
+
+            // Get unique values for the column
+            let uniqueValues = new Set();
+            if (column === 'status') {
+                REVENUE_CLOUD_OBJECTS.forEach(obj => {
+                    const status = objectSyncStatus[obj.apiName]?.status || 'not-synced';
+                    uniqueValues.add(status);
+                });
+            }
+
+            // Create filter dropdown
+            const dropdown = document.createElement('div');
+            dropdown.className = 'sync-filter-dropdown';
+            dropdown.style.cssText = `
+                position: absolute;
+                background: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                padding: 8px;
+                z-index: 1000;
+                min-width: 150px;
+                max-height: 300px;
+                overflow-y: auto;
+            `;
+
+            // Add filter options
+            let filterHtml = '<div style="margin-bottom: 8px;">';
+            filterHtml += '<input type="text" placeholder="Search..." style="width: 100%; padding: 4px; border: 1px solid #e0e0e0; border-radius: 3px;" onkeyup="filterSyncFilterOptions(this)">';
+            filterHtml += '</div>';
+            
+            Array.from(uniqueValues).sort().forEach(value => {
+                const checked = syncTableFilterState[column]?.includes(value) ? 'checked' : '';
+                const displayValue = column === 'status' ? formatStatus(value) : value;
+                filterHtml += `
+                    <label style="display: block; padding: 4px 0; cursor: pointer;">
+                        <input type="checkbox" value="${value}" ${checked} onchange="updateSyncFilter('${column}', this)">
+                        <span style="margin-left: 4px;">${displayValue}</span>
+                    </label>
+                `;
+            });
+
+            filterHtml += `
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
+                    <button onclick="applySyncFilter('${column}')" style="padding: 4px 8px; background: #0066cc; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 4px;">Apply</button>
+                    <button onclick="clearSyncFilter('${column}')" style="padding: 4px 8px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;">Clear</button>
+                </div>
+            `;
+
+            dropdown.innerHTML = filterHtml;
+
+            // Position dropdown
+            const rect = event.target.getBoundingClientRect();
+            dropdown.style.top = rect.bottom + 'px';
+            dropdown.style.left = rect.left + 'px';
+
+            document.body.appendChild(dropdown);
+
+            // Close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', function closeFilter(e) {
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.remove();
+                        document.removeEventListener('click', closeFilter);
+                    }
+                });
+            }, 100);
+        }
+
+        // Filter sync filter options
+        function filterSyncFilterOptions(input) {
+            const searchTerm = input.value.toLowerCase();
+            const labels = input.closest('.sync-filter-dropdown').querySelectorAll('label');
+            
+            labels.forEach(label => {
+                const text = label.textContent.toLowerCase();
+                label.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        // Update sync filter state
+        function updateSyncFilter(column, checkbox) {
+            if (!syncTableFilterState[column]) {
+                syncTableFilterState[column] = [];
+            }
+            
+            if (checkbox.checked) {
+                if (!syncTableFilterState[column].includes(checkbox.value)) {
+                    syncTableFilterState[column].push(checkbox.value);
+                }
+            } else {
+                syncTableFilterState[column] = syncTableFilterState[column].filter(v => v !== checkbox.value);
+            }
+        }
+
+        // Apply sync filter
+        function applySyncFilter(column) {
+            document.querySelectorAll('.sync-filter-dropdown').forEach(d => d.remove());
+            renderSyncTable(true);
+        }
+
+        // Clear sync filter
+        function clearSyncFilter(column) {
+            syncTableFilterState[column] = [];
+            document.querySelectorAll('.sync-filter-dropdown').forEach(d => d.remove());
+            renderSyncTable(true);
+        }
+
+        // Render sync table with sorting and filtering
+        function renderSyncTable(preserveCheckboxes = false) {
+            // Save current checkbox states if needed
+            let checkboxStates = {};
+            if (preserveCheckboxes) {
+                document.querySelectorAll('input[name="sync-object"]').forEach(cb => {
+                    checkboxStates[cb.value] = cb.checked;
+                });
+            }
+
+            // Get filtered and sorted data
+            let tableData = [];
+            REVENUE_CLOUD_OBJECTS.forEach(obj => {
+                const status = objectSyncStatus[obj.apiName] || {
+                    status: 'not-synced',
+                    lastSynced: null,
+                    recordCount: 0
+                };
+
+                // Apply filters
+                if (syncTableFilterState.status && syncTableFilterState.status.length > 0) {
+                    if (!syncTableFilterState.status.includes(status.status)) {
+                        return;
+                    }
+                }
+
+                tableData.push({
+                    ...obj,
+                    status: status.status,
+                    lastSynced: status.lastSynced,
+                    recordCount: status.recordCount
+                });
+            });
+
+            // Apply sorting
+            if (syncTableSortState.column) {
+                tableData.sort((a, b) => {
+                    let aVal = a[syncTableSortState.column];
+                    let bVal = b[syncTableSortState.column];
+
+                    // Handle numeric sorting for recordCount
+                    if (syncTableSortState.column === 'recordCount') {
+                        aVal = parseInt(aVal) || 0;
+                        bVal = parseInt(bVal) || 0;
+                    }
+
+                    // Handle date sorting for lastSynced
+                    if (syncTableSortState.column === 'lastSynced') {
+                        aVal = aVal ? new Date(aVal).getTime() : 0;
+                        bVal = bVal ? new Date(bVal).getTime() : 0;
+                    }
+
+                    // Handle null/undefined values
+                    if (aVal === null || aVal === undefined) aVal = '';
+                    if (bVal === null || bVal === undefined) bVal = '';
+
+                    // Compare
+                    if (aVal < bVal) return syncTableSortState.direction === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return syncTableSortState.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // Rebuild table body
+            const tbody = document.getElementById('sync-objects-tbody');
+            let html = '';
+            let currentCategory = '';
+
+            tableData.forEach(obj => {
+                // Add category row if category changed
+                if (obj.category !== currentCategory) {
+                    currentCategory = obj.category;
+                    html += `
+                        <tr class="category-row" style="background: #e0dfdf !important;">
+                            <td style="color: black; font-weight: 600; text-transform: uppercase; padding: 12px; width: 40px;">
+                                <input type="checkbox" class="category-checkbox" data-category="${currentCategory}" 
+                                       onchange="toggleCategorySelection('${currentCategory}')" 
+                                       style="width: 14px; height: 14px; cursor: pointer;">
+                            </td>
+                            <td colspan="6" style="color: black; font-weight: 600; text-transform: uppercase; padding: 12px;">${currentCategory}</td>
+                        </tr>
+                    `;
+                }
+
+                const checked = preserveCheckboxes && checkboxStates[obj.apiName] ? 'checked' : '';
+                
+                html += `
+                    <tr class="object-row">
+                        <td>
+                            <input type="checkbox" name="sync-object" value="${obj.apiName}" id="sync-${obj.apiName}" ${checked}>
+                        </td>
+                        <td>${obj.name}</td>
+                        <td><code>${obj.apiName}</code></td>
+                        <td>
+                            <span class="status-badge ${obj.status}" id="status-${obj.apiName}">
+                                ${formatStatus(obj.status)}
+                            </span>
+                        </td>
+                        <td id="last-sync-${obj.apiName}">${formatLastSynced(obj.lastSynced)}</td>
+                        <td id="record-count-${obj.apiName}">${obj.recordCount || '-'}</td>
+                        <td>
+                            <div class="object-actions">
+                                <a class="action-link" onclick="viewWorkbook('${obj.apiName}')" title="View records in workbook">View</a>
+                                <a class="action-link" onclick="downloadWorkbook('${obj.apiName}')" title="Download as Excel file">Download</a>
+                                <a class="action-link" onclick="uploadSingleObject('${obj.apiName}')" title="Upload data from file">Upload</a>
+                                <a class="action-link" onclick="syncSingleObject('${obj.apiName}')" title="Sync from Salesforce">Sync</a>
+                                <a class="action-link" onclick="openObjectManager('${obj.apiName}')" title="Open in Salesforce Object Manager">Object Manager</a>
+                                <a class="action-link" onclick="validateObject('${obj.apiName}')" title="Validate object data">Validate</a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            
+            // Update status summary
+            updateStatusSummary();
         }
 
         // View workbook for an object
@@ -2860,7 +3183,7 @@ a:hover {
                         </div>
                         <div class="modal-footer">
                             ${hasRelationshipErrors ? `
-                                <button class="btn btn-danger" onclick="performCascadeDelete('${apiName}', ${JSON.stringify(errors.map(e => e.recordId))})">
+                                <button class="btn btn-danger" id="cascade-delete-btn">
                                     Delete with Related Records
                                 </button>
                             ` : ''}
@@ -2871,10 +3194,25 @@ a:hover {
             `;
             
             document.body.insertAdjacentHTML('beforeend', errorHtml);
+            
+            // Add event listener to cascade delete button if it exists
+            if (hasRelationshipErrors) {
+                const cascadeBtn = document.getElementById('cascade-delete-btn');
+                if (cascadeBtn) {
+                    cascadeBtn.addEventListener('click', function() {
+                        console.log('Cascade delete button clicked');
+                        performCascadeDelete(apiName, errors.map(e => e.recordId).filter(id => id));
+                    });
+                } else {
+                    console.error('Cascade delete button not found');
+                }
+            }
         }
         
         // Perform cascade delete
-        async function performCascadeDelete(apiName, recordIds) {
+        window.performCascadeDelete = async function(apiName, recordIds) {
+            console.log('performCascadeDelete called with:', apiName, recordIds);
+            
             // Close the error modal
             const errorModal = document.getElementById('delete-error-modal');
             if (errorModal) errorModal.remove();
@@ -2897,7 +3235,7 @@ a:hover {
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-danger" onclick="executeCascadeDelete('${apiName}', ${JSON.stringify(recordIds)})">
+                            <button class="btn btn-danger" id="confirm-cascade-btn">
                                 Yes, Delete Everything
                             </button>
                             <button class="btn btn-secondary" onclick="document.getElementById('cascade-confirm-modal').remove()">
@@ -2909,10 +3247,21 @@ a:hover {
             `;
             
             document.body.insertAdjacentHTML('beforeend', confirmHtml);
+            
+            // Add event listener to confirm button
+            const confirmBtn = document.getElementById('confirm-cascade-btn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function() {
+                    console.log('Confirm cascade delete clicked');
+                    executeCascadeDelete(apiName, recordIds);
+                });
+            }
         }
         
         // Execute cascade delete
-        async function executeCascadeDelete(apiName, recordIds) {
+        window.executeCascadeDelete = async function(apiName, recordIds) {
+            console.log('executeCascadeDelete called with:', apiName, recordIds);
+            
             // Close confirmation modal
             const confirmModal = document.getElementById('cascade-confirm-modal');
             if (confirmModal) confirmModal.remove();
@@ -4843,18 +5192,29 @@ a:hover {
             const dropdown = document.querySelector('.modal-filter-dropdown');
             
             if (dropdown) {
-                // Get column from dropdown
-                const column = dropdown.querySelector('input[type="checkbox"]').closest('.filter-option').parentElement.previousElementSibling.querySelector('input').getAttribute('onkeyup').match(/'([^']+)'/)[1];
+                // Get column from the filter search input's onkeyup attribute
+                const filterSearchInput = dropdown.querySelector('.filter-search input');
+                const onkeyupAttr = filterSearchInput.getAttribute('onkeyup');
+                const columnMatch = onkeyupAttr.match(/filterModalOptions\(this,\s*'([^']+)'\)/);
+                const column = columnMatch ? columnMatch[1] : null;
+                
+                if (!column) {
+                    console.error('Could not determine column for filter');
+                    return;
+                }
                 
                 // Get selected values
                 const selectedValues = [];
-                dropdown.querySelectorAll('.filter-option input[type="checkbox"]:checked').forEach((cb, index) => {
+                dropdown.querySelectorAll('.filter-option input[type="checkbox"]').forEach((cb, index) => {
                     if (index === 0) return; // Skip "Select All"
-                    selectedValues.push(cb.value);
+                    if (cb.checked) {
+                        selectedValues.push(cb.value);
+                    }
                 });
                 
                 // Update active filters
-                if (selectedValues.length === 0 || selectedValues.length === dropdown.querySelectorAll('.filter-option input[type="checkbox"]').length - 1) {
+                const allOptions = dropdown.querySelectorAll('.filter-option input[type="checkbox"]').length - 1; // Exclude "Select All"
+                if (selectedValues.length === 0 || selectedValues.length === allOptions) {
                     delete data.activeFilters[column];
                 } else {
                     data.activeFilters[column] = selectedValues;
@@ -4862,6 +5222,7 @@ a:hover {
             }
             
             // Apply all filters
+            console.log('Applying filters:', data.activeFilters);
             data.filteredData = data.originalData.filter(row => {
                 for (const [col, values] of Object.entries(data.activeFilters)) {
                     const rowValue = String(row[col]);
@@ -4871,6 +5232,7 @@ a:hover {
                 }
                 return true;
             });
+            console.log('Filtered data count:', data.filteredData.length, 'from', data.originalData.length);
             
             // Re-sort if there's an active sort
             if (data.sortColumn && data.sortDirection) {
@@ -4898,6 +5260,20 @@ a:hover {
             const tbody = document.getElementById('modal-table-body');
             if (tbody) {
                 tbody.innerHTML = renderModalTableBody(data.sortedData, data.apiName);
+                
+                // Re-initialize checkbox event listeners
+                document.querySelectorAll('.record-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateDeleteButtonState);
+                });
+                
+                // Update delete button state
+                updateDeleteButtonState();
+                
+                // Reset select all checkbox
+                const selectAllCheckbox = document.getElementById('select-all-records');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = false;
+                }
             }
             
             // Close dropdown
