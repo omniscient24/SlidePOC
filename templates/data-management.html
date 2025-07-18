@@ -1566,6 +1566,9 @@ a:hover {
     </div>
 
     <script>
+        // Generate a unique session ID for this session
+        const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        
         // Revenue Cloud objects configuration - Complete list
         const REVENUE_CLOUD_OBJECTS = [
             // Foundation Objects (Phase 1 - Core foundation that must be configured first)
@@ -2214,6 +2217,9 @@ a:hover {
                                     <table class="data-table">
                                         <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                                             <tr>
+                                                <th style="width: 50px; padding: 12px 16px; text-align: center; border-right: 1px solid #e0e0e0; background: #f5f5f5;">
+                                                    <input type="checkbox" id="select-all-records" onchange="toggleAllRecordCheckboxes()" style="cursor: pointer;">
+                                                </th>
                                                 ${(() => {
                                                     // Get all unique keys from all records
                                                     const allKeys = new Set();
@@ -2284,6 +2290,16 @@ a:hover {
                         </div>
                         <div class="modal-footer">
                             <button class="btn btn-secondary" onclick="closeWorkbookModal()">Close</button>
+                            ${hasData ? `
+                                <button class="btn btn-danger" id="delete-records-btn" onclick="console.log('Delete button clicked for', '${apiName}'); deleteSelectedRecords('${apiName}')" disabled>
+                                    <i class="anticon">
+                                        <svg viewBox="64 64 896 896" focusable="false" width="1em" height="1em" fill="currentColor">
+                                            <path d="M360 184h-8c4.4 0 8-3.6 8-8v8h304v-8c0 4.4 3.6 8 8 8h-8v72h72v-80c0-35.3-28.7-64-64-64H352c-35.3 0-64 28.7-64 64v80h72v-72zm504 72H160c-17.7 0-32 14.3-32 32v32c0 4.4 3.6 8 8 8h60.4l24.7 523c1.6 34.1 29.8 61 63.9 61h454c34.2 0 62.3-26.8 63.9-61l24.7-523H888c4.4 0 8-3.6 8-8v-32c0-17.7-14.3-32-32-32zM731.3 840H292.7l-24.2-512h487l-24.2 512z"></path>
+                                        </svg>
+                                    </i>
+                                    Delete Records (<span id="selected-count">0</span>)
+                                </button>
+                            ` : ''}
                             ${hasData || workbookInfo.sheet !== null ? `
                                 <button class="btn btn-primary" onclick="viewSpreadsheet('${apiName}', '${workbookInfo.sheet || ''}')">
                                     <i class="anticon">
@@ -2301,6 +2317,20 @@ a:hover {
             
             // Add modal to page
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Add event listeners for checkboxes
+            setTimeout(() => {
+                // Select all checkbox
+                const selectAllCheckbox = document.getElementById('select-all-records');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.addEventListener('change', toggleAllRecordCheckboxes);
+                }
+                
+                // Individual checkboxes
+                document.querySelectorAll('.record-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateDeleteButtonState);
+                });
+            }, 100);
             
             // Store data globally for sorting and filtering
             window.currentModalData = {
@@ -2328,6 +2358,456 @@ a:hover {
             if (modal) {
                 modal.classList.remove('active');
                 setTimeout(() => modal.remove(), 300);
+            }
+        }
+        
+        // Toggle all record checkboxes
+        function toggleAllRecordCheckboxes() {
+            const selectAll = document.getElementById('select-all-records');
+            const checkboxes = document.querySelectorAll('.record-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                // Only check boxes that have valid record IDs
+                if (checkbox.dataset.recordId && checkbox.dataset.recordId !== 'undefined') {
+                    checkbox.checked = selectAll.checked;
+                }
+            });
+            
+            updateDeleteButtonState();
+        }
+        
+        // Update delete button state based on selection
+        function updateDeleteButtonState() {
+            const selectedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
+            const deleteBtn = document.getElementById('delete-records-btn');
+            const selectedCount = document.getElementById('selected-count');
+            
+            if (deleteBtn) {
+                deleteBtn.disabled = selectedCheckboxes.length === 0;
+                if (selectedCount) {
+                    selectedCount.textContent = selectedCheckboxes.length;
+                }
+            }
+        }
+        
+        // Delete selected records
+        async function deleteSelectedRecords(apiName) {
+            const selectedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
+            if (selectedCheckboxes.length === 0) return;
+            
+            const recordIds = Array.from(selectedCheckboxes)
+                .map(cb => cb.dataset.recordId)
+                .filter(id => id && id !== 'undefined' && id !== 'null');
+            
+            if (recordIds.length === 0) {
+                showModalError('No valid record IDs found. Records must have been synced from Salesforce to have IDs for deletion.', 
+                    ['Sync data from Salesforce first using the Sync from Salesforce option',
+                     'Only records with Salesforce IDs can be deleted',
+                     'Excel-only data cannot be deleted through this interface']);
+                return;
+            }
+            
+            console.log('Selected record IDs for deletion:', recordIds);
+            
+            // Check if these are Excel records (row-N format) vs Salesforce records
+            const isExcelData = recordIds.some(id => id.startsWith('row-'));
+            if (isExcelData) {
+                showModalError('These are template records from Excel. To delete actual Salesforce records, first sync data from Salesforce.');
+                return;
+            }
+            
+            // Show confirmation dialog
+            const confirmHtml = `
+                <div class="modal-overlay active" id="delete-confirm-modal" style="z-index: 2000;">
+                    <div class="modal-content" style="max-width: 500px; z-index: 2001;">
+                        <div class="modal-header">
+                            <span>Confirm Delete</span>
+                            <button class="close-button" onclick="closeDeleteConfirmModal()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <strong>Warning:</strong> You are about to delete ${recordIds.length} record(s) from ${apiName}.
+                                <br><br>
+                                This action cannot be undone.
+                            </div>
+                            <div id="related-records-info" style="display: none;">
+                                <div class="alert alert-info">
+                                    <strong>Related Records:</strong>
+                                    <div id="related-records-list"></div>
+                                    <br>
+                                    <label>
+                                        <input type="checkbox" id="cascade-delete"> Delete related records as well
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeDeleteConfirmModal()">Cancel</button>
+                            <button class="btn btn-danger" onclick="confirmDelete('${apiName}', ${JSON.stringify(recordIds).replace(/"/g, '&quot;')})">
+                                Delete Records
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', confirmHtml);
+            
+            // Check for related records
+            checkRelatedRecords(apiName, recordIds);
+        }
+        
+        // Check for related records
+        async function checkRelatedRecords(apiName, recordIds) {
+            try {
+                const response = await fetch('/api/objects/check-dependencies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        objectName: apiName,
+                        recordIds: recordIds
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.hasRelatedRecords) {
+                    const relatedInfo = document.getElementById('related-records-info');
+                    const relatedList = document.getElementById('related-records-list');
+                    
+                    if (relatedInfo && relatedList) {
+                        relatedInfo.style.display = 'block';
+                        relatedList.innerHTML = result.relatedRecords.map(rel => 
+                            `<div>• ${rel.count} ${rel.objectName} record(s)</div>`
+                        ).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking related records:', error);
+            }
+        }
+        
+        // Close delete confirmation modal
+        function closeDeleteConfirmModal() {
+            const modal = document.getElementById('delete-confirm-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Show error in modal dialog
+        function showModalError(message, suggestions = []) {
+            // Parse error message for common issues and provide suggestions
+            let errorDetails = message;
+            let suggestedFixes = suggestions;
+            
+            // Auto-detect common errors and provide suggestions
+            if (message.includes('Unexpected token')) {
+                if (suggestedFixes.length === 0) {
+                    suggestedFixes = [
+                        'Check your network connection and try again',
+                        'Refresh the page and retry the operation',
+                        'The server may be experiencing issues - wait a moment and try again'
+                    ];
+                }
+                errorDetails = 'The server returned an invalid response. This typically happens when there is a connection issue or server error.';
+            } else if (message.includes('INSUFFICIENT_ACCESS')) {
+                errorDetails = 'You do not have permission to delete these records.';
+                suggestedFixes = [
+                    'Contact your Salesforce administrator for delete permissions',
+                    'Verify you have the correct profile or permission set',
+                    'Check if the records are locked or protected'
+                ];
+            } else if (message.includes('FIELD_INTEGRITY_EXCEPTION')) {
+                errorDetails = 'These records cannot be deleted because they are referenced by other records.';
+                suggestedFixes = [
+                    'Delete the related records first',
+                    'Use the cascade delete option if available',
+                    'Check for lookup relationships referencing these records'
+                ];
+            }
+            
+            const errorHtml = `
+                <div class="modal-overlay active" id="error-modal" style="z-index: 3000;">
+                    <div class="modal-content" style="max-width: 600px; z-index: 3001;">
+                        <div class="modal-header">
+                            <span>Information</span>
+                            <button class="close-button" onclick="document.getElementById('error-modal').remove()">×</button>
+                        </div>
+                        <div class="modal-body" style="padding: 24px;">
+                            <div style="margin-bottom: 20px;">
+                                <h4 style="margin: 0 0 12px 0; color: #dc3545; font-size: 18px;">Error Details</h4>
+                                <div style="background: #f8f9fa; padding: 16px; border-radius: 4px; border-left: 4px solid #dc3545;">
+                                    ${errorDetails}
+                                </div>
+                            </div>
+                            
+                            ${suggestedFixes.length > 0 ? `
+                                <div>
+                                    <h4 style="margin: 0 0 12px 0; color: #28a745; font-size: 18px;">Suggested Solutions</h4>
+                                    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                                        ${suggestedFixes.map(fix => `<li>${fix}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="document.getElementById('error-modal').remove()">OK</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', errorHtml);
+        }
+        
+        // Confirm and execute deletion
+        async function confirmDelete(apiName, recordIds) {
+            const cascadeDelete = document.getElementById('cascade-delete')?.checked || false;
+            
+            // Show loading state
+            showLoading('Deleting records...');
+            
+            try {
+                const response = await fetch('/api/objects/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-Id': sessionId
+                    },
+                    body: JSON.stringify({
+                        objectName: apiName,
+                        recordIds: recordIds,
+                        cascadeDelete: cascadeDelete
+                    })
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Delete response error:', response.status, text);
+                    throw new Error(`Server error: ${response.status} - ${text.substring(0, 200)}`);
+                }
+                
+                const result = await response.json();
+                hideLoading();
+                
+                if (result.success) {
+                    // Show success and close modals
+                    hideLoading();
+                    closeDeleteConfirmModal();
+                    
+                    // Show success message
+                    const successHtml = `
+                        <div class="modal-overlay active" id="success-modal" style="z-index: 3000;">
+                            <div class="modal-content" style="max-width: 500px; z-index: 3001;">
+                                <div class="modal-header">
+                                    <span>Success</span>
+                                    <button class="close-button" onclick="document.getElementById('success-modal').remove()">×</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-success">
+                                        Successfully deleted ${result.deletedCount} record(s).
+                                    </div>
+                                    <p style="margin-top: 10px;">The view will be refreshed to show the updated data.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-primary" onclick="document.getElementById('success-modal').remove()">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', successHtml);
+                    
+                    // Wait a moment then refresh the view
+                    setTimeout(async () => {
+                        // Refresh the workbook view to show updated data
+                        await viewWorkbook(apiName);
+                    }, 1000);
+                } else {
+                    // Show detailed error information
+                    showDeleteErrors(result.errors, apiName);
+                }
+            } catch (error) {
+                hideLoading();
+                showModalError('Failed to delete records: ' + error.message);
+            }
+        }
+        
+        // Show deletion errors in modal
+        function showDeleteErrors(errors, apiName) {
+            // Check if errors are due to related records
+            const hasRelationshipErrors = errors.some(err => 
+                err.message.includes('associated with') || 
+                err.message.includes('FIELD_INTEGRITY_EXCEPTION') ||
+                err.message.includes('DELETE_FAILED')
+            );
+            
+            const errorHtml = `
+                <div class="modal-overlay active" id="delete-error-modal" style="z-index: 3000;">
+                    <div class="modal-content" style="max-width: 700px; z-index: 3001;">
+                        <div class="modal-header">
+                            <span>Delete Errors</span>
+                            <button class="close-button" onclick="document.getElementById('delete-error-modal').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            ${errors.map(err => {
+                                // Parse the error message to extract related objects
+                                let relatedInfo = '';
+                                const match = err.message.match(/associated with the following (.+?):\s*(.+)/);
+                                if (match) {
+                                    const relatedType = match[1];
+                                    const relatedItems = match[2].split(',').map(item => item.trim());
+                                    const displayItems = relatedItems.slice(0, 5);
+                                    const remainingCount = relatedItems.length - 5;
+                                    
+                                    relatedInfo = `
+                                        <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                                            <strong>Related ${relatedType}:</strong>
+                                            <ul style="margin: 5px 0; padding-left: 20px;">
+                                                ${displayItems.map(item => `<li>${item}</li>`).join('')}
+                                                ${remainingCount > 0 ? `<li><em>...and ${remainingCount} more</em></li>` : ''}
+                                            </ul>
+                                        </div>
+                                    `;
+                                }
+                                
+                                return `
+                                    <div class="alert alert-danger">
+                                        <strong>Record ID: ${err.recordId}</strong><br>
+                                        ${err.message.split(':')[0]}<br>
+                                        ${relatedInfo}
+                                        ${err.solution ? `<br><strong>Solution:</strong> ${err.solution}` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                            
+                            ${hasRelationshipErrors ? `
+                                <div class="alert alert-info" style="margin-top: 20px;">
+                                    <strong>Cascade Delete Option</strong><br>
+                                    These records have related data that must be deleted first. 
+                                    Would you like to delete all related records and then retry?
+                                    <br><br>
+                                    <strong>Warning:</strong> This action cannot be undone and will delete all related records.
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="modal-footer">
+                            ${hasRelationshipErrors ? `
+                                <button class="btn btn-danger" onclick="performCascadeDelete('${apiName}', ${JSON.stringify(errors.map(e => e.recordId))})">
+                                    Delete with Related Records
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-secondary" onclick="document.getElementById('delete-error-modal').remove()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', errorHtml);
+        }
+        
+        // Perform cascade delete
+        async function performCascadeDelete(apiName, recordIds) {
+            // Close the error modal
+            const errorModal = document.getElementById('delete-error-modal');
+            if (errorModal) errorModal.remove();
+            
+            // Show confirmation dialog
+            const confirmHtml = `
+                <div class="modal-overlay active" id="cascade-confirm-modal" style="z-index: 3000;">
+                    <div class="modal-content" style="max-width: 600px; z-index: 3001;">
+                        <div class="modal-header">
+                            <span>Confirm Cascade Delete</span>
+                            <button class="close-button" onclick="document.getElementById('cascade-confirm-modal').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <strong>⚠️ Warning: Cascade Delete</strong><br><br>
+                                This will delete the selected records AND all related records that depend on them.
+                                This action cannot be undone.
+                                <br><br>
+                                Are you absolutely sure you want to proceed?
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-danger" onclick="executeCascadeDelete('${apiName}', ${JSON.stringify(recordIds)})">
+                                Yes, Delete Everything
+                            </button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('cascade-confirm-modal').remove()">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', confirmHtml);
+        }
+        
+        // Execute cascade delete
+        async function executeCascadeDelete(apiName, recordIds) {
+            // Close confirmation modal
+            const confirmModal = document.getElementById('cascade-confirm-modal');
+            if (confirmModal) confirmModal.remove();
+            
+            // Show loading
+            showLoading('Performing cascade delete...');
+            
+            try {
+                const response = await fetch('/api/objects/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-Id': sessionId
+                    },
+                    body: JSON.stringify({
+                        objectName: apiName,
+                        recordIds: recordIds,
+                        cascadeDelete: true
+                    })
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${text.substring(0, 200)}`);
+                }
+                
+                const result = await response.json();
+                hideLoading();
+                
+                if (result.success) {
+                    // Show success message
+                    const successHtml = `
+                        <div class="modal-overlay active" id="success-modal" style="z-index: 3000;">
+                            <div class="modal-content" style="max-width: 500px; z-index: 3001;">
+                                <div class="modal-header">
+                                    <span>Success</span>
+                                    <button class="close-button" onclick="document.getElementById('success-modal').remove()">×</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-success">
+                                        Successfully deleted ${result.deletedCount} record(s) and all related records.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-primary" onclick="document.getElementById('success-modal').remove()">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', successHtml);
+                    
+                    // Refresh the view
+                    setTimeout(async () => {
+                        await viewWorkbook(apiName);
+                    }, 1000);
+                } else {
+                    showDeleteErrors(result.errors, apiName);
+                }
+            } catch (error) {
+                hideLoading();
+                showModalError('Failed to perform cascade delete: ' + error.message);
             }
         }
         
@@ -3304,6 +3784,36 @@ a:hover {
                 alert('Error: ' + message);
             }
         }
+        
+        // Show loading overlay
+        function showLoading(message = 'Loading...') {
+            // Remove any existing loading overlay
+            hideLoading();
+            
+            const loadingHtml = `
+                <div id="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div class="spinner" style="border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+                        <div>${message}</div>
+                    </div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+            document.body.insertAdjacentHTML('beforeend', loadingHtml);
+        }
+        
+        // Hide loading overlay
+        function hideLoading() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+            }
+        }
 
         function showSuccess(message, useToast = true) {
             if (useToast) {
@@ -3757,8 +4267,23 @@ a:hover {
             }
             
             // Map each row
-            return data.slice(0, 100).map(row => `
+            return data.slice(0, 100).map((row, index) => {
+                // Get record ID - check for 'Id' or 'id' field
+                const recordId = row.Id || row.id;
+                
+                // If no Salesforce ID, we can't delete from Salesforce
+                const hasId = recordId ? true : false;
+                
+                // Store the entire row data as JSON for deletion purposes
+                const rowDataJson = JSON.stringify(row).replace(/"/g, '&quot;');
+                return `
                 <tr>
+                    <td style="width: 50px; padding: 12px 16px; text-align: center; border-right: 1px solid #e0e0e0;">
+                        ${hasId ? 
+                            `<input type="checkbox" class="record-checkbox" data-record-id="${recordId}" data-row-index="${index}" data-row-data="${rowDataJson}" style="cursor: pointer;">` :
+                            `<span style="color: #999; font-size: 11px;" title="No Salesforce ID - sync data first to enable deletion">—</span>`
+                        }
+                    </td>
                     ${columnsToShow.map(key => {
                         const val = row[key];
                         // Escape HTML characters in values
@@ -3772,7 +4297,7 @@ a:hover {
                         return `<td style="padding: 12px 16px; min-width: 120px; border-right: 1px solid #e0e0e0;">${escapedVal}</td>`;
                     }).join('')}
                 </tr>
-            `).join('');
+            `}).join('');
         }
         
         // Sort modal table

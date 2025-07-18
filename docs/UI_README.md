@@ -38,12 +38,29 @@ This will present you with options:
 - **Real-time Updates**: Server-sent events for live progress
 - **Visual Progress**: See each object's upload status
 - **Clean Logging**: Formatted, color-coded process logs
+- **Data Management**: Complete CRUD operations on Revenue Cloud objects
+- **Bulk Operations**: Select and manage multiple records at once
+
+### Data Management Capabilities
+- **View Records**: Display Excel workbook data in sortable, filterable tables
+- **Delete Records**: Bulk delete with dependency checking
+- **Cascade Delete**: Option to delete related records when dependencies exist
+- **Sync Data**: Pull latest data from Salesforce to Excel files
+- **Excel Integration**: Direct Excel file opening at specific sheets
+
+### Enhanced Error Handling
+- **Modal Dialogs**: All errors displayed in user-friendly modal windows
+- **Plain English Messages**: Technical errors translated to understandable language
+- **Suggested Solutions**: Context-aware recommendations for resolving issues
+- **Dependency Visualization**: Clear display of related records blocking operations
 
 ### Advantages
 - No installation required (runs in browser)
 - Can be accessed remotely
 - Modern, familiar interface
 - Easy to extend and customize
+- Real-time data synchronization
+- Comprehensive error recovery
 
 ## How It Fits with Project Objectives
 

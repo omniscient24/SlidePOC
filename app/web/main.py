@@ -10,6 +10,7 @@ import subprocess
 import json
 import threading
 import os
+import sys
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
 
@@ -2406,6 +2407,14 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                             # Convert DataFrame to list of dictionaries
                             records = df.to_dict('records')
                             
+                            # Log columns for debugging
+                            print(f"[VIEW] Object: {object_name}, Columns: {list(df.columns)}")
+                            if records and len(records) > 0:
+                                print(f"[VIEW] First record keys: {list(records[0].keys())}")
+                                # Check if Id field exists
+                                has_id = 'Id' in records[0] or 'id' in records[0]
+                                print(f"[VIEW] Has Id field: {has_id}")
+                            
                             # Convert NaN values to None for proper JSON serialization
                             for record in records:
                                 for key, value in record.items():
@@ -2587,8 +2596,6 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             
             try:
                 # Use subprocess to open the file with the default application
-                import subprocess
-                import sys
                 
                 if sys.platform == 'darwin':  # macOS
                     if sheet_name:
@@ -2623,6 +2630,418 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                 response = {
                     'success': False,
                     'error': f'Failed to open spreadsheet: {str(e)}'
+                }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        elif self.path == '/api/objects/delete':
+            # Delete records from Salesforce
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            object_name = data.get('objectName')
+            record_ids = data.get('recordIds', [])
+            cascade_delete = data.get('cascadeDelete', False)
+            connection_alias = data.get('connectionAlias')
+            
+            try:
+                print(f"[DELETE] Received delete request for {object_name} with {len(record_ids)} records")
+                print(f"[DELETE] Record IDs: {record_ids}")
+                
+                # Validate record IDs
+                valid_record_ids = [rid for rid in record_ids if rid and rid != 'undefined' and rid != 'null']
+                if len(valid_record_ids) != len(record_ids):
+                    print(f"[DELETE] Filtered out invalid IDs. Valid IDs: {valid_record_ids}")
+                    
+                if not valid_record_ids:
+                    response = {
+                        'success': False,
+                        'errors': [{
+                            'recordId': 'N/A',
+                            'message': 'No valid record IDs provided',
+                            'solution': 'Ensure records have been synced from Salesforce and have valid IDs'
+                        }]
+                    }
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(response).encode())
+                    return
+                
+                record_ids = valid_record_ids
+                
+                # Get connection alias from session if not provided
+                if not connection_alias:
+                    # Use the default org connection
+                    connection_alias = 'fortradp2'
+                    print(f"[DELETE] Using default connection: {connection_alias}")
+                
+                if not connection_alias:
+                    response = {
+                        'success': False,
+                        'errors': [{'message': 'No active Salesforce connection. Please select a connection from the dropdown.'}]
+                    }
+                else:
+                    deleted_count = 0
+                    errors = []
+                    
+                    # Use Salesforce CLI command
+                    CLI_COMMAND = 'sf'
+                    
+                    for record_id in record_ids:
+                        try:
+                            print(f"[DELETE] Deleting record {record_id} from {object_name}")
+                            
+                            # Delete the record using Salesforce CLI
+                            cmd = [
+                                CLI_COMMAND, 'data', 'delete', 'record',
+                                '--sobject', object_name,
+                                '--record-id', record_id,
+                                '--target-org', connection_alias,
+                                '--json'
+                            ]
+                            
+                            print(f"[DELETE] Command: {' '.join(cmd)}")
+                            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                            print(f"[DELETE] Return code: {result.returncode}")
+                            print(f"[DELETE] STDOUT: {result.stdout[:200]}")
+                            print(f"[DELETE] STDERR: {result.stderr[:200] if result.stderr else 'None'}")
+                            
+                            if result.returncode == 0:
+                                deleted_count += 1
+                            else:
+                                # Parse error from CLI response
+                                error_msg = 'Failed to delete record'
+                                solution = ''
+                                
+                                try:
+                                    error_data = json.loads(result.stdout)
+                                    if 'message' in error_data:
+                                        error_msg = error_data['message']
+                                except:
+                                    error_msg = result.stderr or result.stdout
+                                
+                                # Provide helpful error messages
+                                if 'INSUFFICIENT_ACCESS' in error_msg:
+                                    solution = 'Contact your Salesforce administrator for delete permissions on this object.'
+                                elif 'ENTITY_IS_DELETED' in error_msg:
+                                    solution = 'This record has already been deleted.'
+                                elif 'DELETE_FAILED' in error_msg and 'CASCADE_DELETE_FAILED' in error_msg:
+                                    solution = 'Delete related records first or enable cascade delete option.'
+                                elif 'FIELD_INTEGRITY_EXCEPTION' in error_msg:
+                                    solution = 'This record is referenced by other records. Delete those records first or use cascade delete.'
+                                elif 'INVALID_CROSS_REFERENCE_KEY' in error_msg:
+                                    solution = 'The record ID is invalid or the record does not exist.'
+                                elif 'associated with the following' in error_msg:
+                                    # Parse the error to identify what needs to be deleted
+                                    solution = 'Delete the related records first, then retry deleting this record.'
+                                
+                                errors.append({
+                                    'recordId': record_id,
+                                    'message': error_msg,
+                                    'solution': solution
+                                })
+                                
+                        except subprocess.TimeoutExpired:
+                            errors.append({
+                                'recordId': record_id,
+                                'message': 'Operation timed out',
+                                'solution': 'The deletion is taking longer than expected. Try again or check your network connection.'
+                            })
+                        except Exception as e:
+                            errors.append({
+                                'recordId': record_id,
+                                'message': str(e),
+                                'solution': 'An unexpected error occurred. Please try again.'
+                            })
+                    
+                    # If we successfully deleted records, update the Excel file
+                    if deleted_count > 0:
+                        try:
+                            print(f"[DELETE] Updating Excel file to remove {deleted_count} deleted records")
+                            
+                            # Import pandas for Excel manipulation
+                            import pandas as pd
+                            
+                            # Get sheet mapping
+                            sheet_mapping = {
+                                'ProductCatalog': '11_ProductCatalog',
+                                'ProductCategory': '12_ProductCategory',
+                                'Product2': '13_Product2',
+                                'ProductClassification': '08_ProductClassification',
+                                'AttributeDefinition': '09_AttributeDefinition',
+                                'AttributeCategory': '10_AttributeCategory',
+                                'AttributePicklist': '14_AttributePicklist',
+                                'AttributePicklistValue': '18_AttributePicklistValue',
+                                'ProductAttributeDefinition': '17_ProductAttributeDef',
+                                'Pricebook2': '19_Pricebook2',
+                                'PricebookEntry': '20_PricebookEntry',
+                                # Add more mappings as needed
+                            }
+                            
+                            sheet_name = sheet_mapping.get(object_name)
+                            if sheet_name and os.path.exists(workbook):
+                                # Read the Excel file
+                                df = pd.read_excel(workbook, sheet_name=sheet_name)
+                                original_count = len(df)
+                                
+                                # Remove deleted records
+                                successfully_deleted_ids = [rid for rid in record_ids if rid not in [err['recordId'] for err in errors]]
+                                df = df[~df['Id'].isin(successfully_deleted_ids)]
+                                new_count = len(df)
+                                
+                                print(f"[DELETE] Removed {original_count - new_count} records from Excel")
+                                
+                                # Write back to Excel
+                                with pd.ExcelWriter(workbook, mode='a', if_sheet_exists='replace', engine='openpyxl') as writer:
+                                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                                
+                                print(f"[DELETE] Excel file updated successfully")
+                                
+                        except Exception as e:
+                            print(f"[DELETE] Warning: Failed to update Excel file: {e}")
+                            # Don't fail the whole operation if Excel update fails
+                    
+                    response = {
+                        'success': len(errors) == 0,
+                        'deletedCount': deleted_count,
+                        'errors': errors
+                    }
+            
+            except Exception as e:
+                response = {
+                    'success': False,
+                    'errors': [{'message': f'Server error: {str(e)}'}]
+                }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        elif self.path == '/api/objects/check-dependencies':
+            # Check for related records before deletion
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            object_name = data.get('objectName')
+            record_ids = data.get('recordIds', [])
+            
+            try:
+                print(f"[CHECK-DEPS] Checking dependencies for {object_name} records: {record_ids}")
+                
+                # Define known relationships
+                relationships = {
+                    'AttributeDefinition': [
+                        {'object': 'ProductAttributeDefinition', 'field': 'AttributeDefinitionId'},
+                        {'object': 'AttributePicklistValue', 'field': 'AttributeDefinitionId'}
+                    ],
+                    'ProductCatalog': [
+                        {'object': 'ProductCategory', 'field': 'CatalogId'}
+                    ],
+                    'Product2': [
+                        {'object': 'ProductAttributeDefinition', 'field': 'ProductId'},
+                        {'object': 'PricebookEntry', 'field': 'Product2Id'},
+                        {'object': 'ProductCategoryProduct', 'field': 'ProductId'}
+                    ],
+                    'ProductCategory': [
+                        {'object': 'ProductCategoryProduct', 'field': 'ProductCategoryId'}
+                    ]
+                }
+                
+                related_records = []
+                
+                # Check if this object has known relationships
+                if object_name in relationships:
+                    CLI_COMMAND = 'sf'
+                    connection_alias = 'fortradp2'
+                    
+                    for rel in relationships[object_name]:
+                        rel_object = rel['object']
+                        rel_field = rel['field']
+                        
+                        # Query for related records
+                        for record_id in record_ids:
+                            query = f"SELECT Id, Name FROM {rel_object} WHERE {rel_field} = '{record_id}'"
+                            cmd = [
+                                CLI_COMMAND, 'data', 'query',
+                                '--query', query,
+                                '--target-org', connection_alias,
+                                '--json'
+                            ]
+                            
+                            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                            
+                            if result.returncode == 0:
+                                try:
+                                    data = json.loads(result.stdout)
+                                    if 'result' in data and 'records' in data['result']:
+                                        records = data['result']['records']
+                                        if records:
+                                            related_records.append({
+                                                'objectName': rel_object,
+                                                'count': len(records),
+                                                'records': records[:5]  # Show first 5
+                                            })
+                                except:
+                                    pass
+                
+                response = {
+                    'hasRelatedRecords': len(related_records) > 0,
+                    'relatedRecords': related_records
+                }
+                
+            except Exception as e:
+                print(f"[CHECK-DEPS] Error: {str(e)}")
+                response = {
+                    'hasRelatedRecords': False,
+                    'relatedRecords': [],
+                    'error': str(e)
+                }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        elif self.path.startswith('/api/sync/') and self.path != '/api/sync/progress/':
+            # Sync specific object from Salesforce to Excel
+            object_name = self.path.split('/')[-1]
+            
+            try:
+                print(f"[SYNC] Starting sync for {object_name}")
+                
+                # Import necessary modules
+                import pandas as pd
+                
+                # Get sheet mapping
+                sheet_mapping = {
+                    'ProductCatalog': '11_ProductCatalog',
+                    'ProductCategory': '12_ProductCategory',
+                    'Product2': '13_Product2',
+                    'ProductClassification': '08_ProductClassification',
+                    'AttributeDefinition': '09_AttributeDefinition',
+                    'AttributeCategory': '10_AttributeCategory',
+                    'AttributePicklist': '14_AttributePicklist',
+                    'AttributePicklistValue': '18_AttributePicklistValue',
+                    'ProductAttributeDefinition': '17_ProductAttributeDef',
+                    'Pricebook2': '19_Pricebook2',
+                    'PricebookEntry': '20_PricebookEntry',
+                    'CostBook': '01_CostBook',
+                    'BillingPolicy': '06_BillingPolicy',
+                    'BillingTreatment': '07_BillingTreatment',
+                    'LegalEntity': '02_LegalEntity',
+                    'TaxEngine': '03_TaxEngine',
+                    'TaxPolicy': '04_TaxPolicy',
+                    'TaxTreatment': '05_TaxTreatment',
+                }
+                
+                sheet_name = sheet_mapping.get(object_name)
+                if not sheet_name:
+                    response = {
+                        'success': False,
+                        'error': f'No sheet mapping found for {object_name}'
+                    }
+                else:
+                    # Query Salesforce for current data
+                    CLI_COMMAND = 'sf'
+                    connection_alias = 'fortradp2'
+                    
+                    # First, let's try a simple query to test
+                    # For ProductCatalog, we need specific fields since FIELDS(ALL) might not work
+                    field_mappings = {
+                        'ProductCatalog': 'Id, Name, Code, Description, CatalogType, EffectiveStartDate, EffectiveEndDate',
+                        'Product2': 'Id, Name, ProductCode, StockKeepingUnit, Description, IsActive, Family, AvailabilityDate, BasedOnId, IsAssetizable, ConfigureDuringSale, QuantityUnitOfMeasure, UnitOfMeasureId, HelpText, IsSoldOnlyWithOtherProds, TaxPolicyId, DiscontinuedDate, EndOfLifeDate',
+                        'ProductClassification': 'Id, Name, Code, Status',
+                        'AttributeDefinition': 'Id, Name, Label, Description, IsActive, IsRequired, DefaultValue, Code, PicklistId, DefaultHelpText, ValueDescription, SourceSystemIdentifier',
+                        # Add more as needed
+                    }
+                    
+                    # Get fields for this object or use a basic set
+                    fields = field_mappings.get(object_name, 'Id, Name')
+                    
+                    # Build query command
+                    cmd = [
+                        CLI_COMMAND, 'data', 'query',
+                        '--query', f"SELECT {fields} FROM {object_name} LIMIT 2000",
+                        '--target-org', connection_alias,
+                        '--result-format', 'json',
+                        '--json'
+                    ]
+                    
+                    print(f"[SYNC] Executing: {' '.join(cmd)}")
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    
+                    if result.returncode == 0:
+                        try:
+                            data = json.loads(result.stdout)
+                            if 'result' in data and 'records' in data['result']:
+                                records = data['result']['records']
+                                
+                                # Remove attributes field from each record
+                                for record in records:
+                                    if 'attributes' in record:
+                                        del record['attributes']
+                                
+                                print(f"[SYNC] Retrieved {len(records)} records from Salesforce")
+                                
+                                # Convert to DataFrame
+                                df = pd.DataFrame(records)
+                                
+                                # Update Excel file
+                                with pd.ExcelWriter(workbook, mode='a', if_sheet_exists='replace', engine='openpyxl') as writer:
+                                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                                
+                                print(f"[SYNC] Updated Excel sheet {sheet_name} with {len(records)} records")
+                                
+                                response = {
+                                    'success': True,
+                                    'recordCount': len(records),
+                                    'message': f'Synced {len(records)} records from Salesforce'
+                                }
+                            else:
+                                response = {
+                                    'success': False,
+                                    'error': 'No records returned from Salesforce'
+                                }
+                        except json.JSONDecodeError as e:
+                            response = {
+                                'success': False,
+                                'error': f'Failed to parse Salesforce response: {str(e)}'
+                            }
+                    else:
+                        error_msg = result.stderr or result.stdout
+                        print(f"[SYNC] Command failed with return code {result.returncode}")
+                        print(f"[SYNC] STDOUT: {result.stdout}")
+                        print(f"[SYNC] STDERR: {result.stderr}")
+                        
+                        # Try to parse error from JSON response
+                        try:
+                            error_data = json.loads(result.stdout)
+                            if 'message' in error_data:
+                                error_msg = error_data['message']
+                            elif 'name' in error_data:
+                                error_msg = error_data.get('name', 'Unknown error')
+                        except:
+                            pass
+                            
+                        response = {
+                            'success': False,
+                            'error': f'Salesforce query failed: {error_msg}'
+                        }
+                        
+            except Exception as e:
+                print(f"[SYNC] Error: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                response = {
+                    'success': False,
+                    'error': f'Sync error: {str(e)}'
                 }
             
             self.send_response(200)

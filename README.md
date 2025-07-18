@@ -106,6 +106,31 @@ The View modals in the Data Management page now include:
   - Graceful handling of missing sheets with informative messages
 - **Org Connection Display**: Current Salesforce org shown in header with wider dropdown for better visibility
 
+### Data Management Delete Functionality
+
+The Data Management page now supports bulk record deletion with the following features:
+
+- **Bulk Selection**: Select multiple records using checkboxes in View modals
+- **Delete Records Button**: Dynamic button showing count of selected records
+- **Dependency Checking**: Automatic detection of related records that would block deletion
+- **Cascade Delete**: Option to delete records along with their dependencies when needed
+- **Modal-Based Error Handling**: All errors displayed in formatted modal dialogs with:
+  - Clear error descriptions in plain English
+  - Suggested solutions for common issues
+  - Related record listings for dependency errors
+- **Excel Synchronization**: Automatic Excel file updates after successful deletions
+- **View Refresh**: Automatic view refresh to show updated data after operations
+
+### Salesforce Data Synchronization
+
+The Sync Data functionality includes:
+
+- **Object-Level Sync**: Sync individual objects from Salesforce to local Excel files
+- **Real-Time Updates**: Pull latest data from Salesforce org to ensure accuracy
+- **Field Mapping**: Intelligent field mapping for each Revenue Cloud object
+- **Error Recovery**: Graceful handling of sync failures with detailed error messages
+- **Progress Tracking**: Visual indicators for sync status per object
+
 ## Documentation
 
 - [Upload Guide](docs/REVENUE_CLOUD_UPLOAD_GUIDE.md) - Detailed upload instructions
