@@ -2725,11 +2725,53 @@ a:hover {
                 // create a simplified view from the error messages
                 const relatedFromErrors = [];
                 errors.forEach(err => {
-                    const match = err.message.match(/associated with the following (.+?)[:.]?\s*(.+)/);
-                    if (match) {
-                        const relatedType = match[1];
-                        const relatedItemsText = match[2];
-                        let relatedItems = relatedItemsText.split(/[,;]/).map(item => item.trim()).filter(item => item);
+                    console.log('Processing error message:', err.message);
+                    
+                    // Look for "associated with the following" pattern
+                    const assocIndex = err.message.indexOf('associated with the following');
+                    if (assocIndex > -1) {
+                        // Extract everything after "following"
+                        const afterFollowing = err.message.substring(assocIndex + 'associated with the following'.length).trim();
+                        
+                        // The format appears to be "products." followed by the actual list
+                        // Extract the object type and the list separately
+                        let relatedType = 'products'; // default
+                        let itemsList = afterFollowing;
+                        
+                        // Check if there's a period or colon separating the type from the list
+                        const typeMatch = afterFollowing.match(/^(\w+)[.:]\s*/);
+                        if (typeMatch) {
+                            relatedType = typeMatch[1];
+                            itemsList = afterFollowing.substring(typeMatch[0].length);
+                        }
+                        
+                        console.log('Found related type:', relatedType);
+                        console.log('Items list:', itemsList);
+                        
+                        // Split by commas but handle various formats
+                        let relatedItems = itemsList.split(',').map(item => item.trim());
+                        
+                        // Filter out empty items and items that are just dots
+                        relatedItems = relatedItems
+                            .map(item => {
+                                // Remove trailing periods
+                                item = item.replace(/\.$/, '').trim();
+                                
+                                // Skip "and X more" pattern
+                                if (item.match(/^\.+and \d+ more/) || item.match(/^and \d+ more/)) {
+                                    return null;
+                                }
+                                
+                                // Skip items that are just dots
+                                if (item === '...' || item === '..' || item === '.') {
+                                    return null;
+                                }
+                                
+                                return item;
+                            })
+                            .filter(item => item && item.length > 0);
+                        
+                        console.log('Filtered items:', relatedItems);
                         
                         if (relatedItems.length > 0) {
                             relatedFromErrors.push({
@@ -2766,42 +2808,17 @@ a:hover {
                         </div>
                         <div class="modal-body">
                             ${errors.map(err => {
-                                // Parse the error message to extract related objects
-                                let relatedInfo = '';
-                                const match = err.message.match(/associated with the following (.+?)[:.]?\s*(.+)/);
-                                if (match) {
-                                    const relatedType = match[1];
-                                    const relatedItemsText = match[2];
-                                    
-                                    // Parse the related items - they might be listed differently
-                                    let relatedItems = [];
-                                    if (relatedItemsText.includes(',')) {
-                                        relatedItems = relatedItemsText.split(',').map(item => item.trim());
-                                    } else {
-                                        // Might be a different format
-                                        relatedItems = relatedItemsText.split(/\s*[,;]\s*/).map(item => item.trim()).filter(item => item);
-                                    }
-                                    
-                                    const displayItems = relatedItems.slice(0, 5);
-                                    const remainingCount = relatedItems.length - 5;
-                                    
-                                    relatedInfo = `
-                                        <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                                            <strong>Related ${relatedType}:</strong>
-                                            <ul style="margin: 5px 0; padding-left: 20px;">
-                                                ${displayItems.map(item => `<li>${item}</li>`).join('')}
-                                                ${remainingCount > 0 ? `<li><em>...and ${remainingCount} more</em></li>` : ''}
-                                            </ul>
-                                        </div>
-                                    `;
+                                // Add default solution for relationship errors if not provided
+                                let solution = err.solution;
+                                if (!solution && err.message && err.message.includes('associated with')) {
+                                    solution = 'Delete the related records first, then retry deleting this record.';
                                 }
                                 
                                 return `
                                     <div class="alert alert-danger">
                                         <strong>Record ID: ${err.recordId}</strong><br>
-                                        ${err.message.split(':')[0]}<br>
-                                        ${relatedInfo}
-                                        ${err.solution ? `<br><strong>Solution:</strong> ${err.solution}` : ''}
+                                        ${err.message.split('.')[0]}.
+                                        ${solution ? `<br><br><strong>Solution:</strong> ${solution}` : ''}
                                     </div>
                                 `;
                             }).join('')}
