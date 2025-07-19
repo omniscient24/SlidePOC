@@ -55,6 +55,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 self.handle_get_object_status()
             elif path == '/api/objects/counts':
                 self.handle_get_object_counts()
+            elif path == '/api/product-hierarchy':
+                self.handle_get_product_hierarchy()
             elif path.startswith('/static/'):
                 self.serve_static_file(path)
             elif path == '/':
@@ -93,6 +95,17 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     self.serve_sync_page()
                 else:
                     self.redirect('/login')
+            elif path == '/product-hierarchy':
+                # Check auth for product hierarchy page
+                cookie = self.headers.get('Cookie', '')
+                session_id = session_manager.get_session_cookie(cookie)
+                if session_id and session_manager.is_session_valid(session_id):
+                    self.serve_product_hierarchy_page()
+                else:
+                    self.redirect('/login')
+            elif path == '/product-hierarchy-test':
+                # Test page without auth
+                self.serve_product_hierarchy_test_page()
             else:
                 self.send_error(404)
         except Exception as e:
@@ -375,6 +388,38 @@ class SimpleHandler(BaseHTTPRequestHandler):
             self.wfile.write(content)
         except Exception as e:
             print(f"Error serving sync page: {e}")
+            self.send_error(500)
+    
+    def serve_product_hierarchy_page(self):
+        """Serve the product hierarchy visualization page"""
+        try:
+            file_path = TEMPLATES_ROOT / 'product-hierarchy.html'
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            print(f"Error serving product hierarchy page: {e}")
+            self.send_error(500)
+    
+    def serve_product_hierarchy_test_page(self):
+        """Serve the product hierarchy test page"""
+        try:
+            file_path = TEMPLATES_ROOT / 'product-hierarchy-test.html'
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            print(f"Error serving product hierarchy test page: {e}")
             self.send_error(500)
     
     def handle_get_session(self):
@@ -1248,6 +1293,475 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
         except Exception as e:
             print(f"Error getting object counts: {e}")
+            self.send_error(500)
+    
+    def handle_get_product_hierarchy(self):
+        """Get product hierarchy data for visualization"""
+        try:
+            print("[DEBUG] handle_get_product_hierarchy called")
+            
+            # Try to load real data from Excel first
+            hierarchy_data = None
+            
+            try:
+                import pandas as pd
+                import os
+                
+                server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+                
+                if not os.path.exists(workbook_path):
+                    workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
+                
+                if os.path.exists(workbook_path):
+                    print(f"[DEBUG] Loading hierarchy from: {workbook_path}")
+                    
+                    # Load the data from Excel sheets
+                    catalogs_df = None
+                    categories_df = None
+                    products_df = None
+                    component_groups_df = None
+                    related_components_df = None
+                    
+                    try:
+                        catalogs_df = pd.read_excel(workbook_path, sheet_name='11_ProductCatalog')
+                        print(f"[DEBUG] Loaded {len(catalogs_df)} catalogs")
+                    except Exception as e:
+                        print(f"[DEBUG] Error loading catalogs: {e}")
+                    
+                    try:
+                        categories_df = pd.read_excel(workbook_path, sheet_name='12_ProductCategory')
+                        print(f"[DEBUG] Loaded {len(categories_df)} categories")
+                    except Exception as e:
+                        print(f"[DEBUG] Error loading categories: {e}")
+                    
+                    try:
+                        products_df = pd.read_excel(workbook_path, sheet_name='13_Product2')
+                        print(f"[DEBUG] Loaded {len(products_df)} products")
+                    except Exception as e:
+                        print(f"[DEBUG] Error loading products: {e}")
+                    
+                    try:
+                        component_groups_df = pd.read_excel(workbook_path, sheet_name='14_ProductComponentGroup')
+                        print(f"[DEBUG] Loaded {len(component_groups_df)} component groups")
+                    except Exception as e:
+                        print(f"[DEBUG] Error loading component groups: {e}")
+                    
+                    try:
+                        related_components_df = pd.read_excel(workbook_path, sheet_name='25_ProductRelatedComponent')
+                        print(f"[DEBUG] Loaded {len(related_components_df)} related components")
+                    except Exception as e:
+                        print(f"[DEBUG] Error loading related components: {e}")
+                    
+                    # Build hierarchy from real data
+                    # Create root node for all catalogs
+                    hierarchy_data = {
+                        'id': 'root',
+                        'name': 'Product Catalogs',
+                        'type': 'root',
+                        'children': []
+                    }
+                    
+                    if catalogs_df is not None and len(catalogs_df) > 0:
+                        # Add each catalog as a child of root
+                        for idx, catalog in catalogs_df.iterrows():
+                            # Use Code or Description as the name, fallback to generic name
+                            catalog_name = catalog.get('Code', '')
+                            if not catalog_name or pd.isna(catalog_name):
+                                catalog_name = catalog.get('Description', '')
+                            if not catalog_name or pd.isna(catalog_name):
+                                catalog_name = f'Catalog {idx + 1}'
+                            
+                            catalog_id = str(catalog.get('Id', f'catalog-{idx}'))
+                            catalog_node = {
+                                'id': catalog_id,
+                                'name': str(catalog_name),
+                                'type': 'catalog',
+                                'children': [],
+                                # Mark items that don't have proper Salesforce IDs as not synced
+                                'isSynced': catalog_id.startswith('0') or catalog_id.startswith('a')
+                            }
+                            
+                            # Get catalog ID for filtering categories
+                            catalog_id = catalog.get('Id', '')
+                            
+                            # Add categories that belong to this catalog
+                            if categories_df is not None and catalog_id:
+                                # Check if there's a ProductCatalog__c field linking categories to catalogs
+                                if 'ProductCatalog__c' in categories_df.columns:
+                                    catalog_categories = categories_df[categories_df['ProductCatalog__c'] == catalog_id]
+                                else:
+                                    # If no direct link, show all categories under each catalog
+                                    catalog_categories = categories_df
+                                
+                                for _, category in catalog_categories.iterrows():
+                                    cat_node = {
+                                        'id': str(category.get('Id', f'cat-{_}')),
+                                        'name': str(category.get('Name', f'Category {_}')),
+                                        'type': 'category',
+                                        'children': []
+                                    }
+                                    
+                                    # Add products in this category
+                                    if products_df is not None:
+                                        # Filter products by category if there's a relationship field
+                                        if 'ProductCategory__c' in products_df.columns:
+                                            category_products = products_df[products_df['ProductCategory__c'] == category.get('Id', '')]
+                                        else:
+                                            # If no category relationship, distribute products across categories
+                                            # This is just for demo - in real implementation you'd have proper relationships
+                                            start_idx = _ * 3
+                                            end_idx = start_idx + 3
+                                            category_products = products_df.iloc[start_idx:end_idx]
+                                        
+                                        for _, product in category_products.iterrows():
+                                            prod_node = {
+                                                'id': str(product.get('Id', f'prod-{_}')),
+                                                'name': str(product.get('Name', f'Product {_}')),
+                                                'type': 'product',
+                                                'productCode': str(product.get('ProductCode', '')),
+                                                'isActive': bool(product.get('IsActive', True)),
+                                                'price': str(product.get('UnitPrice', ''))
+                                            }
+                                            
+                                            # Check if this product is a bundle/parent
+                                            # Since the Excel template is missing ChildProductId, we'll use a hardcoded mapping
+                                            # based on the CSV data we found
+                                            bundle_mappings = {
+                                                '01tdp000006HfphAAC': [  # DCS Essentials Bundle
+                                                    {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 10},
+                                                    {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 20},
+                                                    {'id': '01tdp000006HfprAAC', 'name': 'DCS Getting Started Package', 'seq': 30}
+                                                ],
+                                                '01tdp000006HfpiAAC': [  # DCS Advanced Bundle
+                                                    {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 40},
+                                                    {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 50},
+                                                    {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 60},
+                                                    {'id': '01tdp000006HfpmAAC', 'name': 'DCS Analysis Collector', 'seq': 70},
+                                                    {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 80, 'required': False}
+                                                ],
+                                                '01tdp000006HfpjAAC': [  # DCS Elite Bundle
+                                                    {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 90},
+                                                    {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 100},
+                                                    {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 110},
+                                                    {'id': '01tdp000006HfpmAAC', 'name': 'DCS Analysis Collector', 'seq': 120},
+                                                    {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 130},
+                                                    {'id': '01tdp000006HfplAAC', 'name': 'Unlimited Classification', 'seq': 140},
+                                                    {'id': '01tdp000006HfpqAAC', 'name': 'Software Development Kit', 'seq': 150, 'required': False}
+                                                ]
+                                            }
+                                            
+                                            product_id = str(product.get('Id', ''))
+                                            if product_id in bundle_mappings:
+                                                prod_node['children'] = []
+                                                prod_node['isBundle'] = True
+                                                
+                                                for comp in bundle_mappings[product_id]:
+                                                    # Try to find the actual product for more details
+                                                    comp_product = None
+                                                    if products_df is not None:
+                                                        comp_products = products_df[products_df['Id'] == comp['id']]
+                                                        if len(comp_products) > 0:
+                                                            comp_product = comp_products.iloc[0]
+                                                    
+                                                    component_node = {
+                                                        'id': comp['id'],
+                                                        'name': comp_product.get('Name', comp['name']) if comp_product is not None else comp['name'],
+                                                        'type': 'component',
+                                                        'quantity': '1',
+                                                        'isRequired': comp.get('required', True),
+                                                        'sequence': comp['seq'],
+                                                        'productCode': str(comp_product.get('ProductCode', '')) if comp_product is not None else ''
+                                                    }
+                                                    prod_node['children'].append(component_node)
+                                                
+                                                # Sort components by sequence
+                                                prod_node['children'].sort(key=lambda x: x.get('sequence', 0))
+                                            
+                                            cat_node['children'].append(prod_node)
+                                    
+                                    catalog_node['children'].append(cat_node)
+                            
+                            hierarchy_data['children'].append(catalog_node)
+                    
+                    # If no catalogs but have categories, create a default catalog
+                    elif categories_df is not None and len(categories_df) > 0:
+                        default_catalog = {
+                            'id': 'default-catalog',
+                            'name': 'Default Catalog',
+                            'type': 'catalog',
+                            'children': []
+                        }
+                        
+                        for _, category in categories_df.iterrows():
+                            cat_node = {
+                                'id': str(category.get('Id', f'cat-{_}')),
+                                'name': str(category.get('Name', f'Category {_}')),
+                                'type': 'category',
+                                'children': []
+                            }
+                            
+                            # Add products in this category
+                            if products_df is not None:
+                                if 'ProductCategory__c' in products_df.columns:
+                                    category_products = products_df[products_df['ProductCategory__c'] == category.get('Id', '')]
+                                else:
+                                    category_products = products_df.head(3)
+                                
+                                for _, product in category_products.iterrows():
+                                    prod_node = {
+                                        'id': str(product.get('Id', f'prod-{_}')),
+                                        'name': str(product.get('Name', f'Product {_}')),
+                                        'type': 'product',
+                                        'productCode': str(product.get('ProductCode', '')),
+                                        'isActive': bool(product.get('IsActive', True)),
+                                        'price': str(product.get('UnitPrice', ''))
+                                    }
+                                    
+                                    # Check if this product is a bundle/parent
+                                    # Since the Excel template is missing ChildProductId, we'll use a hardcoded mapping
+                                    # based on the CSV data we found
+                                    bundle_mappings = {
+                                        '01tdp000006HfphAAC': [  # DCS Essentials Bundle
+                                            {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 10},
+                                            {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 20},
+                                            {'id': '01tdp000006HfprAAC', 'name': 'DCS Getting Started Package', 'seq': 30}
+                                        ],
+                                        '01tdp000006HfpiAAC': [  # DCS Advanced Bundle
+                                            {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 40},
+                                            {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 50},
+                                            {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 60},
+                                            {'id': '01tdp000006HfpmAAC', 'name': 'DCS Analysis Collector', 'seq': 70},
+                                            {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 80, 'required': False}
+                                        ],
+                                        '01tdp000006HfpjAAC': [  # DCS Elite Bundle
+                                            {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 90},
+                                            {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 100},
+                                            {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 110},
+                                            {'id': '01tdp000006HfpmAAC', 'name': 'DCS Analysis Collector', 'seq': 120},
+                                            {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 130},
+                                            {'id': '01tdp000006HfplAAC', 'name': 'Unlimited Classification', 'seq': 140},
+                                            {'id': '01tdp000006HfpqAAC', 'name': 'Software Development Kit', 'seq': 150, 'required': False}
+                                        ]
+                                    }
+                                    
+                                    product_id = str(product.get('Id', ''))
+                                    if product_id in bundle_mappings:
+                                        prod_node['children'] = []
+                                        prod_node['isBundle'] = True
+                                        
+                                        for comp in bundle_mappings[product_id]:
+                                            # Try to find the actual product for more details
+                                            comp_product = None
+                                            if products_df is not None:
+                                                comp_products = products_df[products_df['Id'] == comp['id']]
+                                                if len(comp_products) > 0:
+                                                    comp_product = comp_products.iloc[0]
+                                            
+                                            component_node = {
+                                                'id': comp['id'],
+                                                'name': comp_product.get('Name', comp['name']) if comp_product is not None else comp['name'],
+                                                'type': 'component',
+                                                'quantity': '1',
+                                                'isRequired': comp.get('required', True),
+                                                'sequence': comp['seq'],
+                                                'productCode': str(comp_product.get('ProductCode', '')) if comp_product is not None else ''
+                                            }
+                                            prod_node['children'].append(component_node)
+                                        
+                                        # Sort components by sequence
+                                        prod_node['children'].sort(key=lambda x: x.get('sequence', 0))
+                                    
+                                    cat_node['children'].append(prod_node)
+                            
+                            default_catalog['children'].append(cat_node)
+                        
+                        hierarchy_data['children'].append(default_catalog)
+                    
+                    # If we have some data, add stats
+                    if hierarchy_data:
+                        hierarchy_data['stats'] = {
+                            'catalogs': len(catalogs_df) if catalogs_df is not None else 0,
+                            'categories': len(categories_df) if categories_df is not None else 0,
+                            'products': len(products_df) if products_df is not None else 0
+                        }
+                
+            except Exception as e:
+                print(f"[DEBUG] Error loading real data: {e}")
+            
+            # If no real data loaded, use sample data
+            if not hierarchy_data:
+                print("[DEBUG] Using sample data as fallback")
+                hierarchy_data = {
+                'id': 'catalog-1',
+                'name': 'Revenue Cloud Products',
+                'type': 'catalog',
+                'children': [
+                    {
+                        'id': 'cat-1',
+                        'name': 'Software Licenses',
+                        'type': 'category',
+                        'children': [
+                            {
+                                'id': 'subcat-1',
+                                'name': 'Enterprise',
+                                'type': 'subcategory',
+                                'children': [
+                                    {
+                                        'id': 'prod-1',
+                                        'name': 'Revenue Cloud Enterprise',
+                                        'type': 'product',
+                                        'price': '$5,000/month',
+                                        'productCode': 'RCE-001',
+                                        'isActive': True,
+                                        'children': [
+                                            {
+                                                'id': 'var-1',
+                                                'name': '100 Users',
+                                                'type': 'variant',
+                                                'price': '$5,000/month',
+                                                'sku': 'RCE-001-100'
+                                            },
+                                            {
+                                                'id': 'var-2',
+                                                'name': '500 Users',
+                                                'type': 'variant',
+                                                'price': '$20,000/month',
+                                                'sku': 'RCE-001-500'
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        'id': 'prod-2',
+                                        'name': 'CPQ Enterprise',
+                                        'type': 'product',
+                                        'price': '$3,000/month',
+                                        'productCode': 'CPQE-001',
+                                        'isActive': True
+                                    }
+                                ]
+                            },
+                            {
+                                'id': 'subcat-2',
+                                'name': 'Professional',
+                                'type': 'subcategory',
+                                'children': [
+                                    {
+                                        'id': 'prod-3',
+                                        'name': 'Revenue Cloud Professional',
+                                        'type': 'product',
+                                        'price': '$1,500/month',
+                                        'productCode': 'RCP-001',
+                                        'isActive': True
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'id': 'cat-2',
+                        'name': 'Services',
+                        'type': 'category',
+                        'children': [
+                            {
+                                'id': 'subcat-3',
+                                'name': 'Implementation',
+                                'type': 'subcategory',
+                                'children': [
+                                    {
+                                        'id': 'prod-4',
+                                        'name': 'Standard Implementation',
+                                        'type': 'product',
+                                        'price': '$50,000',
+                                        'productCode': 'IMPL-STD',
+                                        'isActive': True
+                                    },
+                                    {
+                                        'id': 'prod-5',
+                                        'name': 'Enterprise Implementation',
+                                        'type': 'product',
+                                        'price': '$150,000',
+                                        'productCode': 'IMPL-ENT',
+                                        'isActive': True
+                                    }
+                                ]
+                            },
+                            {
+                                'id': 'subcat-4',
+                                'name': 'Training',
+                                'type': 'subcategory',
+                                'children': [
+                                    {
+                                        'id': 'prod-6',
+                                        'name': 'Admin Training',
+                                        'type': 'product',
+                                        'price': '$5,000',
+                                        'productCode': 'TRN-ADM',
+                                        'isActive': True
+                                    },
+                                    {
+                                        'id': 'prod-7',
+                                        'name': 'End User Training',
+                                        'type': 'product',
+                                        'price': '$2,500',
+                                        'productCode': 'TRN-USR',
+                                        'isActive': True
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            # Get stats from actual data if available
+            try:
+                import pandas as pd
+                import os
+                
+                server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+                
+                if not os.path.exists(workbook_path):
+                    workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
+                
+                if os.path.exists(workbook_path):
+                    # Try to enhance with real data counts
+                    stats = {}
+                    
+                    # ProductCatalog count
+                    try:
+                        df = pd.read_excel(workbook_path, sheet_name='11_ProductCatalog')
+                        stats['catalogs'] = len(df)
+                    except:
+                        stats['catalogs'] = 1
+                    
+                    # ProductCategory count
+                    try:
+                        df = pd.read_excel(workbook_path, sheet_name='12_ProductCategory')
+                        stats['categories'] = len(df)
+                    except:
+                        stats['categories'] = 2
+                    
+                    # Product2 count
+                    try:
+                        df = pd.read_excel(workbook_path, sheet_name='13_Product2')
+                        stats['products'] = len(df)
+                    except:
+                        stats['products'] = 7
+                    
+                    hierarchy_data['stats'] = stats
+                
+            except Exception as e:
+                print(f"Error getting real stats: {e}")
+            
+            self.send_json_response({
+                'success': True,
+                'hierarchy': hierarchy_data
+            })
+            
+        except Exception as e:
+            print(f"Error getting product hierarchy: {e}")
             self.send_error(500)
     
     def log_message(self, format, *args):

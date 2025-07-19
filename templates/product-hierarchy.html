@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Hierarchy Visualization - Revenue Cloud Migration</title>
+    
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://unpkg.com/antd@5.12.8/dist/reset.css" rel="stylesheet">
+    
+    <!-- D3.js for visualizations -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- React and Ant Design for UI components -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/antd@5.12.8/dist/antd.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #0176D3;
+            --secondary-color: #014486;
+            --success-color: #2E844A;
+            --warning-color: #FFB75D;
+            --error-color: #BA0517;
+            --background-color: #F3F3F3;
+            --surface-color: #FFFFFF;
+            --text-primary: #181818;
+            --text-secondary: #514F4D;
+            --border-color: #DDDBDA;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .header-content {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* Ant Design Select styling to match our button style */
+        #org-selector-container .ant-select {
+            min-width: 200px;
+        }
+        
+        #org-selector-container .ant-select-selector {
+            background-color: transparent !important;
+            color: var(--primary-color) !important;
+            border: 1px solid var(--primary-color) !important;
+            height: auto !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 4px !important;
+            font-size: 0.875rem !important;
+        }
+        
+        #org-selector-container .ant-select:hover .ant-select-selector {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            border-color: var(--primary-color) !important;
+        }
+        
+        #org-selector-container .ant-select:hover .ant-select-arrow {
+            color: white !important;
+        }
+        
+        #org-selector-container .ant-select-arrow {
+            color: var(--primary-color);
+        }
+        
+        /* Force dropdown to open downward and ensure visibility */
+        .ant-select-dropdown {
+            z-index: 10000 !important;
+        }
+        
+        /* Add space below header for dropdown */
+        .header {
+            overflow: visible !important;
+        }
+        
+        .header-actions {
+            overflow: visible !important;
+        }
+        
+        /* Organization selector wrapper and label */
+        .org-selector-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .field-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        .main-container {
+            width: 100%;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            gap: 1rem;
+            height: calc(100vh - 120px);
+        }
+
+        .visualization-panel {
+            flex: 1;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .visualization-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .visualization-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .control-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background-color: var(--background-color);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        #hierarchy-container {
+            flex: 1;
+            position: relative;
+            background-color: #FAFAFA;
+        }
+
+        .details-panel {
+            width: 400px;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .details-panel.collapsed {
+            transform: translateX(420px);
+        }
+
+        .details-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .details-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .details-section {
+            margin-bottom: 2rem;
+        }
+
+        .details-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--background-color);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-value {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 1.125rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* React Flow Custom Node Styles */
+        .custom-node {
+            background-color: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            min-width: 200px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+
+        .custom-node:hover {
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-color);
+        }
+
+        .custom-node.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(1, 118, 211, 0.2);
+        }
+
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .node-icon {
+            width: 24px;
+            height: 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+
+        .node-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .node-stats {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .node-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Custom Edge Styles */
+        .react-flow__edge-path {
+            stroke: var(--border-color);
+            stroke-width: 2;
+        }
+
+        .react-flow__edge-path:hover {
+            stroke: var(--primary-color);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            z-index: 100;
+        }
+
+        .toolbar-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background-color: transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background-color: var(--background-color);
+        }
+
+        .toolbar-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+
+        /* Breadcrumb */
+        .breadcrumb {
+            padding: 0.75rem 1rem;
+            background-color: var(--background-color);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+
+        .breadcrumb-item {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .breadcrumb-item:hover {
+            color: var(--primary-color);
+        }
+
+        .breadcrumb-separator {
+            margin: 0 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb-current {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        /* Column Headers */
+        .column-header {
+            position: absolute;
+            top: 10px;
+            text-align: center;
+            width: 180px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .column-header-color {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            margin-bottom: 6px;
+        }
+        
+        /* Node dragging styles */
+        .node.dragging rect {
+            opacity: 0.8;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        }
+        
+        .node {
+            transition: none;
+        }
+        
+        .link {
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Highlight path to selected node */
+        .link.highlight {
+            stroke: #FF6900 !important; /* Orange color for active path */
+            stroke-width: 3px !important;
+            opacity: 1 !important;
+        }
+        
+        /* Node hover states */
+        .node rect {
+            transition: none;
+        }
+        
+        .node:hover rect {
+            filter: brightness(1.1) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+            stroke-width: 2px;
+        }
+        
+        /* Selected node styling */
+        .node.selected rect {
+            stroke-width: 3px !important;
+            filter: brightness(1.15) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+        }
+        
+        .node.selected text {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>
+                <i class="fas fa-sitemap"></i>
+                Product Hierarchy Visualization
+            </h1>
+            <div class="header-actions">
+                <div class="org-selector-wrapper">
+                    <label for="org-selector" class="field-label">Org:</label>
+                    <div id="org-selector-container" style="min-width: 250px;"></div>
+                </div>
+                <button class="btn btn-secondary" onclick="window.location.href='/'">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Home
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="breadcrumb">
+        <a href="/" class="breadcrumb-item">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="/data-management" class="breadcrumb-item">Data Management</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Product Hierarchy</span>
+    </div>
+
+    <div class="main-container">
+        <div class="visualization-panel">
+            <div class="visualization-header">
+                <h2 style="font-size: 1.125rem; font-weight: 600;">Hierarchy View</h2>
+                <div class="filter-controls" style="display: flex; align-items: center; gap: 15px; margin-right: 15px;">
+                    <label style="display: flex; align-items: center; gap: 5px; font-size: 0.875rem;">
+                        Show:
+                        <select id="activeFilter" class="filter-select" onchange="applyFilters()" style="padding: 4px 8px; border: 1px solid #DDDBDA; border-radius: 4px; font-size: 0.875rem;">
+                            <option value="all">All Items</option>
+                            <option value="active">Active Only</option>
+                            <option value="inactive">Inactive Only</option>
+                        </select>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; font-size: 0.875rem;">
+                        <input type="checkbox" id="syncedOnlyFilter" onchange="applyFilters()">
+                        Synced Only
+                    </label>
+                </div>
+                <div class="visualization-controls">
+                    <button class="control-btn" onclick="refreshHierarchy()" title="Refresh Data" style="background-color: #0176D3; color: white;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="control-btn" onclick="fitView()" title="Fit to View">
+                        <i class="fas fa-compress"></i>
+                    </button>
+                    <button class="control-btn" onclick="toggleFullscreen()" title="Fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="control-btn" onclick="exportImage()" title="Export as Image">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="hierarchy-container">
+                <div class="loading-overlay" id="loading">
+                    <div class="loading-spinner"></div>
+                </div>
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hierarchy data available</p>
+                    <button class="btn btn-primary" onclick="loadSampleData()">
+                        Load Sample Data
+                    </button>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="toolbar-btn" onclick="zoomIn()" title="Zoom In">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="toolbar-btn" onclick="zoomOut()" title="Zoom Out">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="toolbar-btn" onclick="resetView()" title="Reset View">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button class="toolbar-btn" id="layout-btn" onclick="toggleLayout()" title="Change Layout">
+                    <i class="fas fa-project-diagram"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="details-panel" id="details-panel">
+            <div class="details-header">
+                <h3 style="font-size: 1.125rem; font-weight: 600;">Details</h3>
+                <button class="control-btn" onclick="toggleDetailsPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="details-content" id="details-content">
+                <div class="empty-state" style="height: 200px;">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <p style="font-size: 0.875rem;">Select an item to view details</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentLayout = 'vertical';
+        let selectedNode = null;
+        let originalData = null;
+        let currentData = null;
+        let d3Root = null;
+        let d3Update = null;
+
+
+        // Helper Functions
+        function generateSampleData() {
+            return {
+                id: 'catalog-1',
+                name: 'Revenue Cloud Products',
+                type: 'catalog',
+                children: [
+                    {
+                        id: 'cat-1',
+                        name: 'Software Licenses',
+                        type: 'category',
+                        children: [
+                            {
+                                id: 'subcat-1',
+                                name: 'Enterprise',
+                                type: 'subcategory',
+                                children: [
+                                    {
+                                        id: 'prod-1',
+                                        name: 'Revenue Cloud Enterprise',
+                                        type: 'product',
+                                        price: '$5,000/month',
+                                        children: [
+                                            {
+                                                id: 'var-1',
+                                                name: '100 Users',
+                                                type: 'variant',
+                                                price: '$5,000/month'
+                                            },
+                                            {
+                                                id: 'var-2',
+                                                name: '500 Users',
+                                                type: 'variant',
+                                                price: '$20,000/month'
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        id: 'prod-2',
+                                        name: 'CPQ Enterprise',
+                                        type: 'product',
+                                        price: '$3,000/month'
+                                    }
+                                ]
+                            },
+                            {
+                                id: 'subcat-2',
+                                name: 'Professional',
+                                type: 'subcategory',
+                                children: [
+                                    {
+                                        id: 'prod-3',
+                                        name: 'Revenue Cloud Professional',
+                                        type: 'product',
+                                        price: '$1,500/month'
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 'cat-2',
+                        name: 'Services',
+                        type: 'category',
+                        children: [
+                            {
+                                id: 'subcat-3',
+                                name: 'Implementation',
+                                type: 'subcategory',
+                                children: [
+                                    {
+                                        id: 'prod-4',
+                                        name: 'Standard Implementation',
+                                        type: 'product',
+                                        price: '$50,000'
+                                    },
+                                    {
+                                        id: 'prod-5',
+                                        name: 'Enterprise Implementation',
+                                        type: 'product',
+                                        price: '$150,000'
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
+
+        function showNodeDetails(node) {
+            console.log('showNodeDetails called with:', node);
+            const detailsContent = document.getElementById('details-content');
+            
+            if (!node) {
+                console.error('No node data provided');
+                return;
+            }
+            
+            let detailsHTML = `
+                <div class="details-section">
+                    <div class="section-title">Basic Information</div>
+                    <div class="detail-item">
+                        <span class="detail-label">Name</span>
+                        <span class="detail-value">${node.name || 'Unknown'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Type</span>
+                        <span class="detail-value">${(node.type || 'unknown').charAt(0).toUpperCase() + (node.type || 'unknown').slice(1)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">ID</span>
+                        <span class="detail-value">${node.id || 'N/A'}</span>
+                    </div>
+                    ${node.productCode ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Product Code</span>
+                            <span class="detail-value">${node.productCode}</span>
+                        </div>
+                    ` : ''}
+                    ${node.price ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Price</span>
+                            <span class="detail-value">${node.price}</span>
+                        </div>
+                    ` : ''}
+                    ${node.isActive !== undefined ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Status</span>
+                            <span class="detail-value">${node.isActive ? 'Active' : 'Inactive'}</span>
+                        </div>
+                    ` : ''}
+                    ${node.isBundle ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Type</span>
+                            <span class="detail-value">Bundle Product</span>
+                        </div>
+                    ` : ''}
+                    ${node.quantity !== undefined ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Quantity</span>
+                            <span class="detail-value">${node.quantity}</span>
+                        </div>
+                    ` : ''}
+                    ${node.isRequired !== undefined ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Required</span>
+                            <span class="detail-value">${node.isRequired ? 'Yes' : 'No'}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            if (node.stats) {
+                detailsHTML += `
+                    <div class="details-section">
+                        <div class="section-title">Statistics</div>
+                        ${node.stats.children !== undefined ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Direct Children</span>
+                                <span class="detail-value">${node.stats.children}</span>
+                            </div>
+                        ` : ''}
+                        ${node.stats.products !== undefined ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Total Products</span>
+                                <span class="detail-value">${node.stats.products}</span>
+                            </div>
+                        ` : ''}
+                        ${node.stats.catalogs !== undefined ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Total Catalogs</span>
+                                <span class="detail-value">${node.stats.catalogs}</span>
+                            </div>
+                        ` : ''}
+                        ${node.stats.categories !== undefined ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Total Categories</span>
+                                <span class="detail-value">${node.stats.categories}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // Count children if available
+            if (node.children && node.children.length > 0) {
+                detailsHTML += `
+                    <div class="details-section">
+                        <div class="section-title">Hierarchy Info</div>
+                        <div class="detail-item">
+                            <span class="detail-label">Direct Children</span>
+                            <span class="detail-value">${node.children.length}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            detailsHTML += `
+                <div class="details-section">
+                    <div class="section-title">Actions</div>
+                    <button class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;" onclick="editNode('${node.id}')">
+                        <i class="fas fa-edit"></i>
+                        Edit Details
+                    </button>
+                    <button class="btn btn-secondary" style="width: 100%;" onclick="viewInDataManagement('${node.type}', '${node.id}')">
+                        <i class="fas fa-external-link-alt"></i>
+                        View in Data Management
+                    </button>
+                </div>
+            `;
+
+            detailsContent.innerHTML = detailsHTML;
+        }
+
+        // Control Functions (these will be reimplemented for D3)
+        function fitView() {
+            // TODO: Implement for D3
+        }
+
+        function zoomIn() {
+            // TODO: Implement for D3
+        }
+
+        function zoomOut() {
+            // TODO: Implement for D3
+        }
+
+        function resetView() {
+            // TODO: Implement for D3
+        }
+
+        function toggleLayout() {
+            currentLayout = currentLayout === 'vertical' ? 'horizontal' : 'vertical';
+            refreshHierarchy();
+        }
+
+        function toggleFullscreen() {
+            const container = document.querySelector('.visualization-panel');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function exportImage() {
+            // Implement image export functionality
+            alert('Export functionality coming soon!');
+        }
+
+        function toggleDetailsPanel() {
+            const panel = document.getElementById('details-panel');
+            panel.classList.toggle('collapsed');
+        }
+
+        function refreshHierarchy() {
+            document.getElementById('loading').style.display = 'flex';
+            // Re-render the component
+            renderApp();
+        }
+
+        function loadSampleData() {
+            document.getElementById('empty-state').style.display = 'none';
+            refreshHierarchy();
+        }
+
+        function editNode(nodeId) {
+            // Implement edit functionality
+            alert(`Edit functionality for ${nodeId} coming soon!`);
+        }
+
+        function viewInDataManagement(type, id) {
+            // Navigate to data management with pre-selected object
+            window.location.href = `/data-management?type=${type}&id=${id}`;
+        }
+
+        
+        // Filter functions
+        function applyFilters() {
+            if (!originalData) return;
+            
+            const activeFilter = document.getElementById('activeFilter').value;
+            const syncedOnly = document.getElementById('syncedOnlyFilter').checked;
+            
+            // Deep clone the original data
+            currentData = JSON.parse(JSON.stringify(originalData));
+            
+            // Apply filters recursively
+            filterNode(currentData);
+            
+            // Re-render the tree
+            const container = document.getElementById('hierarchy-container');
+            container.innerHTML = '';
+            renderD3Tree(currentData);
+            
+            function filterNode(node) {
+                if (!node) return true;
+                
+                // Check if node should be visible based on filters
+                let isVisible = true;
+                
+                // Active/Inactive filter (only for nodes with isActive property)
+                if (activeFilter !== 'all' && node.isActive !== undefined) {
+                    if (activeFilter === 'active' && !node.isActive) {
+                        isVisible = false;
+                    } else if (activeFilter === 'inactive' && node.isActive) {
+                        isVisible = false;
+                    }
+                }
+                
+                // Synced filter
+                if (syncedOnly) {
+                    // Check isSynced flag if available, otherwise check ID format
+                    if (node.isSynced !== undefined) {
+                        if (!node.isSynced) {
+                            isVisible = false;
+                        }
+                    } else if (node.id) {
+                        // Fallback: check if ID looks like a Salesforce ID
+                        if (!node.id.startsWith('0') && !node.id.startsWith('a')) {
+                            isVisible = false;
+                        }
+                    }
+                }
+                
+                // Filter children recursively
+                if (node.children) {
+                    node.children = node.children.filter(child => filterNode(child));
+                    // Keep parent if it has visible children
+                    if (node.children.length > 0) {
+                        isVisible = true;
+                    }
+                }
+                
+                return isVisible;
+            }
+        }
+        
+        // D3.js tree visualization with column-based layout
+        function renderD3Tree(data) {
+            const container = document.getElementById('hierarchy-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const g = svg.append('g')
+                .attr('transform', 'translate(100, 50)');  // Increased left margin from 50 to 100
+            
+            // Create separate groups for links and nodes
+            const linksGroup = g.append('g').attr('class', 'links');
+            const nodesGroup = g.append('g').attr('class', 'nodes');
+            
+            // Layout configuration
+            const columnWidth = 250;  // Fixed width between columns
+            const nodeHeight = 60;    // Vertical space per node
+            const nodeWidth = 180;    // Width of each node
+            const nodePadding = 12;   // Padding inside nodes
+            
+            const root = d3.hierarchy(data);
+            
+            // Set initial collapsed state - only show first level (root only)
+            root.descendants().forEach(d => {
+                if (d.depth > 0) {
+                    d._children = d.children;
+                    d.children = null;
+                }
+            });
+            
+            // Function to calculate custom layout
+            function calculateLayout(root) {
+                const levels = [];
+                const nodesByDepth = {};
+                
+                // Group nodes by depth
+                root.descendants().forEach(d => {
+                    if (!nodesByDepth[d.depth]) {
+                        nodesByDepth[d.depth] = [];
+                    }
+                    nodesByDepth[d.depth].push(d);
+                });
+                
+                // Calculate positions for each level
+                Object.keys(nodesByDepth).forEach(depth => {
+                    const nodesAtDepth = nodesByDepth[depth];
+                    const depthNum = parseInt(depth);
+                    
+                    // For product level, we need to arrange all visible products to avoid overlap
+                    if (depthNum === 3 && nodesAtDepth.some(n => n.data.type === 'product')) {
+                        // Get all visible products
+                        const visibleProducts = nodesAtDepth.filter(n => n.data.type === 'product' && n.parent.children);
+                        
+                        if (visibleProducts.length > 0) {
+                            // Sort products by their parent's Y position to maintain relative order
+                            visibleProducts.sort((a, b) => a.parent.y - b.parent.y);
+                            
+                            // Calculate total height needed
+                            const totalHeight = visibleProducts.length * nodeHeight;
+                            const startY = (height - totalHeight) / 2;
+                            
+                            // Position products vertically without overlap
+                            visibleProducts.forEach((node, index) => {
+                                node.x = (depthNum + 1) * columnWidth; // Skip subcategory column
+                                if (!node._manualY) {
+                                    node.y = startY + (index * nodeHeight);
+                                }
+                            });
+                            
+                            // Handle non-product nodes at this depth normally
+                            nodesAtDepth.filter(n => n.data.type !== 'product').forEach(node => {
+                                if (node.parent) {
+                                    node.x = depthNum * columnWidth;
+                                    if (!node._manualY) {
+                                        node.y = node.parent.y;
+                                    }
+                                }
+                            });
+                            
+                            return; // Skip the normal processing for this depth
+                        }
+                    }
+                    
+                    // For component level, arrange all visible components to avoid overlap
+                    if (depthNum === 4 && nodesAtDepth.some(n => n.data.type === 'component')) {
+                        // Get all visible components
+                        const visibleComponents = nodesAtDepth.filter(n => n.data.type === 'component' && n.parent && n.parent.children);
+                        
+                        if (visibleComponents.length > 0) {
+                            // Group components by their parent product
+                            const componentsByProduct = {};
+                            visibleComponents.forEach(comp => {
+                                const productId = comp.parent.data.id;
+                                if (!componentsByProduct[productId]) {
+                                    componentsByProduct[productId] = [];
+                                }
+                                componentsByProduct[productId].push(comp);
+                            });
+                            
+                            // Sort products by Y position
+                            const sortedProducts = Object.keys(componentsByProduct).sort((a, b) => {
+                                const prodA = visibleComponents.find(c => c.parent.data.id === a).parent;
+                                const prodB = visibleComponents.find(c => c.parent.data.id === b).parent;
+                                return prodA.y - prodB.y;
+                            });
+                            
+                            let currentY = 50; // Start from top with some padding
+                            
+                            sortedProducts.forEach(productId => {
+                                const components = componentsByProduct[productId];
+                                // Sort components by sequence if available
+                                components.sort((a, b) => (a.data.sequence || 0) - (b.data.sequence || 0));
+                                
+                                components.forEach((node, index) => {
+                                    node.x = (depthNum + 1) * columnWidth; // Adjust for skipped subcategory
+                                    if (!node._manualY) {
+                                        node.y = currentY + (index * nodeHeight);
+                                    }
+                                });
+                                
+                                currentY += components.length * nodeHeight + 20; // Add spacing between product groups
+                            });
+                            
+                            return; // Skip normal processing for this depth
+                        }
+                    }
+                    
+                    // Normal processing for other depths
+                    // Group nodes by parent to handle alignment
+                    const nodesByParent = {};
+                    nodesAtDepth.forEach(node => {
+                        const parentId = node.parent ? node.parent.data.id : 'root';
+                        if (!nodesByParent[parentId]) {
+                            nodesByParent[parentId] = [];
+                        }
+                        nodesByParent[parentId].push(node);
+                    });
+                    
+                    // Position nodes based on their parent's position
+                    Object.entries(nodesByParent).forEach(([parentId, siblings]) => {
+                        let centerY;
+                        
+                        if (parentId === 'root') {
+                            // Root level - center vertically
+                            const totalHeight = siblings.length * nodeHeight;
+                            centerY = height / 2;
+                        } else {
+                            // Find parent node and use its Y position as center
+                            const parent = siblings[0].parent;
+                            centerY = parent.y;
+                        }
+                        
+                        // Calculate starting Y position to center siblings around parent
+                        const totalHeight = siblings.length * nodeHeight;
+                        const startY = centerY - (totalHeight / 2) + (nodeHeight / 2);
+                        
+                        siblings.forEach((node, index) => {
+                            // Special handling for products that are direct children of categories
+                            let effectiveDepth = depthNum;
+                            if (node.data.type === 'product' && node.parent && node.parent.data.type === 'category') {
+                                // Skip the subcategory column for products directly under categories
+                                effectiveDepth = depthNum + 1;
+                            } else if (node.data.type === 'component' && node.parent && node.parent.data.type === 'product' 
+                                     && node.parent.parent && node.parent.parent.data.type === 'category') {
+                                // Also adjust components of products that skipped subcategory
+                                effectiveDepth = depthNum + 1;
+                            }
+                            
+                            // Always set X position based on effective depth
+                            node.x = effectiveDepth * columnWidth;
+                            
+                            // Only set Y position if it hasn't been manually set
+                            if (!node._manualY) {
+                                node.y = startY + (index * nodeHeight);
+                            }
+                            // If manually positioned, keep the manual Y position
+                        });
+                    });
+                });
+            }
+            
+            // Column header labels and colors
+            const columnInfo = {
+                0: { label: 'All Catalogs', color: '#014486' },
+                1: { label: 'Product Catalog', color: '#0176D3' },
+                2: { label: 'Category', color: '#00D4FF' },
+                3: { label: 'Sub-Category', color: '#9050E9' },
+                4: { label: 'Product', color: '#2E844A' },
+                5: { label: 'Bundle Components', color: '#FF6900' },
+                6: { label: 'Product Variant', color: '#FFB75D' }
+            };
+            
+            // Function to add column headers
+            function addColumnHeaders() {
+                // Get unique depths with visible nodes
+                const visibleDepths = new Set();
+                let maxDepth = 0;
+                root.descendants().forEach(d => {
+                    // Use effective depth for products and components that skip subcategory
+                    let effectiveDepth = d.depth;
+                    if (d.data.type === 'product' && d.parent && d.parent.data.type === 'category') {
+                        effectiveDepth = d.depth + 1;
+                    } else if (d.data.type === 'component' && d.parent && d.parent.data.type === 'product' 
+                             && d.parent.parent && d.parent.parent.data.type === 'category') {
+                        effectiveDepth = d.depth + 1;
+                    }
+                    visibleDepths.add(effectiveDepth);
+                    maxDepth = Math.max(maxDepth, effectiveDepth);
+                });
+                
+                // Ensure all columns from 0 to maxDepth are included
+                for (let i = 0; i <= maxDepth; i++) {
+                    visibleDepths.add(i);
+                }
+                
+                // Check if headers need updating
+                const existingHeaders = d3.select(container).selectAll('.column-header-fixed');
+                const existingDepths = new Set();
+                existingHeaders.each(function() {
+                    const depth = parseInt(d3.select(this).attr('data-depth'));
+                    if (!isNaN(depth)) existingDepths.add(depth);
+                });
+                
+                // Only update if depths have changed
+                const depthsChanged = visibleDepths.size !== existingDepths.size || 
+                    [...visibleDepths].some(d => !existingDepths.has(d));
+                
+                if (!depthsChanged) return;
+                
+                // Remove existing headers and rebuild
+                d3.select(container).selectAll('.column-header-fixed').remove();
+                
+                // Get current transform of the g element
+                const currentTransform = d3.zoomTransform(svg.node());
+                const scale = currentTransform.k;
+                const translateX = currentTransform.x;
+                
+                // Add headers for each visible depth
+                visibleDepths.forEach(depth => {
+                    if (columnInfo[depth]) {
+                        // Create a fixed header div outside the SVG
+                        // Position at center of column (depth * columnWidth) minus half the header width
+                        const columnCenterX = 100 + (depth * columnWidth * scale) + translateX;
+                        const headerLeft = columnCenterX - (nodeWidth / 2);
+                        
+                        const headerDiv = d3.select(container)
+                            .append('div')
+                            .attr('class', 'column-header-fixed')
+                            .style('position', 'absolute')
+                            .style('top', '20px')
+                            .style('left', `${headerLeft}px`)
+                            .style('width', `${nodeWidth}px`)
+                            .style('text-align', 'center')
+                            .style('z-index', '10')
+                            .attr('data-depth', depth);  // Store depth for comparison
+                        
+                        // Add color bar
+                        headerDiv.append('div')
+                            .style('width', '100%')
+                            .style('height', '4px')
+                            .style('background-color', columnInfo[depth].color)
+                            .style('border-radius', '2px')
+                            .style('margin-bottom', '6px');
+                        
+                        // Add label
+                        headerDiv.append('div')
+                            .style('font-size', '0.875rem')
+                            .style('font-weight', '600')
+                            .style('color', 'var(--text-primary)')
+                            .style('text-transform', 'uppercase')
+                            .style('letter-spacing', '0.05em')
+                            .text(columnInfo[depth].label);
+                    }
+                });
+            }
+            
+            // Function to update the tree
+            function update(source) {
+                // Get all nodes
+                const nodes = root.descendants();
+                const links = root.links();
+                
+                // Calculate custom layout
+                calculateLayout(root);
+                
+                // Add column headers
+                addColumnHeaders();
+                
+                // Debug: Log node positions
+                console.log('Node positions after layout:');
+                root.descendants().forEach(d => {
+                    if (d.data.type === 'product' || d.data.type === 'category') {
+                        console.log(`${d.data.name} (${d.data.type}): x=${d.x}, depth=${d.depth}`);
+                    }
+                });
+                
+                // Auto-pan to show expanded content
+                if (source && source.children && source.children.length > 0) {
+                    // Find the rightmost visible node
+                    let maxX = 0;
+                    root.descendants().forEach(d => {
+                        if (d.children) {  // Only consider visible nodes
+                            let effectiveX = d.x;
+                            maxX = Math.max(maxX, effectiveX);
+                        }
+                    });
+                    
+                    console.log('Max X position:', maxX);
+                    console.log('Container width:', container.clientWidth);
+                    
+                    // Calculate required translation to fit content
+                    const containerWidth = container.clientWidth;
+                    const contentWidth = maxX + nodeWidth + 100; // Add some padding
+                    
+                    console.log('Content width:', contentWidth);
+                    
+                    if (contentWidth > containerWidth) {
+                        // Pan left to show the expanded content
+                        const currentTransform = d3.zoomTransform(svg.node());
+                        const newX = Math.min(100, containerWidth - contentWidth);
+                        
+                        console.log('Panning to X:', newX);
+                        
+                        svg.transition()
+                            .duration(500)
+                            .call(zoom.transform, d3.zoomIdentity
+                                .translate(newX, 50)
+                                .scale(currentTransform.k));
+                    }
+                }
+                
+                // Update links
+                const link = linksGroup.selectAll('.link')
+                    .data(links, d => d.source.id + '-' + d.target.id);
+                
+                // Remove old links
+                link.exit().remove();
+                
+                // Define link colors based on depth
+                const linkColors = [
+                    '#014486',   // Depth 0-1: Dark blue (root to catalog)
+                    '#0176D3',   // Depth 1-2: Blue (catalog to category)
+                    '#00D4FF',   // Depth 2-3: Light blue (category to product)
+                    '#9050E9',   // Depth 3-4: Purple (product to component/subcategory)
+                    '#FF6900',   // Depth 4-5: Orange (component relationships)
+                    '#FFB75D'    // Depth 5+: Light orange (deeper levels)
+                ];
+                
+                // Enter new links
+                const linkEnter = link.enter().append('path')
+                    .attr('class', 'link')
+                    .attr('fill', 'none')
+                    .attr('stroke', d => {
+                        // Use source node's depth to determine color
+                        const depth = d.source.depth;
+                        return linkColors[Math.min(depth, linkColors.length - 1)];
+                    })
+                    .attr('stroke-width', 2)
+                    .attr('opacity', 0.6);
+                
+                // Update all links
+                link.merge(linkEnter)
+                    .attr('stroke', d => {
+                        // Ensure color is maintained on update
+                        const depth = d.source.depth;
+                        return linkColors[Math.min(depth, linkColors.length - 1)];
+                    })
+                    .transition()
+                    .duration(500)
+                    .attr('d', d => {
+                        const sourceX = d.source.x + nodeWidth / 2;
+                        const sourceY = d.source.y;
+                        const targetX = d.target.x - nodeWidth / 2;
+                        const targetY = d.target.y;
+                        
+                        // Create a smooth curve
+                        return `M${sourceX},${sourceY}
+                                C${sourceX + 50},${sourceY}
+                                 ${targetX - 50},${targetY}
+                                 ${targetX},${targetY}`;
+                    });
+                
+                // Update nodes
+                const node = nodesGroup.selectAll('.node')
+                    .data(nodes, d => d.data.id);
+                
+                // Remove old nodes
+                node.exit()
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 0)
+                    .remove();
+                
+                // Enter new nodes
+                const nodeEnter = node.enter().append('g')
+                    .attr('class', 'node')
+                    .attr('data-node-id', d => d.data.id)
+                    .attr('transform', d => `translate(${d.x},${d.y})`)
+                    .style('opacity', 0);
+                
+                // Update all nodes
+                node.merge(nodeEnter)
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 1)
+                    .attr('transform', d => `translate(${d.x},${d.y})`);
+                
+                // Add vertical-only drag behavior
+                const drag = d3.drag()
+                    .clickDistance(20) // Increase click distance threshold
+                    .on('start', function(event, d) {
+                        console.log('Drag started');
+                        d3.select(this).raise().style('cursor', 'grabbing');
+                        // Store the original x position to lock horizontal movement
+                        d._fixedX = d.x;
+                    })
+                    .on('drag', function(event, d) {
+                        // Calculate the drag delta
+                        const oldY = d.y;
+                        // Only allow vertical movement
+                        d.y = event.y;
+                        // Mark this position as manually set
+                        d._manualY = true;
+                        // Keep x position fixed to original column
+                        d.x = d._fixedX;
+                        
+                        // Calculate movement delta
+                        const deltaY = d.y - oldY;
+                        
+                        // Get all nodes at the same depth (siblings in the same column)
+                        const nodesAtSameDepth = nodes.filter(n => n.depth === d.depth && n !== d);
+                        
+                        // Move all other nodes in the same column by the same amount
+                        nodesAtSameDepth.forEach(sibling => {
+                            sibling.y += deltaY;
+                            sibling._manualY = true;
+                            // Update their visual positions
+                            d3.select(`[data-node-id="${sibling.data.id}"]`)
+                                .transition()
+                                .duration(0)
+                                .attr('transform', `translate(${sibling.x},${sibling.y})`);
+                        });
+                        
+                        // Move all descendants by the same amount if they exist
+                        if (d.children || d._children) {
+                            const descendants = [];
+                            const collectDescendants = (node) => {
+                                if (node.children) {
+                                    node.children.forEach(child => {
+                                        descendants.push(child);
+                                        collectDescendants(child);
+                                    });
+                                }
+                            };
+                            collectDescendants(d);
+                            
+                            // Apply the same vertical offset to all visible descendants
+                            descendants.forEach(desc => {
+                                desc.y += deltaY;
+                                desc._manualY = true;
+                                // Update their visual positions
+                                d3.select(`[data-node-id="${desc.data.id}"]`)
+                                    .attr('transform', `translate(${desc.x},${desc.y})`);
+                            });
+                        }
+                        
+                        // Update node position
+                        d3.select(this)
+                            .attr('transform', `translate(${d.x},${d.y})`);
+                        
+                        // Update all links in the visualization
+                        linksGroup.selectAll('.link')
+                            .attr('d', l => {
+                                const sourceX = l.source.x + nodeWidth / 2;
+                                const sourceY = l.source.y;
+                                const targetX = l.target.x - nodeWidth / 2;
+                                const targetY = l.target.y;
+                                
+                                return `M${sourceX},${sourceY}
+                                        C${sourceX + 50},${sourceY}
+                                         ${targetX - 50},${targetY}
+                                         ${targetX},${targetY}`;
+                            });
+                    })
+                    .on('end', function(event, d) {
+                        d3.select(this).style('cursor', 'grab');
+                    });
+                
+                // Apply drag to node groups (not the rect itself)
+                nodeEnter.style('cursor', 'grab').call(drag);
+                node.style('cursor', 'grab').call(drag);
+                
+                // For all nodes (enter + update), build their content
+                nodesGroup.selectAll('.node').each(function(d) {
+                    const node = d3.select(this);
+                    
+                    // Track if dragging
+                    let isDragging = false;
+                    
+                    // Add pointerdown handler to track potential clicks
+                    node.on('pointerdown.details', function(event, d) {
+                        isDragging = false;
+                        const startX = event.clientX;
+                        const startY = event.clientY;
+                        
+                        const checkClick = function(e) {
+                            const dx = e.clientX - startX;
+                            const dy = e.clientY - startY;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance > 5) {
+                                isDragging = true;
+                            }
+                        };
+                        
+                        const handlePointerUp = function(e) {
+                            const dx = e.clientX - startX;
+                            const dy = e.clientY - startY;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (!isDragging && distance < 5) {
+                                console.log('Node clicked (pointer):', d.data.name);
+                                event.stopPropagation();
+                                
+                                // Update selection without calling update()
+                                nodesGroup.selectAll('.node')
+                                    .classed('selected', n => n === d);
+                                
+                                // Highlight path from root to selected node
+                                highlightPath(d);
+                                
+                                selectedNode = d;
+                                showNodeDetails(d.data || d);
+                            }
+                            
+                            // Clean up
+                            window.removeEventListener('pointermove', checkClick);
+                            window.removeEventListener('pointerup', handlePointerUp);
+                        };
+                        
+                        window.addEventListener('pointermove', checkClick);
+                        window.addEventListener('pointerup', handlePointerUp);
+                    });
+                    
+                    // For existing nodes, remove old expand/collapse circles to rebuild them
+                    node.selectAll('.expand-collapse-circle').remove();
+                    
+                    // Build content for new nodes
+                    if (node.selectAll('rect').empty()) {
+                        // Add rectangle
+                        const rect = node.append('rect')
+                            .attr('width', nodeWidth)
+                            .attr('height', 40)
+                            .attr('x', -nodeWidth / 2)
+                            .attr('y', -20)
+                            .attr('rx', 6)
+                            .attr('fill', d => {
+                                // Lighter fill colors (15% opacity for better contrast with stroke)
+                                const fillColors = {
+                                    'root': 'rgba(1, 68, 134, 0.15)',      // Light version of #014486
+                                    'catalog': 'rgba(1, 118, 211, 0.15)',  // Light version of #0176D3
+                                    'category': 'rgba(0, 212, 255, 0.15)', // Light version of #00D4FF
+                                    'subcategory': 'rgba(144, 80, 233, 0.15)',
+                                    'product': 'rgba(46, 132, 74, 0.15)',  // Light version of #2E844A
+                                    'component': 'rgba(255, 105, 0, 0.15)', // Light version of #FF6900
+                                    'variant': 'rgba(255, 183, 93, 0.15)'
+                                };
+                                return fillColors[d.data.type] || 'rgba(81, 79, 77, 0.15)';
+                            })
+                            .style('stroke', d => {
+                                // Original colors for outlines - using style instead of attr
+                                const strokeColors = {
+                                    'root': '#014486',      // Dark blue for root
+                                    'catalog': '#0176D3',   // Primary blue for catalogs
+                                    'category': '#00D4FF',  // Light blue for categories
+                                    'subcategory': '#9050E9',
+                                    'product': '#2E844A',   // Green for products
+                                    'component': '#FF6900', // Orange for bundle components
+                                    'variant': '#FFB75D'
+                                };
+                                return strokeColors[d.data.type] || '#514F4D';
+                            })
+                            .style('stroke-width', '1px')
+                            .style('stroke-opacity', '1')
+                            .style('stroke-linejoin', 'round')
+                            .style('cursor', 'grab')
+                            .on('mouseenter', function(event, d) {
+                                // On hover, increase fill opacity
+                                d3.select(this)
+                                    .attr('fill', d => {
+                                        // Darker fill colors (30% opacity on hover)
+                                        const hoverFillColors = {
+                                            'root': 'rgba(1, 68, 134, 0.3)',
+                                            'catalog': 'rgba(1, 118, 211, 0.3)',
+                                            'category': 'rgba(0, 212, 255, 0.3)',
+                                            'subcategory': 'rgba(144, 80, 233, 0.3)',
+                                            'product': 'rgba(46, 132, 74, 0.3)',
+                                            'component': 'rgba(255, 105, 0, 0.3)',
+                                            'variant': 'rgba(255, 183, 93, 0.3)'
+                                        };
+                                        return hoverFillColors[d.data.type] || 'rgba(81, 79, 77, 0.3)';
+                                    });
+                            })
+                            .on('mouseleave', function(event, d) {
+                                // On mouse leave, return to original fill
+                                d3.select(this)
+                                    .attr('fill', d => {
+                                        const fillColors = {
+                                            'root': 'rgba(1, 68, 134, 0.15)',
+                                            'catalog': 'rgba(1, 118, 211, 0.15)',
+                                            'category': 'rgba(0, 212, 255, 0.15)',
+                                            'subcategory': 'rgba(144, 80, 233, 0.15)',
+                                            'product': 'rgba(46, 132, 74, 0.15)',
+                                            'component': 'rgba(255, 105, 0, 0.15)',
+                                            'variant': 'rgba(255, 183, 93, 0.15)'
+                                        };
+                                        return fillColors[d.data.type] || 'rgba(81, 79, 77, 0.15)';
+                                    });
+                            })
+                            .style('pointer-events', 'all');
+                        
+                        // Add text
+                        const text = node.append('text')
+                            .attr('text-anchor', 'start')
+                            .attr('x', -nodeWidth / 2 + 10)  // 10px padding from left edge
+                            .attr('dy', '0.35em')
+                            .attr('fill', d => {
+                                // Use dark text color for better contrast on light backgrounds
+                                return '#181818'; // var(--text-primary)
+                            })
+                            .style('font-weight', '600')
+                            .style('font-size', '12px')
+                            .style('pointer-events', 'none')
+                            .style('user-select', 'none')
+                            .text(d.data.name);
+            
+                        // Wrap text if needed
+                        const bbox = text.node().getBBox();
+                        if (bbox.width > nodeWidth - 20) {
+                            wrapText(text, nodeWidth - 20);
+                        }
+                    }
+                    
+                    // Add expand/collapse circle if node has children (rebuild for all nodes)
+                    if (d._children || d.children) {
+                            // Node is expanded if it has visible children
+                            const isExpanded = d.children && d.children.length > 0;
+                            
+                            // Add circle background
+                            const circleGroup = node.append('g')
+                                .attr('transform', `translate(${nodeWidth / 2 + 10}, 0)`)
+                                .attr('class', 'expand-collapse-circle')
+                                .style('cursor', 'pointer')
+                                .style('pointer-events', 'all')
+                                .on('mouseenter', function(event, d) {
+                                    // Hover effect for circle
+                                    d3.select(this).select('circle')
+                                        .attr('fill', 'rgba(1, 118, 211, 0.1)')
+                                        .attr('stroke', '#0176D3')
+                                        .attr('stroke-width', 2);
+                                })
+                                .on('mouseleave', function(event, d) {
+                                    // Return to normal state
+                                    d3.select(this).select('circle')
+                                        .attr('fill', '#fff')
+                                        .attr('stroke', '#DDDBDA')
+                                        .attr('stroke-width', 1.5);
+                                })
+                                .on('mousedown', function(event, d) {
+                                    event.stopPropagation();
+                                    event.preventDefault();
+                                    // Toggle children on mousedown instead of click
+                                    if (d.children) {
+                                        d._children = d.children;
+                                        d.children = null;
+                                    } else {
+                                        d.children = d._children;
+                                        d._children = null;
+                                    }
+                                    update(d);
+                                });
+                            
+                            // Circle background
+                            const circle = circleGroup.append('circle')
+                                .attr('r', 10)
+                                .attr('fill', '#fff')
+                                .attr('stroke', '#DDDBDA')
+                                .attr('stroke-width', 1.5)
+                                .style('transition', 'none')  // Instant hover effect
+                                .style('pointer-events', 'all');  // Ensure circle captures events
+                            
+                            // Plus/minus icon
+                            const iconSize = 6;
+                            // Horizontal line (always visible)
+                            circleGroup.append('line')
+                                .attr('x1', -iconSize)
+                                .attr('x2', iconSize)
+                                .attr('y1', 0)
+                                .attr('y2', 0)
+                                .attr('stroke', '#514F4D')
+                                .attr('stroke-width', 1.5)
+                                .style('pointer-events', 'none');  // Don't capture mouse events
+                            
+                            // Vertical line (only for collapsed nodes - shows plus)
+                            if (!isExpanded) {
+                                circleGroup.append('line')
+                                    .attr('class', 'vertical-line')
+                                    .attr('x1', 0)
+                                    .attr('x2', 0)
+                                    .attr('y1', -iconSize)
+                                    .attr('y2', iconSize)
+                                    .attr('stroke', '#514F4D')
+                                    .attr('stroke-width', 1.5)
+                                    .style('pointer-events', 'none');  // Don't capture mouse events
+                        }
+                    }
+                    
+                    // Update selected node styling
+                    node.classed('selected', d => selectedNode === d);
+                    
+                    // Update stroke for unsynced items
+                    node.select('rect')
+                        .attr('stroke-dasharray', d => {
+                            // Dashed border for unsynced items
+                            const isSynced = d.data.isSynced !== undefined ? d.data.isSynced : 
+                                           (d.data.id && (d.data.id.startsWith('0') || d.data.id.startsWith('a')));
+                            return !isSynced ? '4,2' : 'none';
+                        });
+                });
+            
+                // Function to wrap text
+                function wrapText(text, width) {
+                    text.each(function() {
+                        const text = d3.select(this);
+                        const words = text.text().split(/\s+/).reverse();
+                        let word;
+                        let line = [];
+                        let lineNumber = 0;
+                        const lineHeight = 10;  // Optimal spacing for multi-line text
+                        const y = text.attr('y') || 0;
+                        const dy = parseFloat(text.attr('dy') || 0);
+                        let tspan = text.text(null).append('tspan').attr('x', text.attr('x')).attr('y', y).attr('dy', dy + 'em');
+                        
+                        while (word = words.pop()) {
+                            line.push(word);
+                            tspan.text(line.join(' '));
+                            if (tspan.node().getComputedTextLength() > width) {
+                                line.pop();
+                                tspan.text(line.join(' '));
+                                line = [word];
+                                tspan = text.append('tspan')
+                                    .attr('x', text.attr('x'))  // Maintain the same x position for all lines
+                                    .attr('y', y)
+                                    .attr('dy', lineHeight + 'px')
+                                    .text(word);
+                                lineNumber++;
+                            }
+                        }
+                        
+                        // Center the text vertically with adjusted spacing
+                        const totalHeight = lineNumber * lineHeight;
+                        text.selectAll('tspan').attr('dy', function(d, i) {
+                            return i === 0 ? -totalHeight/2 + 'px' : lineHeight + 'px';
+                        });
+                    });
+                }
+            }
+            
+            
+            // Initial update
+            update(root);
+            
+            // Set initial column header positions with correct transform
+            updateColumnHeaderPositions({ k: 1, x: 100, y: 50 });
+            
+            // Add zoom behavior with panning
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 2])
+                .on('zoom', (event) => {
+                    const transform = event.transform;
+                    g.attr('transform', transform);
+                    // Update column headers positions
+                    updateColumnHeaderPositions(transform);
+                });
+            
+            svg.call(zoom);
+            
+            // Function to update column header positions based on zoom
+            function updateColumnHeaderPositions(transform) {
+                const scale = transform.k;
+                const translateX = transform.x;
+                
+                // Get unique depths from visible nodes
+                const visibleDepths = new Set();
+                let maxDepth = 0;
+                root.descendants().forEach(d => {
+                    // Use effective depth for products and components that skip subcategory
+                    let effectiveDepth = d.depth;
+                    if (d.data.type === 'product' && d.parent && d.parent.data.type === 'category') {
+                        effectiveDepth = d.depth + 1;
+                    } else if (d.data.type === 'component' && d.parent && d.parent.data.type === 'product' 
+                             && d.parent.parent && d.parent.parent.data.type === 'category') {
+                        effectiveDepth = d.depth + 1;
+                    }
+                    visibleDepths.add(effectiveDepth);
+                    maxDepth = Math.max(maxDepth, effectiveDepth);
+                });
+                
+                // Ensure all columns from 0 to maxDepth are included
+                for (let i = 0; i <= maxDepth; i++) {
+                    visibleDepths.add(i);
+                }
+                
+                const depthsArray = Array.from(visibleDepths).sort((a, b) => a - b);
+                
+                d3.select(container).selectAll('.column-header-fixed').each(function(d, i) {
+                    const depth = depthsArray[i];
+                    if (depth !== undefined) {
+                        const columnCenterX = translateX + (depth * columnWidth * scale);
+                        const headerLeft = columnCenterX - (nodeWidth / 2);
+                        d3.select(this)
+                            .style('left', `${headerLeft}px`)
+                            .style('transform', `scale(${Math.max(0.8, Math.min(1, scale))})`);
+                    }
+                });
+            }
+            
+            // Function to highlight path from root to selected node
+            function highlightPath(node) {
+                // First, remove all highlights and reset colors
+                linksGroup.selectAll('.link')
+                    .classed('highlight', false)
+                    .attr('stroke', '#DDDBDA'); // Reset all to grey
+                
+                if (!node) {
+                    // If no node selected, apply depth-based colors
+                    linksGroup.selectAll('.link')
+                        .attr('stroke', d => {
+                            const depth = d.source.depth;
+                            return linkColors[Math.min(depth, linkColors.length - 1)];
+                        });
+                    return;
+                }
+                
+                // Get all ancestors of the selected node
+                const ancestors = [];
+                let current = node;
+                while (current.parent) {
+                    ancestors.push(current);
+                    current = current.parent;
+                }
+                ancestors.push(current); // Add root
+                
+                // Highlight links in the path
+                linksGroup.selectAll('.link')
+                    .classed('highlight', d => {
+                        // Check if this link is part of the path
+                        for (let i = 0; i < ancestors.length - 1; i++) {
+                            if ((d.source === ancestors[i + 1] && d.target === ancestors[i]) ||
+                                (d.source === ancestors[i] && d.target === ancestors[i + 1])) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+            }
+            
+            // Click on SVG background to deselect
+            svg.on('click', function() {
+                selectedNode = null;
+                nodesGroup.selectAll('.node').classed('selected', false);
+                highlightPath(null); // This will restore depth-based colors
+                // Clear details panel
+                document.getElementById('details-content').innerHTML = '<p class="text-muted">Select a node to view details</p>';
+            });
+            
+            // Add controls
+            const controls = d3.select(container)
+                .append('div')
+                .attr('class', 'toolbar');
+            
+            controls.append('button')
+                .attr('class', 'toolbar-btn')
+                .html('<i class="fas fa-search-plus"></i>')
+                .on('click', () => {
+                    svg.transition().call(zoom.scaleBy, 1.2);
+                });
+            
+            controls.append('button')
+                .attr('class', 'toolbar-btn')
+                .html('<i class="fas fa-search-minus"></i>')
+                .on('click', () => {
+                    svg.transition().call(zoom.scaleBy, 0.8);
+                });
+            
+            controls.append('button')
+                .attr('class', 'toolbar-btn')
+                .html('<i class="fas fa-home"></i>')
+                .on('click', () => {
+                    svg.transition().call(zoom.transform, d3.zoomIdentity.translate(100, 50));
+                });
+        }
+
+        // Load org selector and show all connections
+        async function loadOrgSelector() {
+            try {
+                // Check if required libraries are loaded
+                const useAntDesign = typeof React !== 'undefined' && typeof ReactDOM !== 'undefined' && typeof antd !== 'undefined';
+                console.log('Using Ant Design:', useAntDesign);
+                // Get all connections and current session info
+                const [connectionsResponse, sessionResponse] = await Promise.all([
+                    fetch('/api/connections'),
+                    fetch('/api/session')
+                ]);
+                
+                console.log('Connections response:', connectionsResponse.status);
+                console.log('Session response:', sessionResponse.status);
+                
+                let activeConnectionId = null;
+                let options = [];
+                
+                if (sessionResponse.ok) {
+                    const sessionData = await sessionResponse.json();
+                    if (sessionData.success && sessionData.active_connection) {
+                        activeConnectionId = sessionData.active_connection.id;
+                    }
+                }
+                
+                if (connectionsResponse.ok) {
+                    const connectionsData = await connectionsResponse.json();
+                    
+                    if (connectionsData.connections && connectionsData.connections.length > 0) {
+                        // Create options array for Ant Select
+                        options = connectionsData.connections.map(conn => ({
+                            value: conn.id,
+                            label: conn.cli_alias || conn.name || conn.metadata.username
+                        }));
+                        
+                        const container = document.getElementById('org-selector-container');
+                        
+                        if (useAntDesign) {
+                            // Use Ant Design Select component
+                            const { Select } = antd;
+                            
+                            // Handle org switching
+                            const handleChange = async (newConnectionId) => {
+                                if (newConnectionId && newConnectionId !== activeConnectionId) {
+                                    // Show loading state
+                                    document.getElementById('loading').style.display = 'flex';
+                                    document.getElementById('hierarchy-container').innerHTML = '';
+                                    
+                                    try {
+                                        // Use the login endpoint to switch connections
+                                        const loginResponse = await fetch('/api/login', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                connection_id: newConnectionId
+                                            })
+                                        });
+                                        
+                                        if (loginResponse.ok) {
+                                            // Reload the page to use the new connection
+                                            location.reload();
+                                        } else {
+                                            const error = await loginResponse.json();
+                                            antd.message.error(`Failed to switch organization: ${error.error || 'Unknown error'}`);
+                                            document.getElementById('loading').style.display = 'none';
+                                            // Re-render with original value
+                                            renderOrgSelector();
+                                        }
+                                    } catch (error) {
+                                        console.error('Error switching organization:', error);
+                                        antd.message.error('Failed to switch organization. Please try again.');
+                                        document.getElementById('loading').style.display = 'none';
+                                        // Re-render with original value
+                                        renderOrgSelector();
+                                    }
+                                }
+                            };
+                            
+                            // Render function
+                            const renderOrgSelector = () => {
+                                ReactDOM.render(
+                                    React.createElement(Select, {
+                                        defaultValue: activeConnectionId,
+                                        value: activeConnectionId,
+                                        onChange: handleChange,
+                                        options: options,
+                                        placeholder: "Select Organization",
+                                        style: { width: '100%' },
+                                        popupMatchSelectWidth: false,
+                                        placement: 'bottomLeft', // Force dropdown to open downward
+                                        dropdownStyle: { 
+                                            position: 'fixed',
+                                            marginTop: '4px'
+                                        },
+                                        getPopupContainer: () => document.body, // Render dropdown at body level
+                                        dropdownAlign: {
+                                            points: ['tl', 'bl'], // Align top-left of dropdown to bottom-left of trigger
+                                            offset: [0, 4], // Add 4px vertical offset
+                                            overflow: {
+                                                adjustX: true,
+                                                adjustY: false // Prevent vertical adjustment (force downward)
+                                            }
+                                        }
+                                    }),
+                                    container
+                                );
+                            };
+                            
+                            renderOrgSelector();
+                        } else {
+                            // Fallback to regular select
+                            const select = document.createElement('select');
+                            select.id = 'org-selector';
+                            select.className = 'btn btn-secondary';
+                            select.style.width = '100%';
+                            
+                            // Add options
+                            options.forEach(opt => {
+                                const option = document.createElement('option');
+                                option.value = opt.value;
+                                option.textContent = opt.label;
+                                if (opt.value === activeConnectionId) {
+                                    option.selected = true;
+                                }
+                                select.appendChild(option);
+                            });
+                            
+                            // Add change handler
+                            select.addEventListener('change', async (e) => {
+                                const newConnectionId = e.target.value;
+                                if (newConnectionId && newConnectionId !== activeConnectionId) {
+                                    // Show loading state
+                                    document.getElementById('loading').style.display = 'flex';
+                                    document.getElementById('hierarchy-container').innerHTML = '';
+                                    
+                                    try {
+                                        // Use the login endpoint to switch connections
+                                        const loginResponse = await fetch('/api/login', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                connection_id: newConnectionId
+                                            })
+                                        });
+                                        
+                                        if (loginResponse.ok) {
+                                            // Reload the page to use the new connection
+                                            location.reload();
+                                        } else {
+                                            const error = await loginResponse.json();
+                                            alert(`Failed to switch organization: ${error.error || 'Unknown error'}`);
+                                            // Reset to the active connection
+                                            select.value = activeConnectionId;
+                                            document.getElementById('loading').style.display = 'none';
+                                        }
+                                    } catch (error) {
+                                        console.error('Error switching organization:', error);
+                                        alert('Failed to switch organization. Please try again.');
+                                        select.value = activeConnectionId;
+                                        document.getElementById('loading').style.display = 'none';
+                                    }
+                                }
+                            });
+                            
+                            container.appendChild(select);
+                        }
+                    } else {
+                        // No connections found
+                        const container = document.getElementById('org-selector-container');
+                        container.innerHTML = '<span style="color: #999;">No saved connections</span>';
+                    }
+                } else {
+                    // Error loading connections
+                    const container = document.getElementById('org-selector-container');
+                    container.innerHTML = '<span style="color: #999;">Error loading connections</span>';
+                }
+            } catch (error) {
+                console.error('Error in loadOrgSelector:', error);
+                console.error('Error details:', error.message, error.stack);
+                const container = document.getElementById('org-selector-container');
+                container.innerHTML = '<span style="color: #999;">Error loading connections</span>';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            
+            // Load org selector
+            loadOrgSelector();
+            
+            // Immediately use D3 visualization
+            console.log('Using D3 visualization');
+            
+            // Hide loading and fetch data
+            document.getElementById('loading').style.display = 'none';
+            const container = document.getElementById('hierarchy-container');
+            container.innerHTML = '';
+            
+            // Fetch and render
+            fetch('/api/product-hierarchy')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Data received:', data);
+                    if (data.success && data.hierarchy) {
+                        // Store original data for filtering
+                        originalData = data.hierarchy;
+                        currentData = JSON.parse(JSON.stringify(originalData));
+                        renderD3Tree(currentData);
+                    } else {
+                        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>No hierarchy data available</p></div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading data:', error);
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading hierarchy data</p></div>';
+                });
+        });
+    </script>
+</body>
+</html>
