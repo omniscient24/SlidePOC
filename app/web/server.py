@@ -18,6 +18,7 @@ from app.services.file_upload_service import file_upload_service
 from app.services.sync_service import sync_service
 from app.services.upload_service import upload_service
 from app.services.sync_status_service import sync_status_service
+from app.services.edit_service import edit_service
 from config.settings.app_config import HOST, PORT, TEMPLATES_ROOT, STATIC_ROOT, DATA_ROOT
 
 class SimpleHandler(BaseHTTPRequestHandler):
@@ -57,6 +58,10 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 self.handle_get_object_counts()
             elif path == '/api/product-hierarchy':
                 self.handle_get_product_hierarchy()
+            elif path == '/api/edit/permissions':
+                self.handle_get_edit_permissions()
+            elif path == '/api/edit/field-config':
+                self.handle_get_field_config()
             elif path.startswith('/static/'):
                 self.serve_static_file(path)
             elif path == '/':
@@ -106,6 +111,14 @@ class SimpleHandler(BaseHTTPRequestHandler):
             elif path == '/product-hierarchy-test':
                 # Test page without auth
                 self.serve_product_hierarchy_test_page()
+            elif path == '/admin-settings':
+                # Check auth for admin settings page
+                cookie = self.headers.get('Cookie', '')
+                session_id = session_manager.get_session_cookie(cookie)
+                if session_id and session_manager.is_session_valid(session_id):
+                    self.serve_admin_settings_page()
+                else:
+                    self.redirect('/login')
             else:
                 self.send_error(404)
         except Exception as e:
@@ -139,6 +152,10 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     self.handle_refresh_connection()
                 else:
                     self.send_error(404)
+            elif path == '/api/edit/permissions':
+                self.handle_update_edit_permissions()
+            elif path == '/api/edit/field-config':
+                self.handle_update_field_config()
             else:
                 self.send_error(404)
         except Exception as e:
@@ -211,9 +228,20 @@ class SimpleHandler(BaseHTTPRequestHandler):
         """Handle GET /api/connections"""
         try:
             connections = connection_manager.get_all_connections()
+            
+            # Get active connection from session
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            active_connection_id = None
+            
+            if session_id and session_manager.is_session_valid(session_id):
+                session_data = session_manager.get_session(session_id)
+                active_connection_id = session_data.get('active_connection_id')
+            
             response = {
                 'success': True,
-                'connections': connections
+                'connections': connections,
+                'active_connection_id': active_connection_id
             }
             self.send_json_response(response)
         except Exception as e:
@@ -315,11 +343,11 @@ class SimpleHandler(BaseHTTPRequestHandler):
             print(f"Error adding connection: {e}")
             self.send_error(500)
     
-    def send_json_response(self, data):
-        """Send JSON response"""
+    def send_json_response(self, data, status_code=200):
+        """Send JSON response with optional status code"""
         try:
             content = json.dumps(data).encode()
-            self.send_response(200)
+            self.send_response(status_code)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Content-Length', len(content))
             self.end_headers()
@@ -420,6 +448,22 @@ class SimpleHandler(BaseHTTPRequestHandler):
             self.wfile.write(content)
         except Exception as e:
             print(f"Error serving product hierarchy test page: {e}")
+            self.send_error(500)
+    
+    def serve_admin_settings_page(self):
+        """Serve the admin settings page"""
+        try:
+            file_path = TEMPLATES_ROOT / 'admin-settings.html'
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            print(f"Error serving admin settings page: {e}")
             self.send_error(500)
     
     def handle_get_session(self):
@@ -1762,6 +1806,186 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
         except Exception as e:
             print(f"Error getting product hierarchy: {e}")
+            self.send_error(500)
+    
+    def handle_get_edit_permissions(self):
+        """Handle GET /api/edit/permissions"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            user_session = session_manager.get_session(session_id)
+            user_id = user_session.get('user_id', 'default_user')
+            
+            # Get org_id from query params
+            query_params = {}
+            if '?' in self.path:
+                query_string = self.path.split('?')[1]
+                for param in query_string.split('&'):
+                    if '=' in param:
+                        key, value = param.split('=', 1)
+                        query_params[key] = value
+                        
+            org_id = query_params.get('org_id', user_session.get('active_connection_id'))
+            
+            if not org_id:
+                self.send_json_response({'error': 'No organization selected'}, 400)
+                return
+                
+            # Get permissions
+            permissions = edit_service.get_user_permissions_details(user_id, org_id)
+            self.send_json_response(permissions)
+            
+        except Exception as e:
+            print(f"Error getting edit permissions: {e}")
+            self.send_error(500)
+            
+    def handle_get_field_config(self):
+        """Handle GET /api/edit/field-config"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            user_session = session_manager.get_session(session_id)
+            
+            # Get query params
+            query_params = {}
+            if '?' in self.path:
+                query_string = self.path.split('?')[1]
+                for param in query_string.split('&'):
+                    if '=' in param:
+                        key, value = param.split('=', 1)
+                        query_params[key] = value
+                        
+            org_id = query_params.get('org_id', user_session.get('active_connection_id'))
+            object_type = query_params.get('object_type', 'Product2')
+            
+            if not org_id:
+                self.send_json_response({'error': 'No organization selected'}, 400)
+                return
+                
+            # Get field configuration
+            fields = edit_service.get_field_configuration(org_id, object_type)
+            
+            self.send_json_response({
+                'org_id': org_id,
+                'object_type': object_type,
+                'fields': fields,
+                'total': len(fields)
+            })
+            
+        except Exception as e:
+            print(f"Error getting field config: {e}")
+            self.send_error(500)
+            
+    def handle_update_edit_permissions(self):
+        """Handle POST /api/edit/permissions"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            user_session = session_manager.get_session(session_id)
+            user_id = user_session.get('user_id', 'default_user')
+            
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+            
+            target_user_id = data.get('user_id')
+            org_id = data.get('org_id', user_session.get('active_connection_id'))
+            permission_level = data.get('permission_level')
+            
+            # Check if user is admin
+            if not edit_service.check_permission(user_id, org_id, 'admin'):
+                self.send_json_response({'error': 'Admin permission required'}, 403)
+                return
+                
+            # Validate inputs
+            if not all([target_user_id, org_id, permission_level]):
+                self.send_json_response({'error': 'Missing required fields'}, 400)
+                return
+                
+            # Update permission
+            edit_service.update_user_permission(target_user_id, org_id, permission_level, user_id)
+            
+            # Log audit
+            edit_service.log_audit_action(
+                user_id, org_id, 'update_permission', 'edit_permissions', target_user_id,
+                {'target_user': target_user_id, 'permission_level': permission_level},
+                {'ip_address': self.client_address[0], 'session_id': session_id}
+            )
+            
+            self.send_json_response({
+                'success': True,
+                'message': f'Permission updated for user {target_user_id}'
+            })
+            
+        except Exception as e:
+            print(f"Error updating permissions: {e}")
+            self.send_error(500)
+            
+    def handle_update_field_config(self):
+        """Handle POST /api/edit/field-config"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            user_session = session_manager.get_session(session_id)
+            user_id = user_session.get('user_id', 'default_user')
+            
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+            
+            org_id = data.get('org_id', user_session.get('active_connection_id'))
+            object_type = data.get('object_type', 'Product2')
+            fields = data.get('fields', [])
+            
+            # Check if user is admin
+            if not edit_service.check_permission(user_id, org_id, 'admin'):
+                self.send_json_response({'error': 'Admin permission required'}, 403)
+                return
+                
+            if not org_id:
+                self.send_json_response({'error': 'No organization selected'}, 400)
+                return
+                
+            # Update configuration
+            edit_service.update_field_configuration(org_id, object_type, fields)
+            
+            # Log audit
+            edit_service.log_audit_action(
+                user_id, org_id, 'update_field_config', 'field_config', object_type,
+                {'object_type': object_type, 'field_count': len(fields)},
+                {'ip_address': self.client_address[0], 'session_id': session_id}
+            )
+            
+            self.send_json_response({
+                'success': True,
+                'message': f'Field configuration updated for {object_type}',
+                'fields_configured': len(fields)
+            })
+            
+        except Exception as e:
+            print(f"Error updating field config: {e}")
             self.send_error(500)
     
     def log_message(self, format, *args):

@@ -616,7 +616,7 @@
                     </button>
                 </div>
             </div>
-            <div class="toolbar">
+            <div class="toolbar" id="main-toolbar">
                 <button class="toolbar-btn" onclick="zoomIn()" title="Zoom In">
                     <i class="fas fa-search-plus"></i>
                 </button>
@@ -626,8 +626,8 @@
                 <button class="toolbar-btn" onclick="resetView()" title="Reset View">
                     <i class="fas fa-home"></i>
                 </button>
-                <button class="toolbar-btn" id="layout-btn" onclick="toggleLayout()" title="Change Layout">
-                    <i class="fas fa-project-diagram"></i>
+                <button class="toolbar-btn" id="layout-btn" onclick="fitToScreen()" title="Fit to Screen">
+                    <i class="fas fa-compress"></i>
                 </button>
             </div>
         </div>
@@ -1525,15 +1525,25 @@
                                 console.log('Node clicked (pointer):', d.data.name);
                                 event.stopPropagation();
                                 
-                                // Update selection without calling update()
-                                nodesGroup.selectAll('.node')
-                                    .classed('selected', n => n === d);
-                                
-                                // Highlight path from root to selected node
-                                highlightPath(d);
-                                
-                                selectedNode = d;
-                                showNodeDetails(d.data || d);
+                                // Toggle selection if clicking the same node
+                                if (selectedNode === d) {
+                                    // Deselect the node
+                                    selectedNode = null;
+                                    nodesGroup.selectAll('.node').classed('selected', false);
+                                    highlightPath(null); // This will restore depth-based colors
+                                    // Clear details panel
+                                    document.getElementById('details-content').innerHTML = '<p class="text-muted">Select a node to view details</p>';
+                                } else {
+                                    // Select the new node
+                                    nodesGroup.selectAll('.node')
+                                        .classed('selected', n => n === d);
+                                    
+                                    // Highlight path from root to selected node
+                                    highlightPath(d);
+                                    
+                                    selectedNode = d;
+                                    showNodeDetails(d.data || d);
+                                }
                             }
                             
                             // Clean up
@@ -1721,6 +1731,11 @@
                     // Update selected node styling
                     node.classed('selected', d => selectedNode === d);
                     
+                    // Maintain highlighted path if a node is selected
+                    if (selectedNode) {
+                        highlightPath(selectedNode);
+                    }
+                    
                     // Update stroke for unsynced items
                     node.select('rect')
                         .attr('stroke-dasharray', d => {
@@ -1868,40 +1883,13 @@
                     });
             }
             
-            // Click on SVG background to deselect
-            svg.on('click', function() {
-                selectedNode = null;
-                nodesGroup.selectAll('.node').classed('selected', false);
-                highlightPath(null); // This will restore depth-based colors
-                // Clear details panel
-                document.getElementById('details-content').innerHTML = '<p class="text-muted">Select a node to view details</p>';
-            });
+            // Remove the SVG background click handler - we don't want to deselect on background clicks
+            // svg.on('click', function() { ... });
             
-            // Add controls
-            const controls = d3.select(container)
-                .append('div')
-                .attr('class', 'toolbar');
-            
-            controls.append('button')
-                .attr('class', 'toolbar-btn')
-                .html('<i class="fas fa-search-plus"></i>')
-                .on('click', () => {
-                    svg.transition().call(zoom.scaleBy, 1.2);
-                });
-            
-            controls.append('button')
-                .attr('class', 'toolbar-btn')
-                .html('<i class="fas fa-search-minus"></i>')
-                .on('click', () => {
-                    svg.transition().call(zoom.scaleBy, 0.8);
-                });
-            
-            controls.append('button')
-                .attr('class', 'toolbar-btn')
-                .html('<i class="fas fa-home"></i>')
-                .on('click', () => {
-                    svg.transition().call(zoom.transform, d3.zoomIdentity.translate(100, 50));
-                });
+            // Store references globally for toolbar functions
+            window.hierarchySvg = svg;
+            window.hierarchyZoom = zoom;
+            window.hierarchyRoot = root;
         }
 
         // Load org selector and show all connections
@@ -2092,6 +2080,64 @@
             }
         }
 
+        // Global toolbar functions
+        function zoomIn() {
+            if (window.hierarchySvg && window.hierarchyZoom) {
+                window.hierarchySvg.transition().duration(300).call(window.hierarchyZoom.scaleBy, 1.2);
+            }
+        }
+        
+        function zoomOut() {
+            if (window.hierarchySvg && window.hierarchyZoom) {
+                window.hierarchySvg.transition().duration(300).call(window.hierarchyZoom.scaleBy, 0.8);
+            }
+        }
+        
+        function resetView() {
+            if (window.hierarchySvg && window.hierarchyZoom) {
+                window.hierarchySvg.transition().duration(300).call(window.hierarchyZoom.transform, d3.zoomIdentity.translate(100, 50));
+            }
+        }
+        
+        function fitToScreen() {
+            if (!window.hierarchySvg || !window.hierarchyRoot) return;
+            
+            // Get the bounding box of all visible nodes
+            const nodes = window.hierarchyRoot.descendants().filter(d => d.x !== undefined && d.y !== undefined);
+            if (nodes.length === 0) return;
+            
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            nodes.forEach(d => {
+                minX = Math.min(minX, d.x);
+                maxX = Math.max(maxX, d.x + 200); // Add node width
+                minY = Math.min(minY, d.y);
+                maxY = Math.max(maxY, d.y + 60); // Add node height
+            });
+            
+            // Get container dimensions
+            const container = document.getElementById('hierarchy-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            // Calculate scale to fit
+            const padding = 50;
+            const scaleX = (width - padding * 2) / (maxX - minX);
+            const scaleY = (height - padding * 2) / (maxY - minY);
+            const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in more than 100%
+            
+            // Calculate translation to center
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const translateX = width / 2 - centerX * scale;
+            const translateY = height / 2 - centerY * scale;
+            
+            // Apply transform
+            window.hierarchySvg.transition().duration(500)
+                .call(window.hierarchyZoom.transform, d3.zoomIdentity
+                    .translate(translateX, translateY)
+                    .scale(scale));
+        }
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded');
