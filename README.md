@@ -149,10 +149,26 @@ The Sync Data functionality includes:
   - **Column Separators**: Subtle vertical lines between columns for better readability
   - **Improved Category Rows**: Fixed hover behavior to maintain consistent styling
 
+### Product Hierarchy Visualization
+
+A powerful D3.js-based visualization tool for exploring Salesforce product hierarchies:
+
+- **Interactive Tree View**: Visual representation of product relationships and bundle structures
+- **Fixed Column Layout**: Products organized by hierarchy level with color-coded columns
+- **Drag & Drop**: Vertically reposition nodes while maintaining hierarchical structure
+- **Expand/Collapse**: Navigate complex hierarchies with +/- controls
+- **Bundle Support**: Automatic visualization of bundle components and relationships
+- **Node Details**: Click any product to view detailed information
+- **Zoom Controls**: Mouse wheel zoom for detailed inspection
+- **Responsive Design**: Full-width layout that adapts to screen size
+
+Access the visualization at `product-hierarchy-visualization.html` or through the web UI.
+
 ## Documentation
 
 - [Upload Guide](docs/REVENUE_CLOUD_UPLOAD_GUIDE.md) - Detailed upload instructions
 - [UI Guide](docs/UI_README.md) - Web interface documentation
+- [Product Hierarchy Visualization](docs/features/product-hierarchy-visualization.md) - Interactive product tree visualization
 
 ## Requirements
 
