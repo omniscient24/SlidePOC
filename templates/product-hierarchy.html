@@ -8,6 +8,8 @@
     <!-- CSS Libraries -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://unpkg.com/antd@5.12.8/dist/reset.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/edit-indicators.css">
     
     <!-- D3.js for visualizations -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -16,6 +18,10 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/antd@5.12.8/dist/antd.min.js"></script>
+    
+    <!-- Edit functionality scripts -->
+    <script src="/static/js/inline-edit.js"></script>
+    <script src="/static/js/change-tracker.js"></script>
     
     <style>
         :root {
@@ -541,6 +547,17 @@
         .node.selected text {
             font-weight: 600;
         }
+        
+        /* Style for nodes shown only because they have visible children */
+        .node-shown-for-children rect {
+            opacity: 0.5;
+            stroke-dasharray: 5,5;
+        }
+        
+        .node-shown-for-children text {
+            opacity: 0.6;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -551,6 +568,8 @@
                 Product Hierarchy Visualization
             </h1>
             <div class="header-actions">
+                <div class="toolbar-right" style="display: flex; align-items: center; gap: 10px;">
+                </div>
                 <div class="org-selector-wrapper">
                     <label for="org-selector" class="field-label">Org:</label>
                     <div id="org-selector-container" style="min-width: 250px;"></div>
@@ -656,6 +675,7 @@
         let currentData = null;
         let d3Root = null;
         let d3Update = null;
+        window.hierarchyData = { nodes: [] }; // For inline editor
 
 
         // Helper Functions
@@ -676,30 +696,56 @@
                                 type: 'subcategory',
                                 children: [
                                     {
-                                        id: 'prod-1',
-                                        name: 'Revenue Cloud Enterprise',
-                                        type: 'product',
-                                        price: '$5,000/month',
+                                        id: 'subcat-1-1',
+                                        name: 'Core Products',
+                                        type: 'subcategory',
                                         children: [
                                             {
-                                                id: 'var-1',
-                                                name: '100 Users',
-                                                type: 'variant',
-                                                price: '$5,000/month'
+                                                id: 'prod-1',
+                                                name: 'Revenue Cloud Enterprise',
+                                                type: 'product',
+                                                price: '$5,000/month',
+                                                children: [
+                                                    {
+                                                        id: 'var-1',
+                                                        name: '100 Users',
+                                                        type: 'variant',
+                                                        price: '$5,000/month'
+                                                    },
+                                                    {
+                                                        id: 'var-2',
+                                                        name: '500 Users',
+                                                        type: 'variant',
+                                                        price: '$20,000/month'
+                                                    }
+                                                ]
                                             },
                                             {
-                                                id: 'var-2',
-                                                name: '500 Users',
-                                                type: 'variant',
-                                                price: '$20,000/month'
+                                                id: 'prod-2',
+                                                name: 'CPQ Enterprise',
+                                                type: 'product',
+                                                price: '$3,000/month'
                                             }
                                         ]
                                     },
                                     {
-                                        id: 'prod-2',
-                                        name: 'CPQ Enterprise',
-                                        type: 'product',
-                                        price: '$3,000/month'
+                                        id: 'subcat-1-2',
+                                        name: 'Add-on Products',
+                                        type: 'subcategory',
+                                        children: [
+                                            {
+                                                id: 'prod-6',
+                                                name: 'Advanced Analytics',
+                                                type: 'product',
+                                                price: '$1,000/month'
+                                            },
+                                            {
+                                                id: 'prod-7',
+                                                name: 'AI Pricing Optimizer',
+                                                type: 'product',
+                                                price: '$2,000/month'
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -729,16 +775,42 @@
                                 type: 'subcategory',
                                 children: [
                                     {
-                                        id: 'prod-4',
-                                        name: 'Standard Implementation',
-                                        type: 'product',
-                                        price: '$50,000'
+                                        id: 'subcat-3-1',
+                                        name: 'Standard Services',
+                                        type: 'subcategory',
+                                        children: [
+                                            {
+                                                id: 'prod-4',
+                                                name: 'Standard Implementation',
+                                                type: 'product',
+                                                price: '$50,000'
+                                            },
+                                            {
+                                                id: 'prod-8',
+                                                name: 'Data Migration Service',
+                                                type: 'product',
+                                                price: '$25,000'
+                                            }
+                                        ]
                                     },
                                     {
-                                        id: 'prod-5',
-                                        name: 'Enterprise Implementation',
-                                        type: 'product',
-                                        price: '$150,000'
+                                        id: 'subcat-3-2',
+                                        name: 'Premium Services',
+                                        type: 'subcategory',
+                                        children: [
+                                            {
+                                                id: 'prod-5',
+                                                name: 'Enterprise Implementation',
+                                                type: 'product',
+                                                price: '$150,000'
+                                            },
+                                            {
+                                                id: 'prod-9',
+                                                name: 'Custom Integration Package',
+                                                type: 'product',
+                                                price: '$75,000'
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -762,32 +834,32 @@
                     <div class="section-title">Basic Information</div>
                     <div class="detail-item">
                         <span class="detail-label">Name</span>
-                        <span class="detail-value">${node.name || 'Unknown'}</span>
+                        <span class="detail-value" data-field="name">${node.name || 'Unknown'}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Type</span>
-                        <span class="detail-value">${(node.type || 'unknown').charAt(0).toUpperCase() + (node.type || 'unknown').slice(1)}</span>
+                        <span class="detail-value" data-field="type">${(node.type || 'unknown').charAt(0).toUpperCase() + (node.type || 'unknown').slice(1)}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">ID</span>
                         <span class="detail-value">${node.id || 'N/A'}</span>
                     </div>
-                    ${node.productCode ? `
+                    ${node.productCode !== undefined ? `
                         <div class="detail-item">
                             <span class="detail-label">Product Code</span>
-                            <span class="detail-value">${node.productCode}</span>
+                            <span class="detail-value" data-field="productCode">${node.productCode || ''}</span>
                         </div>
                     ` : ''}
-                    ${node.price ? `
+                    ${node.price !== undefined ? `
                         <div class="detail-item">
                             <span class="detail-label">Price</span>
-                            <span class="detail-value">${node.price}</span>
+                            <span class="detail-value" data-field="price">${node.price || ''}</span>
                         </div>
                     ` : ''}
                     ${node.isActive !== undefined ? `
                         <div class="detail-item">
                             <span class="detail-label">Status</span>
-                            <span class="detail-value">${node.isActive ? 'Active' : 'Inactive'}</span>
+                            <span class="detail-value" data-field="isActive">${node.isActive ? 'Active' : 'Inactive'}</span>
                         </div>
                     ` : ''}
                     ${node.isBundle ? `
@@ -799,13 +871,13 @@
                     ${node.quantity !== undefined ? `
                         <div class="detail-item">
                             <span class="detail-label">Quantity</span>
-                            <span class="detail-value">${node.quantity}</span>
+                            <span class="detail-value" data-field="quantity">${node.quantity || ''}</span>
                         </div>
                     ` : ''}
                     ${node.isRequired !== undefined ? `
                         <div class="detail-item">
                             <span class="detail-label">Required</span>
-                            <span class="detail-value">${node.isRequired ? 'Yes' : 'No'}</span>
+                            <span class="detail-value" data-field="isRequired">${node.isRequired ? 'Yes' : 'No'}</span>
                         </div>
                     ` : ''}
                 </div>
@@ -922,7 +994,15 @@
 
         function loadSampleData() {
             document.getElementById('empty-state').style.display = 'none';
-            refreshHierarchy();
+            document.getElementById('loading').style.display = 'none';
+            const container = document.getElementById('hierarchy-container');
+            container.innerHTML = '';
+            
+            // Use sample data
+            const sampleData = generateSampleData();
+            originalData = sampleData;
+            currentData = JSON.parse(JSON.stringify(originalData));
+            renderD3Tree(currentData);
         }
 
         function editNode(nodeId) {
@@ -943,8 +1023,23 @@
             const activeFilter = document.getElementById('activeFilter').value;
             const syncedOnly = document.getElementById('syncedOnlyFilter').checked;
             
+            // Save filter preferences to sessionStorage
+            sessionStorage.setItem('hierarchy-activeFilter', activeFilter);
+            sessionStorage.setItem('hierarchy-syncedOnly', syncedOnly);
+            
             // Deep clone the original data
             currentData = JSON.parse(JSON.stringify(originalData));
+            
+            // Clear any previous filter flags
+            function clearFilterFlags(node) {
+                if (node.shownForChildren) {
+                    delete node.shownForChildren;
+                }
+                if (node.children) {
+                    node.children.forEach(clearFilterFlags);
+                }
+            }
+            clearFilterFlags(currentData);
             
             // Apply filters recursively
             filterNode(currentData);
@@ -954,46 +1049,69 @@
             container.innerHTML = '';
             renderD3Tree(currentData);
             
+            // Store the hierarchy data globally for other functions to access
+            window.hierarchyData = currentData;
+            
             function filterNode(node) {
                 if (!node) return true;
                 
-                // Check if node should be visible based on filters
-                let isVisible = true;
+                // First, recursively filter children to determine if any are visible
+                let hasVisibleChildren = false;
+                if (node.children) {
+                    const originalChildren = [...node.children];
+                    node.children = node.children.filter(child => filterNode(child));
+                    hasVisibleChildren = node.children.length > 0;
+                }
+                
+                // Now check if this node should be visible based on filters
+                let nodeMatchesFilter = true;
                 
                 // Active/Inactive filter (only for nodes with isActive property)
                 if (activeFilter !== 'all' && node.isActive !== undefined) {
-                    if (activeFilter === 'active' && !node.isActive) {
-                        isVisible = false;
-                    } else if (activeFilter === 'inactive' && node.isActive) {
-                        isVisible = false;
+                    // Check for pending changes to isActive field
+                    let effectiveIsActive = node.isActive;
+                    if (window.changeTracker && node.id) {
+                        const nodeChanges = window.changeTracker.pendingChanges.get(node.id);
+                        if (nodeChanges && nodeChanges.has('isActive')) {
+                            const change = nodeChanges.get('isActive');
+                            effectiveIsActive = change.newValue;
+                        }
+                    }
+                    
+                    if (activeFilter === 'active' && !effectiveIsActive) {
+                        nodeMatchesFilter = false;
+                    } else if (activeFilter === 'inactive' && effectiveIsActive) {
+                        nodeMatchesFilter = false;
                     }
                 }
                 
                 // Synced filter
-                if (syncedOnly) {
+                if (nodeMatchesFilter && syncedOnly) {
                     // Check isSynced flag if available, otherwise check ID format
                     if (node.isSynced !== undefined) {
                         if (!node.isSynced) {
-                            isVisible = false;
+                            nodeMatchesFilter = false;
                         }
                     } else if (node.id) {
                         // Fallback: check if ID looks like a Salesforce ID
                         if (!node.id.startsWith('0') && !node.id.startsWith('a')) {
-                            isVisible = false;
+                            nodeMatchesFilter = false;
                         }
                     }
                 }
                 
-                // Filter children recursively
-                if (node.children) {
-                    node.children = node.children.filter(child => filterNode(child));
-                    // Keep parent if it has visible children
-                    if (node.children.length > 0) {
-                        isVisible = true;
-                    }
+                // Determine final visibility
+                if (nodeMatchesFilter) {
+                    // Node matches filter criteria - show it normally
+                    return true;
+                } else if (hasVisibleChildren) {
+                    // Node doesn't match but has visible children - show it dimmed
+                    node.shownForChildren = true;
+                    return true;
+                } else {
+                    // Node doesn't match and has no visible children - hide it
+                    return false;
                 }
-                
-                return isVisible;
             }
         }
         
@@ -1021,18 +1139,73 @@
             const nodeWidth = 180;    // Width of each node
             const nodePadding = 12;   // Padding inside nodes
             
+            // Define zoom behavior early to avoid initialization errors
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 2])
+                .on('zoom', (event) => {
+                    const transform = event.transform;
+                    g.attr('transform', transform);
+                    // Update column headers positions
+                    updateColumnHeaderPositions(transform);
+                });
+            
             const root = d3.hierarchy(data);
             
-            // Set initial collapsed state - only show first level (root only)
+            // Set initial collapsed state - start with everything collapsed except root and catalog
             root.descendants().forEach(d => {
-                if (d.depth > 0) {
-                    d._children = d.children;
-                    d.children = null;
+                if (d.children && d.children.length > 0) {
+                    // Only keep root and catalog expanded, collapse everything else
+                    if (d.depth > 1) {  // Collapse everything below catalog level
+                        d._children = d.children;
+                        d.children = null;
+                    }
                 }
             });
             
+            // Function to prevent overlaps in node positioning
+            function preventOverlaps(nodes) {
+                // Group nodes by column (X position)
+                const nodesByColumn = {};
+                nodes.forEach(node => {
+                    if (!nodesByColumn[node.x]) {
+                        nodesByColumn[node.x] = [];
+                    }
+                    nodesByColumn[node.x].push(node);
+                });
+                
+                // For each column, ensure no overlaps
+                Object.keys(nodesByColumn).forEach(x => {
+                    const columnNodes = nodesByColumn[x];
+                    // Sort by current Y position
+                    columnNodes.sort((a, b) => a.y - b.y);
+                    
+                    // Adjust positions to prevent overlaps
+                    let lastY = null;
+                    let lastHeight = 0;
+                    columnNodes.forEach((node, i) => {
+                        const currentHeight = node.data._height || nodeHeight;
+                        if (i === 0) {
+                            lastY = node.y;
+                            lastHeight = currentHeight;
+                        } else {
+                            const minY = lastY + (lastHeight / 2) + (currentHeight / 2) + 15; // Dynamic spacing based on node heights
+                            if (node.y < minY && !node._manualY) {
+                                node.y = minY;
+                            }
+                            lastY = node.y;
+                            lastHeight = currentHeight;
+                        }
+                    });
+                });
+            }
+            
             // Function to calculate custom layout
             function calculateLayout(root) {
+                // Clear any positioned flags to ensure fresh calculation
+                root.descendants().forEach(node => {
+                    delete node._positioned;
+                });
+                
                 const levels = [];
                 const nodesByDepth = {};
                 
@@ -1049,43 +1222,108 @@
                     const nodesAtDepth = nodesByDepth[depth];
                     const depthNum = parseInt(depth);
                     
-                    // For product level, we need to arrange all visible products to avoid overlap
-                    if (depthNum === 3 && nodesAtDepth.some(n => n.data.type === 'product')) {
+                    // Special handling for nodes to position them in correct columns
+                    // based on their type and category hierarchy depth
+                    const products = nodesAtDepth.filter(n => n.data.type === 'product');
+                    const categories = nodesAtDepth.filter(n => n.data.type === 'category' || n.data.type === 'subcategory');
+                    const components = nodesAtDepth.filter(n => n.data.type === 'component');
+                    
+                    // Handle products specially
+                    if (products.length > 0) {
                         // Get all visible products
-                        const visibleProducts = nodesAtDepth.filter(n => n.data.type === 'product' && n.parent.children);
+                        const visibleProducts = products.filter(n => n.parent && n.parent.children);
+                        console.log(`Handling ${visibleProducts.length} products at depth ${depth}`);
                         
                         if (visibleProducts.length > 0) {
-                            // Sort products by their parent's Y position to maintain relative order
-                            visibleProducts.sort((a, b) => a.parent.y - b.parent.y);
-                            
-                            // Calculate total height needed
-                            const totalHeight = visibleProducts.length * nodeHeight;
-                            const startY = (height - totalHeight) / 2;
-                            
-                            // Position products vertically without overlap
-                            visibleProducts.forEach((node, index) => {
-                                node.x = (depthNum + 1) * columnWidth; // Skip subcategory column
-                                if (!node._manualY) {
-                                    node.y = startY + (index * nodeHeight);
+                            // Group products by their parent node
+                            const productsByParent = {};
+                            visibleProducts.forEach(product => {
+                                const parentId = product.parent.data.id || product.parent.data.name;
+                                if (!productsByParent[parentId]) {
+                                    productsByParent[parentId] = {
+                                        parent: product.parent,
+                                        products: []
+                                    };
                                 }
+                                productsByParent[parentId].products.push(product);
                             });
                             
-                            // Handle non-product nodes at this depth normally
-                            nodesAtDepth.filter(n => n.data.type !== 'product').forEach(node => {
-                                if (node.parent) {
-                                    node.x = depthNum * columnWidth;
+                            // Position each group of products
+                            Object.values(productsByParent).forEach(group => {
+                                const parent = group.parent;
+                                const groupProducts = group.products;
+                                
+                                // Sort products within the group
+                                groupProducts.sort((a, b) => {
+                                    const aName = a.data.name || '';
+                                    const bName = b.data.name || '';
+                                    return aName.localeCompare(bName);
+                                });
+                                
+                                // Determine the column based on category depth
+                                let categoryDepth = 0;
+                                let current = parent;
+                                while (current && (current.data.type === 'category' || current.data.type === 'subcategory')) {
+                                    categoryDepth++;
+                                    current = current.parent;
+                                }
+                                
+                                // Calculate Y position centered around parent
+                                const parentY = parent.y;
+                                const spacing = 15; // Spacing between nodes
+                                const groupHeight = groupProducts.length * (nodeHeight + spacing) - spacing;
+                                const startY = parentY - (groupHeight / 2) + (nodeHeight / 2);
+                                
+                                // Sort products: bundle products first, then non-bundle products
+                                groupProducts.sort((a, b) => {
+                                    const aHasChildren = (a.children && a.children.length > 0) || (a._children && a._children.length > 0);
+                                    const bHasChildren = (b.children && b.children.length > 0) || (b._children && b._children.length > 0);
+                                    
+                                    // Bundle products (with children) come first
+                                    if (aHasChildren && !bHasChildren) return -1;
+                                    if (!aHasChildren && bHasChildren) return 1;
+                                    
+                                    // If both are the same type, maintain their original order
+                                    return 0;
+                                });
+                                
+                                // Position products in this group
+                                groupProducts.forEach((node, index) => {
+                                    // Place products after all category levels
+                                    node.x = (1 + categoryDepth + 1) * columnWidth;
+                                    node._positioned = true; // Mark as positioned
                                     if (!node._manualY) {
-                                        node.y = node.parent.y;
+                                        node.y = startY + (index * (nodeHeight + spacing));
                                     }
-                                }
+                                });
                             });
-                            
-                            return; // Skip the normal processing for this depth
                         }
                     }
                     
-                    // For component level, arrange all visible components to avoid overlap
-                    if (depthNum === 4 && nodesAtDepth.some(n => n.data.type === 'component')) {
+                    // Handle categories and subcategories
+                    if (categories.length > 0) {
+                        categories.forEach(node => {
+                            if (node.parent) {
+                                // Count category depth from catalog
+                                let categoryLevel = 0;
+                                let current = node;
+                                while (current.parent && (current.parent.data.type === 'category' || current.parent.data.type === 'subcategory')) {
+                                    categoryLevel++;
+                                    current = current.parent;
+                                }
+                                
+                                // Position in appropriate column
+                                // catalog=1, category=2, subcategory1=3, subcategory2=4, etc.
+                                node.x = (2 + categoryLevel) * columnWidth;
+                                if (!node._manualY) {
+                                    node.y = node.parent.y;
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Handle components
+                    if (components.length > 0) {
                         // Get all visible components
                         const visibleComponents = nodesAtDepth.filter(n => n.data.type === 'component' && n.parent && n.parent.children);
                         
@@ -1115,13 +1353,44 @@
                                 components.sort((a, b) => (a.data.sequence || 0) - (b.data.sequence || 0));
                                 
                                 components.forEach((node, index) => {
-                                    node.x = (depthNum + 1) * columnWidth; // Adjust for skipped subcategory
-                                    if (!node._manualY) {
-                                        node.y = currentY + (index * nodeHeight);
+                                    // Check if this is actually a component (not a regular product)
+                                    if (node.data.type === 'component') {
+                                        // Determine the column based on parent product's category depth
+                                        let categoryDepth = 0;
+                                        let current = node.parent ? node.parent.parent : null;
+                                        while (current && (current.data.type === 'category' || current.data.type === 'subcategory')) {
+                                            categoryDepth++;
+                                            current = current.parent;
+                                        }
+                                        
+                                        // Place components in the bundle components column
+                                        // catalog=1, categories..., product=N, component=N+1
+                                        node.x = (1 + categoryDepth + 2) * columnWidth;
+                                        node._positioned = true; // Mark as positioned
+                                        
+                                        // Set Y position for components
+                                        if (!node._manualY) {
+                                            node.y = currentY + (index * (nodeHeight + 15)); // Add 15px spacing
+                                        }
+                                    } else {
+                                        // This is a regular product, position it normally
+                                        let categoryDepth = 0;
+                                        let current = node.parent;
+                                        while (current && (current.data.type === 'category' || current.data.type === 'subcategory')) {
+                                            categoryDepth++;
+                                            current = current.parent;
+                                        }
+                                        node.x = (1 + categoryDepth + 1) * columnWidth;
+                                        node._positioned = true; // Mark as positioned
+                                        
+                                        // Set Y position for products
+                                        if (!node._manualY) {
+                                            node.y = currentY + (index * (nodeHeight + 15)); // Add 15px spacing
+                                        }
                                     }
                                 });
                                 
-                                currentY += components.length * nodeHeight + 20; // Add spacing between product groups
+                                currentY += components.length * (nodeHeight + 15) + 20; // Add spacing between product groups
                             });
                             
                             return; // Skip normal processing for this depth
@@ -1132,6 +1401,10 @@
                     // Group nodes by parent to handle alignment
                     const nodesByParent = {};
                     nodesAtDepth.forEach(node => {
+                        // Skip nodes that have already been positioned
+                        if (node._positioned || node.data.type === 'product' || node.data.type === 'component') {
+                            return;
+                        }
                         const parentId = node.parent ? node.parent.data.id : 'root';
                         if (!nodesByParent[parentId]) {
                             nodesByParent[parentId] = [];
@@ -1153,84 +1426,160 @@
                             centerY = parent.y;
                         }
                         
+                        // Sort siblings if they are products: bundle products first
+                        if (siblings.length > 0 && siblings[0].data.type === 'product') {
+                            siblings.sort((a, b) => {
+                                const aHasChildren = (a.children && a.children.length > 0) || (a._children && a._children.length > 0);
+                                const bHasChildren = (b.children && b.children.length > 0) || (b._children && b._children.length > 0);
+                                
+                                // Bundle products (with children) come first
+                                if (aHasChildren && !bHasChildren) return -1;
+                                if (!aHasChildren && bHasChildren) return 1;
+                                
+                                // If both are the same type, maintain their original order
+                                return 0;
+                            });
+                        }
+                        
                         // Calculate starting Y position to center siblings around parent
-                        const totalHeight = siblings.length * nodeHeight;
+                        const spacing = 15; // Spacing between nodes
+                        const totalHeight = siblings.length * (nodeHeight + spacing) - spacing;
                         const startY = centerY - (totalHeight / 2) + (nodeHeight / 2);
                         
                         siblings.forEach((node, index) => {
-                            // Special handling for products that are direct children of categories
-                            let effectiveDepth = depthNum;
-                            if (node.data.type === 'product' && node.parent && node.parent.data.type === 'category') {
-                                // Skip the subcategory column for products directly under categories
-                                effectiveDepth = depthNum + 1;
-                            } else if (node.data.type === 'component' && node.parent && node.parent.data.type === 'product' 
-                                     && node.parent.parent && node.parent.parent.data.type === 'category') {
-                                // Also adjust components of products that skipped subcategory
-                                effectiveDepth = depthNum + 1;
+                            // Determine the appropriate column based on node type and hierarchy
+                            let nodeX = depthNum * columnWidth; // Default position
+                            
+                            if (node.data.type === 'catalog') {
+                                nodeX = 1 * columnWidth;
+                            } else if (node.data.type === 'category' || node.data.type === 'subcategory') {
+                                // Count category depth from catalog
+                                let categoryLevel = 0;
+                                let current = node;
+                                while (current.parent && (current.parent.data.type === 'category' || current.parent.data.type === 'subcategory')) {
+                                    categoryLevel++;
+                                    current = current.parent;
+                                }
+                                nodeX = (2 + categoryLevel) * columnWidth;
+                            } else if (node.data.type === 'product') {
+                                // This should not happen as products are handled specially above
+                                // But if it does, position based on parent
+                                let categoryDepth = 0;
+                                let current = node.parent;
+                                while (current && (current.data.type === 'category' || current.data.type === 'subcategory')) {
+                                    categoryDepth++;
+                                    current = current.parent;
+                                }
+                                nodeX = (1 + categoryDepth + 1) * columnWidth;
+                            } else if (node.data.type === 'component') {
+                                // Count category depth of parent product's parent
+                                let categoryDepth = 0;
+                                let current = node.parent ? node.parent.parent : null;
+                                while (current && (current.data.type === 'category' || current.data.type === 'subcategory')) {
+                                    categoryDepth++;
+                                    current = current.parent;
+                                }
+                                nodeX = (1 + categoryDepth + 2) * columnWidth;
                             }
                             
-                            // Always set X position based on effective depth
-                            node.x = effectiveDepth * columnWidth;
+                            // Always set X position
+                            node.x = nodeX;
                             
                             // Only set Y position if it hasn't been manually set
                             if (!node._manualY) {
-                                node.y = startY + (index * nodeHeight);
+                                node.y = startY + (index * (nodeHeight + 15)); // Add 15px spacing
                             }
-                            // If manually positioned, keep the manual Y position
                         });
                     });
                 });
             }
             
-            // Column header labels and colors
-            const columnInfo = {
-                0: { label: 'All Catalogs', color: '#014486' },
-                1: { label: 'Product Catalog', color: '#0176D3' },
-                2: { label: 'Category', color: '#00D4FF' },
-                3: { label: 'Sub-Category', color: '#9050E9' },
-                4: { label: 'Product', color: '#2E844A' },
-                5: { label: 'Bundle Components', color: '#FF6900' },
-                6: { label: 'Product Variant', color: '#FFB75D' }
-            };
+            // Function to get column info dynamically based on actual structure
+            function getColumnInfo(column) {
+                // Base columns that are always the same
+                const baseColumns = {
+                    0: { label: 'All Catalogs', color: '#014486' },
+                    1: { label: 'Product Catalog', color: '#0176D3' }
+                };
+                
+                if (baseColumns[column]) {
+                    return baseColumns[column];
+                }
+                
+                // Determine the maximum category depth
+                let maxCategoryDepth = 0;
+                root.descendants().forEach(d => {
+                    if (d.data.type === 'category' || d.data.type === 'subcategory') {
+                        let depth = 0;
+                        let current = d;
+                        while (current.parent && (current.parent.data.type === 'category' || current.parent.data.type === 'subcategory')) {
+                            depth++;
+                            current = current.parent;
+                        }
+                        maxCategoryDepth = Math.max(maxCategoryDepth, depth);
+                    }
+                });
+                
+                // Dynamically assign columns based on structure
+                if (column >= 2 && column < 2 + maxCategoryDepth + 1) {
+                    // Category columns
+                    const categoryLevel = column - 2;
+                    if (categoryLevel === 0) {
+                        return { label: 'Category', color: '#00D4FF' };
+                    } else if (categoryLevel === 1) {
+                        return { label: 'Sub-Category', color: '#9050E9' };
+                    } else {
+                        return { label: `Sub-Category L${categoryLevel}`, color: '#6B46C1' };
+                    }
+                } else if (column === 2 + maxCategoryDepth + 1) {
+                    // Product column
+                    return { label: 'Product', color: '#2E844A' };
+                } else if (column === 2 + maxCategoryDepth + 2) {
+                    // Bundle Components column
+                    return { label: 'Bundle Components', color: '#FF6900' };
+                } else {
+                    // Any additional columns
+                    return { label: 'Product Variant', color: '#FFB75D' };
+                }
+            }
+            
+            // Define link colors based on depth
+            const linkColors = [
+                '#014486',   // Depth 0-1: Dark blue (root to catalog)
+                '#0176D3',   // Depth 1-2: Blue (catalog to category)
+                '#00D4FF',   // Depth 2-3: Light blue (category to product)
+                '#9050E9',   // Depth 3-4: Purple (product to component/subcategory)
+                '#FF6900',   // Depth 4-5: Orange (component relationships)
+                '#FFB75D'    // Depth 5+: Light orange (deeper levels)
+            ];
             
             // Function to add column headers
             function addColumnHeaders() {
-                // Get unique depths with visible nodes
-                const visibleDepths = new Set();
-                let maxDepth = 0;
+                // Get unique depths with visible nodes based on their actual column positions
+                const visibleColumns = new Set();
+                let maxColumn = 0;
+                
                 root.descendants().forEach(d => {
-                    // Use effective depth for products and components that skip subcategory
-                    let effectiveDepth = d.depth;
-                    if (d.data.type === 'product' && d.parent && d.parent.data.type === 'category') {
-                        effectiveDepth = d.depth + 1;
-                    } else if (d.data.type === 'component' && d.parent && d.parent.data.type === 'product' 
-                             && d.parent.parent && d.parent.parent.data.type === 'category') {
-                        effectiveDepth = d.depth + 1;
-                    }
-                    visibleDepths.add(effectiveDepth);
-                    maxDepth = Math.max(maxDepth, effectiveDepth);
+                    // Use the actual x position to determine the column
+                    const column = Math.round(d.x / columnWidth);
+                    visibleColumns.add(column);
+                    maxColumn = Math.max(maxColumn, column);
                 });
                 
-                // Ensure all columns from 0 to maxDepth are included
-                for (let i = 0; i <= maxDepth; i++) {
-                    visibleDepths.add(i);
+                // Ensure all columns from 0 to maxColumn are included
+                for (let i = 0; i <= maxColumn; i++) {
+                    visibleColumns.add(i);
                 }
                 
                 // Check if headers need updating
                 const existingHeaders = d3.select(container).selectAll('.column-header-fixed');
-                const existingDepths = new Set();
+                const existingColumns = new Set();
                 existingHeaders.each(function() {
-                    const depth = parseInt(d3.select(this).attr('data-depth'));
-                    if (!isNaN(depth)) existingDepths.add(depth);
+                    const column = parseInt(d3.select(this).attr('data-column'));
+                    if (!isNaN(column)) existingColumns.add(column);
                 });
                 
-                // Only update if depths have changed
-                const depthsChanged = visibleDepths.size !== existingDepths.size || 
-                    [...visibleDepths].some(d => !existingDepths.has(d));
-                
-                if (!depthsChanged) return;
-                
-                // Remove existing headers and rebuild
+                // Always remove and rebuild headers to ensure proper alignment
                 d3.select(container).selectAll('.column-header-fixed').remove();
                 
                 // Get current transform of the g element
@@ -1238,12 +1587,13 @@
                 const scale = currentTransform.k;
                 const translateX = currentTransform.x;
                 
-                // Add headers for each visible depth
-                visibleDepths.forEach(depth => {
-                    if (columnInfo[depth]) {
+                // Add headers for each visible column
+                visibleColumns.forEach(column => {
+                    const colInfo = getColumnInfo(column);
+                    if (colInfo) {
                         // Create a fixed header div outside the SVG
-                        // Position at center of column (depth * columnWidth) minus half the header width
-                        const columnCenterX = 100 + (depth * columnWidth * scale) + translateX;
+                        // Position at center of column minus half the header width
+                        const columnCenterX = 100 + (column * columnWidth * scale) + translateX;
                         const headerLeft = columnCenterX - (nodeWidth / 2);
                         
                         const headerDiv = d3.select(container)
@@ -1255,13 +1605,13 @@
                             .style('width', `${nodeWidth}px`)
                             .style('text-align', 'center')
                             .style('z-index', '10')
-                            .attr('data-depth', depth);  // Store depth for comparison
+                            .attr('data-column', column);  // Store column for comparison
                         
                         // Add color bar
                         headerDiv.append('div')
                             .style('width', '100%')
                             .style('height', '4px')
-                            .style('background-color', columnInfo[depth].color)
+                            .style('background-color', colInfo.color)
                             .style('border-radius', '2px')
                             .style('margin-bottom', '6px');
                         
@@ -1272,13 +1622,27 @@
                             .style('color', 'var(--text-primary)')
                             .style('text-transform', 'uppercase')
                             .style('letter-spacing', '0.05em')
-                            .text(columnInfo[depth].label);
+                            .text(colInfo.label);
                     }
                 });
             }
             
             // Function to update the tree
             function update(source) {
+                // Apply pending changes to node data before rendering
+                if (window.changeTracker && window.changeTracker.pendingChanges.size > 0) {
+                    root.descendants().forEach(node => {
+                        const nodeId = node.data.id;
+                        const nodeChanges = window.changeTracker.pendingChanges.get(nodeId);
+                        if (nodeChanges && nodeChanges.size > 0) {
+                            nodeChanges.forEach((change, fieldName) => {
+                                // Apply the pending change to the node data
+                                node.data[fieldName] = change.newValue;
+                            });
+                        }
+                    });
+                }
+                
                 // Get all nodes
                 const nodes = root.descendants();
                 const links = root.links();
@@ -1286,8 +1650,10 @@
                 // Calculate custom layout
                 calculateLayout(root);
                 
-                // Add column headers
-                addColumnHeaders();
+                // Prevent overlaps after layout calculation
+                preventOverlaps(nodes);
+                
+                // Don't add column headers here - they'll be added after transitions complete
                 
                 // Debug: Log node positions
                 console.log('Node positions after layout:');
@@ -1339,16 +1705,6 @@
                 // Remove old links
                 link.exit().remove();
                 
-                // Define link colors based on depth
-                const linkColors = [
-                    '#014486',   // Depth 0-1: Dark blue (root to catalog)
-                    '#0176D3',   // Depth 1-2: Blue (catalog to category)
-                    '#00D4FF',   // Depth 2-3: Light blue (category to product)
-                    '#9050E9',   // Depth 3-4: Purple (product to component/subcategory)
-                    '#FF6900',   // Depth 4-5: Orange (component relationships)
-                    '#FFB75D'    // Depth 5+: Light orange (deeper levels)
-                ];
-                
                 // Enter new links
                 const linkEnter = link.enter().append('path')
                     .attr('class', 'link')
@@ -1396,17 +1752,53 @@
                 
                 // Enter new nodes
                 const nodeEnter = node.enter().append('g')
-                    .attr('class', 'node')
+                    .attr('class', d => 'node' + (d.data.shownForChildren ? ' node-shown-for-children' : ''))
                     .attr('data-node-id', d => d.data.id)
                     .attr('transform', d => `translate(${d.x},${d.y})`)
                     .style('opacity', 0);
                 
                 // Update all nodes
                 node.merge(nodeEnter)
+                    .attr('class', d => 'node' + (d.data.shownForChildren ? ' node-shown-for-children' : ''))
                     .transition()
                     .duration(500)
                     .style('opacity', 1)
-                    .attr('transform', d => `translate(${d.x},${d.y})`);
+                    .attr('transform', d => `translate(${d.x},${d.y})`)
+                    .on('end', function() {
+                        // Update column headers after all transitions complete
+                        // Only do this once, on the first node's transition end
+                        if (this === node.merge(nodeEnter).node()) {
+                            addColumnHeaders();
+                            const currentTransform = d3.zoomTransform(svg.node());
+                            updateColumnHeaderPositions(currentTransform);
+                        }
+                    });
+                
+                // Update text content for existing nodes (to reflect pending changes)
+                node.select('text')
+                    .text(d => d.data.name);
+                
+                // Re-apply text wrapping and update rectangle height for updated nodes
+                node.each(function(d) {
+                    const nodeEl = d3.select(this);
+                    const text = nodeEl.select('text');
+                    const rect = nodeEl.select('rect');
+                    
+                    if (!text.empty()) {
+                        // Calculate new height if needed
+                        const textHeight = calculateTextHeight(d.data.name, nodeWidth - 40);
+                        d.data._height = textHeight;
+                        
+                        // Update rectangle height and position
+                        if (!rect.empty()) {
+                            rect.attr('height', textHeight)
+                                .attr('y', -textHeight / 2);
+                        }
+                        
+                        // Wrap text
+                        wrapText(text, nodeWidth - 40); // Leave space for expand button
+                    }
+                });
                 
                 // Add vertical-only drag behavior
                 const drag = d3.drag()
@@ -1418,52 +1810,73 @@
                         d._fixedX = d.x;
                     })
                     .on('drag', function(event, d) {
-                        // Calculate the drag delta
-                        const oldY = d.y;
                         // Only allow vertical movement
-                        d.y = event.y;
-                        // Mark this position as manually set
-                        d._manualY = true;
-                        // Keep x position fixed to original column
-                        d.x = d._fixedX;
+                        const proposedY = event.y;
                         
-                        // Calculate movement delta
-                        const deltaY = d.y - oldY;
-                        
-                        // Get all nodes at the same depth (siblings in the same column)
-                        const nodesAtSameDepth = nodes.filter(n => n.depth === d.depth && n !== d);
-                        
-                        // Move all other nodes in the same column by the same amount
-                        nodesAtSameDepth.forEach(sibling => {
-                            sibling.y += deltaY;
-                            sibling._manualY = true;
-                            // Update their visual positions
-                            d3.select(`[data-node-id="${sibling.data.id}"]`)
-                                .transition()
-                                .duration(0)
-                                .attr('transform', `translate(${sibling.x},${sibling.y})`);
+                        // Get all nodes in the same column
+                        const nodesInSameColumn = nodes.filter(n => {
+                            return n !== d && n.x === d.x;
                         });
                         
-                        // Move all descendants by the same amount if they exist
-                        if (d.children || d._children) {
-                            const descendants = [];
-                            const collectDescendants = (node) => {
-                                if (node.children) {
-                                    node.children.forEach(child => {
-                                        descendants.push(child);
-                                        collectDescendants(child);
-                                    });
+                        // Define minimum spacing between nodes
+                        const draggedNodeHeight = d.data._height || nodeHeight;
+                        const minSpacing = 15; // Just the gap, not including node heights
+                        
+                        // Check for collisions and find the constrained Y position
+                        let constrainedY = proposedY;
+                        
+                        // Sort nodes in the same column by Y position
+                        const sortedColumnNodes = nodesInSameColumn.sort((a, b) => a.y - b.y);
+                        
+                        // Find the closest nodes above and below
+                        let nodeAbove = null;
+                        let nodeBelow = null;
+                        
+                        for (const node of sortedColumnNodes) {
+                            if (node.y < d.y && (!nodeAbove || node.y > nodeAbove.y)) {
+                                nodeAbove = node;
+                            }
+                            if (node.y > d.y && (!nodeBelow || node.y < nodeBelow.y)) {
+                                nodeBelow = node;
+                            }
+                        }
+                        
+                        // Constrain Y position to prevent overlap
+                        if (nodeAbove) {
+                            const aboveHeight = nodeAbove.data._height || nodeHeight;
+                            const minY = nodeAbove.y + (aboveHeight / 2) + (draggedNodeHeight / 2) + minSpacing;
+                            if (constrainedY < minY) {
+                                constrainedY = minY;
+                            }
+                        }
+                        if (nodeBelow) {
+                            const belowHeight = nodeBelow.data._height || nodeHeight;
+                            const maxY = nodeBelow.y - (belowHeight / 2) - (draggedNodeHeight / 2) - minSpacing;
+                            if (constrainedY > maxY) {
+                                constrainedY = maxY;
+                            }
+                        }
+                        
+                        // Calculate the actual movement
+                        const deltaY = constrainedY - d.y;
+                        
+                        // Update the dragged node's position
+                        d.y = constrainedY;
+                        d._manualY = true;
+                        d.x = d._fixedX; // Keep x position fixed
+                        
+                        // If this is a product being dragged, move all its expanded components
+                        if (d.data.type === 'product' && d.children) {
+                            d.children.forEach(child => {
+                                if (child.data.type === 'component') {
+                                    child.y += deltaY;
+                                    child._manualY = true;
+                                    // Update component visual position
+                                    d3.select(`[data-node-id="${child.data.id}"]`)
+                                        .transition()
+                                        .duration(0)
+                                        .attr('transform', `translate(${child.x},${child.y})`);
                                 }
-                            };
-                            collectDescendants(d);
-                            
-                            // Apply the same vertical offset to all visible descendants
-                            descendants.forEach(desc => {
-                                desc.y += deltaY;
-                                desc._manualY = true;
-                                // Update their visual positions
-                                d3.select(`[data-node-id="${desc.data.id}"]`)
-                                    .attr('transform', `translate(${desc.x},${desc.y})`);
                             });
                         }
                         
@@ -1542,7 +1955,17 @@
                                     highlightPath(d);
                                     
                                     selectedNode = d;
+                                    // Store globally for inline editor
+                                    window.selectedNode = d;
+                                    
                                     showNodeDetails(d.data || d);
+                                    
+                                    // Enable inline editing for the details panel
+                                    if (window.inlineEditor) {
+                                        setTimeout(() => {
+                                            window.inlineEditor.enableEditMode();
+                                        }, 100);
+                                    }
                                 }
                             }
                             
@@ -1560,12 +1983,16 @@
                     
                     // Build content for new nodes
                     if (node.selectAll('rect').empty()) {
+                        // Calculate required height based on text
+                        const textHeight = calculateTextHeight(d.data.name, nodeWidth - 40);
+                        d.data._height = textHeight; // Store height on the data
+                        
                         // Add rectangle
                         const rect = node.append('rect')
                             .attr('width', nodeWidth)
-                            .attr('height', 40)
+                            .attr('height', textHeight)
                             .attr('x', -nodeWidth / 2)
-                            .attr('y', -20)
+                            .attr('y', -textHeight / 2)
                             .attr('rx', 6)
                             .attr('fill', d => {
                                 // Lighter fill colors (15% opacity for better contrast with stroke)
@@ -1647,11 +2074,8 @@
                             .style('user-select', 'none')
                             .text(d.data.name);
             
-                        // Wrap text if needed
-                        const bbox = text.node().getBBox();
-                        if (bbox.width > nodeWidth - 20) {
-                            wrapText(text, nodeWidth - 20);
-                        }
+                        // Always wrap text to ensure proper formatting
+                        wrapText(text, nodeWidth - 40); // Leave space for expand button
                     }
                     
                     // Add expand/collapse circle if node has children (rebuild for all nodes)
@@ -1660,8 +2084,10 @@
                             const isExpanded = d.children && d.children.length > 0;
                             
                             // Add circle background
+                            // Position at the right end of the node
+                            const xPosition = nodeWidth / 2 + 10;
                             const circleGroup = node.append('g')
-                                .attr('transform', `translate(${nodeWidth / 2 + 10}, 0)`)
+                                .attr('transform', `translate(${xPosition}, 0)`)
                                 .attr('class', 'expand-collapse-circle')
                                 .style('cursor', 'pointer')
                                 .style('pointer-events', 'all')
@@ -1690,6 +2116,10 @@
                                         d.children = d._children;
                                         d._children = null;
                                     }
+                                    // Reset manual Y positions when expanding/collapsing to allow proper layout
+                                    root.descendants().forEach(node => {
+                                        delete node._manualY;
+                                    });
                                     update(d);
                                 });
                             
@@ -1746,6 +2176,42 @@
                         });
                 });
             
+                // Function to calculate text height after wrapping
+                function calculateTextHeight(textString, width) {
+                    // Create a temporary text element to measure
+                    const tempText = svg.append('text')
+                        .style('visibility', 'hidden')
+                        .text(textString);
+                    
+                    const words = textString.split(/\s+/).reverse();
+                    let word;
+                    let line = [];
+                    let lineCount = 0;
+                    const lineHeight = 14; // Line height in pixels
+                    
+                    const tspan = tempText.append('tspan');
+                    
+                    while (word = words.pop()) {
+                        line.push(word);
+                        tspan.text(line.join(' '));
+                        if (tspan.node().getComputedTextLength() > width) {
+                            line.pop();
+                            if (line.length > 0) {
+                                lineCount++;
+                            }
+                            line = [word];
+                        }
+                    }
+                    if (line.length > 0) {
+                        lineCount++;
+                    }
+                    
+                    tempText.remove();
+                    
+                    // Return total height needed (with padding)
+                    return Math.max(40, lineCount * lineHeight + 20); // Minimum 40px, add 20px padding
+                }
+                
                 // Function to wrap text
                 function wrapText(text, width) {
                     text.each(function() {
@@ -1782,25 +2248,38 @@
                         });
                     });
                 }
+                
+                // Reapply change indicators after update
+                if (window.changeTracker && window.changeTracker.pendingChanges.size > 0) {
+                    window.changeTracker.pendingChanges.forEach((nodeChanges, nodeId) => {
+                        if (nodeChanges.size > 0) {
+                            // Find the node in the tree (could be collapsed or expanded)
+                            const treeNode = root.descendants().find(d => d.data.id === nodeId);
+                            if (treeNode) {
+                                // Apply the change indicator if the node element exists in the DOM
+                                const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
+                                if (!nodeElement.empty()) {
+                                    if (window.inlineEditor) {
+                                        window.inlineEditor.markNodeAsModified(nodeId);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
             }
             
             
             // Initial update
             update(root);
             
-            // Set initial column header positions with correct transform
-            updateColumnHeaderPositions({ k: 1, x: 100, y: 50 });
+            // Add initial column headers after a short delay to ensure layout is complete
+            setTimeout(() => {
+                addColumnHeaders();
+                updateColumnHeaderPositions({ k: 1, x: 100, y: 50 });
+            }, 600);
             
-            // Add zoom behavior with panning
-            const zoom = d3.zoom()
-                .scaleExtent([0.5, 2])
-                .on('zoom', (event) => {
-                    const transform = event.transform;
-                    g.attr('transform', transform);
-                    // Update column headers positions
-                    updateColumnHeaderPositions(transform);
-                });
-            
+            // Apply zoom behavior to svg
             svg.call(zoom);
             
             // Function to update column header positions based on zoom
@@ -1808,33 +2287,10 @@
                 const scale = transform.k;
                 const translateX = transform.x;
                 
-                // Get unique depths from visible nodes
-                const visibleDepths = new Set();
-                let maxDepth = 0;
-                root.descendants().forEach(d => {
-                    // Use effective depth for products and components that skip subcategory
-                    let effectiveDepth = d.depth;
-                    if (d.data.type === 'product' && d.parent && d.parent.data.type === 'category') {
-                        effectiveDepth = d.depth + 1;
-                    } else if (d.data.type === 'component' && d.parent && d.parent.data.type === 'product' 
-                             && d.parent.parent && d.parent.parent.data.type === 'category') {
-                        effectiveDepth = d.depth + 1;
-                    }
-                    visibleDepths.add(effectiveDepth);
-                    maxDepth = Math.max(maxDepth, effectiveDepth);
-                });
-                
-                // Ensure all columns from 0 to maxDepth are included
-                for (let i = 0; i <= maxDepth; i++) {
-                    visibleDepths.add(i);
-                }
-                
-                const depthsArray = Array.from(visibleDepths).sort((a, b) => a - b);
-                
-                d3.select(container).selectAll('.column-header-fixed').each(function(d, i) {
-                    const depth = depthsArray[i];
-                    if (depth !== undefined) {
-                        const columnCenterX = translateX + (depth * columnWidth * scale);
+                d3.select(container).selectAll('.column-header-fixed').each(function() {
+                    const column = parseInt(d3.select(this).attr('data-column'));
+                    if (!isNaN(column)) {
+                        const columnCenterX = translateX + (column * columnWidth * scale);
                         const headerLeft = columnCenterX - (nodeWidth / 2);
                         d3.select(this)
                             .style('left', `${headerLeft}px`)
@@ -1890,6 +2346,19 @@
             window.hierarchySvg = svg;
             window.hierarchyZoom = zoom;
             window.hierarchyRoot = root;
+            
+            // Store nodes for inline editor
+            window.hierarchyData.nodes = root.descendants().map(d => d.data);
+            
+            // Initialize inline editor if available
+            if (window.inlineEditor) {
+                window.inlineEditor.initialize();
+            }
+            
+            // Apply any saved changes from session storage
+            if (window.changeTracker && window.changeTracker.pendingChanges.size > 0) {
+                window.changeTracker.applyRestoredChanges();
+            }
         }
 
         // Load org selector and show all connections
@@ -2142,6 +2611,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded');
             
+            // Initialize inline editor and change tracker
+            if (window.inlineEditor && window.changeTracker) {
+                window.inlineEditor.changeTracker = window.changeTracker;
+                window.inlineEditor.initialize();
+            }
+            
             // Load org selector
             loadOrgSelector();
             
@@ -2155,21 +2630,64 @@
             
             // Fetch and render
             fetch('/api/product-hierarchy')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     console.log('Data received:', data);
                     if (data.success && data.hierarchy) {
                         // Store original data for filtering
                         originalData = data.hierarchy;
                         currentData = JSON.parse(JSON.stringify(originalData));
-                        renderD3Tree(currentData);
+                        
+                        // Restore filter preferences from sessionStorage
+                        const savedActiveFilter = sessionStorage.getItem('hierarchy-activeFilter');
+                        const savedSyncedOnly = sessionStorage.getItem('hierarchy-syncedOnly');
+                        
+                        if (savedActiveFilter) {
+                            document.getElementById('activeFilter').value = savedActiveFilter;
+                        }
+                        if (savedSyncedOnly !== null) {
+                            document.getElementById('syncedOnlyFilter').checked = savedSyncedOnly === 'true';
+                        }
+                        
+                        // Apply filters if any are set
+                        if ((savedActiveFilter && savedActiveFilter !== 'all') || savedSyncedOnly === 'true') {
+                            applyFilters();
+                        } else {
+                            renderD3Tree(currentData);
+                        }
                     } else {
-                        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>No hierarchy data available</p></div>';
+                        // No hierarchy data - show option to load sample data
+                        container.innerHTML = `
+                            <div class="empty-state" id="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>No hierarchy data available</p>
+                                <button class="btn btn-primary" onclick="loadSampleData()">
+                                    Load Sample Data
+                                </button>
+                            </div>
+                        `;
                     }
                 })
                 .catch(error => {
                     console.error('Error loading data:', error);
-                    container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading hierarchy data</p></div>';
+                    console.error('Error details:', error.message, error.stack);
+                    
+                    // Show option to load sample data
+                    container.innerHTML = `
+                        <div class="empty-state" id="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Error loading hierarchy data</p>
+                            <p style="font-size: 0.875rem; color: #999; margin-bottom: 1rem;">${error.message}</p>
+                            <button class="btn btn-primary" onclick="loadSampleData()">
+                                Load Sample Data
+                            </button>
+                        </div>
+                    `;
                 });
         });
     </script>

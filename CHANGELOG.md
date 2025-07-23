@@ -4,6 +4,48 @@ All notable changes to the Revenue Cloud Migration Tool will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2025-07-23] - Product Hierarchy Visualization Enhancements
+
+### Fixed
+
+#### Bundle Components Display
+- Fixed issue where all products were showing in the Bundle Components column instead of only actual bundle components
+- Implemented proper filtering to ensure only components (children of bundle products) appear in the Bundle Components column
+- Added `_positioned` flag to prevent nodes from being processed multiple times during layout calculation
+
+#### Node Overlap Issues
+- Fixed overlapping nodes when expanding/collapsing hierarchy levels
+- Implemented dynamic spacing (15px) between all nodes
+- Added `preventOverlaps()` function that ensures minimum spacing between nodes in the same column
+- Updated drag behavior to include collision detection preventing nodes from overlapping during manual repositioning
+- Reset manual Y positions when expanding/collapsing to allow proper automatic layout
+
+#### Text Wrapping and Dynamic Node Heights
+- Fixed text wrapping for all node titles
+- Implemented dynamic node height calculation based on wrapped text content
+- Added `calculateTextHeight()` function that measures required height for multi-line text
+- Updated rectangle heights and Y positions to accommodate variable node heights
+- Ensured text wrapping is reapplied when nodes are updated
+
+#### Column Header Alignment
+- Fixed column header misalignment when bundle components are expanded
+- Changed column detection to use actual node X positions instead of recalculating
+- Created dynamic `getColumnInfo()` function that adapts to variable category depths
+- Synchronized header updates with node transition animations
+- Headers now properly reflect actual column structure regardless of hierarchy depth
+
+#### UI/UX Improvements
+- Bundle products now appear first in the Product column, before non-bundle products
+- Expand/collapse buttons properly positioned at the right edge of nodes
+- Hierarchy starts in collapsed state (only root and catalog visible initially)
+- Fixed initial positioning of products to be properly centered around their parent
+
+### Technical Details
+- Updated D3.js visualization with improved layout algorithm
+- Enhanced collision detection for draggable nodes
+- Improved transition timing for smooth animations
+- Better separation of concerns between layout calculation and visual updates
+
 ## [2025-07-19] - Product Hierarchy Edit Functionality Phase 1
 
 ### Added
