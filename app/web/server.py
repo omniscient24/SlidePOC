@@ -62,6 +62,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 self.handle_get_edit_permissions()
             elif path == '/api/edit/field-config':
                 self.handle_get_field_config()
+            elif path == '/api/edit/changes/history':
+                self.handle_get_change_history()
             elif path.startswith('/static/'):
                 self.serve_static_file(path)
             elif path == '/':
@@ -138,10 +140,16 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 self.handle_file_upload()
             elif path == '/api/sync':
                 self.handle_sync()
+            elif path.startswith('/api/sync/'):
+                # Handle individual object sync
+                object_name = path.replace('/api/sync/', '')
+                self.handle_object_sync(object_name)
             elif path == '/api/sync-status':
                 self.handle_sync_status()
             elif path == '/api/logout':
                 self.handle_logout()
+            elif path == '/api/workbook/open':
+                self.handle_open_workbook()
             elif path.startswith('/api/connections/'):
                 # Handle connection-specific endpoints
                 if path == '/api/connections/test':
@@ -150,12 +158,18 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     self.handle_delete_connection()
                 elif path == '/api/connections/refresh':
                     self.handle_refresh_connection()
+                elif path == '/api/connections/set-active':
+                    self.handle_set_active_connection()
                 else:
                     self.send_error(404)
             elif path == '/api/edit/permissions':
                 self.handle_update_edit_permissions()
             elif path == '/api/edit/field-config':
                 self.handle_update_field_config()
+            elif path == '/api/edit/changes/validate':
+                self.handle_validate_changes()
+            elif path == '/api/edit/changes/commit':
+                self.handle_commit_changes()
             else:
                 self.send_error(404)
         except Exception as e:
@@ -544,7 +558,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 # Use the workbook file directly
                 workbook_path = form.getvalue('workbookPath', '')
                 if not workbook_path:
-                    workbook_path = str(DATA_ROOT / 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+                    workbook_path = str(DATA_ROOT / 'templates' / 'master' / 'Revenue_Cloud_Complete_Upload_Template.xlsx')
                 
                 # Get form fields
                 object_name = form.getvalue('object', '')
@@ -798,6 +812,74 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 'error': f'Sync error: {str(e)}'
             })
     
+    def handle_object_sync(self, object_name):
+        """Handle sync request for a specific object"""
+        try:
+            # Get session to retrieve connection info
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Authentication required'
+                })
+                return
+            
+            session = session_manager.get_session(session_id)
+            if not session:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Invalid session'
+                })
+                return
+            
+            # Get active connection alias
+            active_connection_id = session.get('active_connection_id')
+            if not active_connection_id:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'No active connection selected'
+                })
+                return
+            
+            # Get the actual connection object
+            active_connection = connection_manager.get_connection(active_connection_id)
+            if not active_connection:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Active connection not found'
+                })
+                return
+            
+            connection_alias = active_connection.get('cli_alias')
+            
+            # Log the sync request
+            print(f"[SYNC] Individual sync request for {object_name} using connection {connection_alias}")
+            
+            # Perform sync for the specific object
+            success, result = sync_service.sync_single_object(object_name, connection_alias)
+            
+            if success:
+                self.send_json_response({
+                    'success': True,
+                    'recordCount': result.get('recordCount', 0),
+                    'message': result.get('message', f'Successfully synced {object_name}')
+                })
+            else:
+                self.send_json_response({
+                    'success': False,
+                    'error': result.get('error', 'Sync failed')
+                })
+                
+        except Exception as e:
+            print(f"Error in handle_object_sync: {e}")
+            import traceback
+            traceback.print_exc()
+            self.send_json_response({
+                'success': False,
+                'error': f'Sync error: {str(e)}'
+            })
+    
     def handle_sync_status(self):
         """Handle sync status request"""
         try:
@@ -911,6 +993,64 @@ class SimpleHandler(BaseHTTPRequestHandler):
             print(f"Error deleting connection: {e}")
             self.send_error(500)
     
+    def handle_set_active_connection(self):
+        """Set a connection as active"""
+        try:
+            # Get session
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Authentication required'
+                })
+                return
+            
+            # Get session data
+            session = session_manager.get_session(session_id)
+            if not session:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Invalid session'
+                })
+                return
+                
+            # Get request data
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body)
+            
+            connection_id = data.get('connection_id')
+            if not connection_id:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Connection ID required'
+                })
+                return
+            
+            # Set the active connection
+            success = connection_manager.set_active_connection(session, connection_id)
+            
+            if success:
+                self.send_json_response({
+                    'success': True,
+                    'message': 'Connection set as active'
+                })
+            else:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Failed to set active connection'
+                })
+                
+        except Exception as e:
+            print(f"Error setting active connection: {e}")
+            import traceback
+            traceback.print_exc()
+            self.send_json_response({
+                'success': False,
+                'error': str(e)
+            })
+    
     def handle_refresh_connection(self):
         """Refresh a connection"""
         try:
@@ -965,7 +1105,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
             # Path to the main workbook - use absolute path from server location
             server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+            workbook_path = os.path.join(server_dir, 'data', 'templates', 'master', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
             
             # Check if workbook exists
             if not os.path.exists(workbook_path):
@@ -1101,7 +1241,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
             # Path to the main workbook
             server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+            workbook_path = os.path.join(server_dir, 'data', 'templates', 'master', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
             
             if not os.path.exists(workbook_path):
                 self.send_error(404, "Workbook not found")
@@ -1261,7 +1401,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
             # Path to the main workbook
             server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+            workbook_path = os.path.join(server_dir, 'data', 'templates', 'master', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
             
             if not os.path.exists(workbook_path):
                 workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
@@ -1339,6 +1479,70 @@ class SimpleHandler(BaseHTTPRequestHandler):
             print(f"Error getting object counts: {e}")
             self.send_error(500)
     
+    def handle_open_workbook(self):
+        """Handle opening workbook in system default application"""
+        try:
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body)
+            
+            path = data.get('path')
+            sheet = data.get('sheet')
+            api_name = data.get('apiName')
+            
+            if not path:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Workbook path required'
+                })
+                return
+            
+            # Check if file exists
+            import os
+            if not os.path.exists(path):
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Workbook file not found'
+                })
+                return
+            
+            # Open the file with the system default application
+            import subprocess
+            import platform
+            
+            print(f"[OPEN] Opening workbook: {path}")
+            print(f"[OPEN] Sheet: {sheet}, API Name: {api_name}")
+            
+            try:
+                if platform.system() == 'Darwin':  # macOS
+                    subprocess.run(['open', path])
+                elif platform.system() == 'Windows':
+                    os.startfile(path)
+                else:  # Linux and others
+                    subprocess.run(['xdg-open', path])
+                
+                self.send_json_response({
+                    'success': True,
+                    'message': f'Opened {api_name} in spreadsheet application'
+                })
+                
+            except Exception as e:
+                print(f"[ERROR] Failed to open workbook: {e}")
+                self.send_json_response({
+                    'success': False,
+                    'error': f'Failed to open spreadsheet: {str(e)}'
+                })
+                
+        except Exception as e:
+            print(f"Error in handle_open_workbook: {e}")
+            import traceback
+            traceback.print_exc()
+            self.send_json_response({
+                'success': False,
+                'error': f'Error opening workbook: {str(e)}'
+            })
+    
     def handle_get_product_hierarchy(self):
         """Get product hierarchy data for visualization"""
         try:
@@ -1352,7 +1556,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 import os
                 
                 server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+                workbook_path = os.path.join(server_dir, 'data', 'templates', 'master', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
                 
                 if not os.path.exists(workbook_path):
                     workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
@@ -1376,6 +1580,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     try:
                         categories_df = pd.read_excel(workbook_path, sheet_name='12_ProductCategory')
                         print(f"[DEBUG] Loaded {len(categories_df)} categories")
+                        print(f"[DEBUG] Actual category columns from Excel: {categories_df.columns.tolist()}")
+                        print(f"[DEBUG] First category: {categories_df.iloc[0].to_dict() if len(categories_df) > 0 else 'None'}")
                     except Exception as e:
                         print(f"[DEBUG] Error loading categories: {e}")
                     
@@ -1397,6 +1603,21 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     except Exception as e:
                         print(f"[DEBUG] Error loading related components: {e}")
                     
+                    # Load ProductCategoryProduct junction table
+                    product_category_df = None
+                    try:
+                        product_category_df = pd.read_excel(workbook_path, sheet_name='26_ProductCategoryProduct')
+                        print(f"[DEBUG] Loaded {len(product_category_df)} product-category mappings")
+                        # Filter out rows with empty ProductCategoryId or ProductId
+                        if 'ProductCategoryId*' in product_category_df.columns and 'ProductId*' in product_category_df.columns:
+                            product_category_df = product_category_df[
+                                product_category_df['ProductCategoryId*'].notna() & 
+                                product_category_df['ProductId*'].notna()
+                            ]
+                            print(f"[DEBUG] After filtering: {len(product_category_df)} valid mappings")
+                    except Exception as e:
+                        print(f"[DEBUG] Error loading product-category mappings: {e}")
+                    
                     # Build hierarchy from real data
                     # Create root node for all catalogs
                     hierarchy_data = {
@@ -1407,6 +1628,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     }
                     
                     if catalogs_df is not None and len(catalogs_df) > 0:
+                        print(f"[DEBUG] Building hierarchy with {len(catalogs_df)} catalogs")
                         # Add each catalog as a child of root
                         for idx, catalog in catalogs_df.iterrows():
                             # Use Code or Description as the name, fallback to generic name
@@ -1431,32 +1653,119 @@ class SimpleHandler(BaseHTTPRequestHandler):
                             
                             # Add categories that belong to this catalog
                             if categories_df is not None and catalog_id:
-                                # Check if there's a ProductCatalog__c field linking categories to catalogs
-                                if 'ProductCatalog__c' in categories_df.columns:
-                                    catalog_categories = categories_df[categories_df['ProductCatalog__c'] == catalog_id]
+                                print(f"[DEBUG] Category columns: {categories_df.columns.tolist()}")
+                                # Check if there's a CatalogId field linking categories to catalogs
+                                if 'CatalogId' in categories_df.columns:
+                                    catalog_categories = categories_df[categories_df['CatalogId'] == catalog_id]
+                                    print(f"[DEBUG] Found {len(catalog_categories)} categories for catalog {catalog_id}")
                                 else:
-                                    # If no direct link, show all categories under each catalog
-                                    catalog_categories = categories_df
+                                    # If no direct link, only show root categories under the first catalog
+                                    # to avoid duplication
+                                    if idx == 0:  # First catalog gets all root categories
+                                        catalog_categories = categories_df
+                                        print(f"[DEBUG] No CatalogId column, assigning all {len(catalog_categories)} categories to first catalog")
+                                    else:
+                                        catalog_categories = pd.DataFrame()  # Empty dataframe for other catalogs
+                                        print(f"[DEBUG] No CatalogId column, skipping categories for catalog {idx+1}")
                                 
+                                # Build a dictionary to track parent-child relationships
+                                category_dict = {}
                                 for _, category in catalog_categories.iterrows():
+                                    cat_id = str(category.get('Id', f'cat-{_}'))
+                                    parent_id = str(category.get('ParentCategoryId', '')) if pd.notna(category.get('ParentCategoryId', '')) else None
+                                    
                                     cat_node = {
-                                        'id': str(category.get('Id', f'cat-{_}')),
+                                        'id': cat_id,
                                         'name': str(category.get('Name', f'Category {_}')),
-                                        'type': 'category',
-                                        'children': []
+                                        'type': 'subcategory' if parent_id else 'category',
+                                        'children': [],
+                                        'parent_id': parent_id
                                     }
+                                    category_dict[cat_id] = cat_node
+                                
+                                # Build the hierarchy by connecting parents and children
+                                root_categories = []
+                                print(f"[DEBUG] Building category hierarchy from {len(category_dict)} categories")
+                                for cat_id, cat_node in category_dict.items():
+                                    parent_id = cat_node.get('parent_id')
+                                    if parent_id and parent_id in category_dict:
+                                        # This is a sub-category, add it to its parent
+                                        category_dict[parent_id]['children'].append(cat_node)
+                                    else:
+                                        # This is a root category, add it to the catalog
+                                        root_categories.append(cat_node)
+                                    # Remove the temporary parent_id field
+                                    if 'parent_id' in cat_node:
+                                        del cat_node['parent_id']
+                                
+                                # Track which products have been assigned
+                                assigned_products = set()
+                                
+                                # Function to add products to a category and its subcategories
+                                def add_products_to_category(cat_node):
+                                    cat_id = cat_node['id']
                                     
                                     # Add products in this category
                                     if products_df is not None:
-                                        # Filter products by category if there's a relationship field
-                                        if 'ProductCategory__c' in products_df.columns:
-                                            category_products = products_df[products_df['ProductCategory__c'] == category.get('Id', '')]
-                                        else:
-                                            # If no category relationship, distribute products across categories
-                                            # This is just for demo - in real implementation you'd have proper relationships
-                                            start_idx = _ * 3
-                                            end_idx = start_idx + 3
-                                            category_products = products_df.iloc[start_idx:end_idx]
+                                        category_products = pd.DataFrame()
+                                        
+                                        # Use ProductCategoryProduct junction table if available
+                                        if product_category_df is not None and len(product_category_df) > 0:
+                                            # Get product IDs for this category from junction table
+                                            try:
+                                                category_mappings = product_category_df[product_category_df['ProductCategoryId*'] == cat_id]
+                                                if len(category_mappings) > 0:
+                                                    product_ids = category_mappings['ProductId*'].tolist()
+                                                    # Only get products that haven't been assigned yet
+                                                    unassigned_product_ids = [pid for pid in product_ids if pid not in assigned_products]
+                                                    category_products = products_df[products_df['Id'].isin(unassigned_product_ids)]
+                                            except Exception as e:
+                                                print(f"[DEBUG] Error getting category mappings: {e}")
+                                        # Fallback to ProductCategory__c field if junction table not available
+                                        elif 'ProductCategory__c' in products_df.columns:
+                                            category_products = products_df[products_df['ProductCategory__c'] == cat_id]
+                                            # Filter out already assigned products
+                                            category_products = category_products[~category_products['Id'].isin(assigned_products)]
+                                        # If no mappings exist, assign products to categories based on name matching
+                                        if len(category_products) == 0 and 'Family' in products_df.columns:
+                                            # For demo purposes, assign products to lowest level categories based on name patterns
+                                            # Check if this is a leaf node (no child categories)
+                                            has_child_categories = any(child['type'] in ['category', 'subcategory'] for child in cat_node.get('children', []))
+                                            if cat_node['type'] == 'subcategory' and not has_child_categories:
+                                                # This is a leaf subcategory - assign products based on specific patterns
+                                                cat_name = cat_node['name']
+                                                
+                                                # Create specific mappings based on category names
+                                                # Only assign products to specific catalog-category combinations
+                                                catalog_name = catalog_node.get('name', '')
+                                                
+                                                if cat_name == 'Data Classification' and catalog_name == 'Cyber':
+                                                    # Only DCS core products and bundles go to Data Classification
+                                                    # Exclude HRM, Professional Services, Support, and Training
+                                                    category_products = products_df[
+                                                        (products_df['Name'].str.contains('DCS', na=False)) & 
+                                                        (~products_df['Name'].str.contains('HRM|Professional|Support|Training', na=False))
+                                                    ]
+                                                    # Filter out already assigned products
+                                                    category_products = category_products[~category_products['Id'].isin(assigned_products)]
+                                                    print(f"[DEBUG] Assigning {len(category_products)} DCS products to {cat_name} in {catalog_name}")
+                                                elif cat_name == 'Human Risk Management' and catalog_name == 'Cyber':
+                                                    # Check if this is the L2 node by checking if ID matches the L2 HRM ID
+                                                    # L2 HRM ID is 0ZGdp0000000AyfGAE
+                                                    if cat_id == '0ZGdp0000000AyfGAE':
+                                                        # This is the L2 node - assign ONLY HRM products (9 total, including 3 bundles)
+                                                        # Do NOT include Professional Services, Support, or Training
+                                                        category_products = products_df[
+                                                            products_df['Name'].str.contains('HRM', na=False)
+                                                        ]
+                                                        # Filter out already assigned products
+                                                        category_products = category_products[~category_products['Id'].isin(assigned_products)]
+                                                        print(f"[DEBUG] Assigning {len(category_products)} HRM products to {cat_name} (L2) in {catalog_name}")
+                                                    else:
+                                                        # This is the L1 node - don't assign products directly
+                                                        category_products = pd.DataFrame()
+                                                        print(f"[DEBUG] Skipping product assignment to {cat_name} (L1) in {catalog_name}")
+                                                # Don't assign products to other catalog-category combinations
                                         
                                         for _, product in category_products.iterrows():
                                             prod_node = {
@@ -1492,6 +1801,25 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                                     {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 130},
                                                     {'id': '01tdp000006HfplAAC', 'name': 'Unlimited Classification', 'seq': 140},
                                                     {'id': '01tdp000006HfpqAAC', 'name': 'Software Development Kit', 'seq': 150, 'required': False}
+                                                ],
+                                                # HRM Bundles
+                                                '01tdp000006iLGbAAM': [  # HRM Essentials Bundle
+                                                    {'id': '01tdp000006iLGcAAM', 'name': 'HRM Core Module', 'seq': 10},
+                                                    {'id': '01tdp000006iLGdAAM', 'name': 'HRM Basic Training', 'seq': 20}
+                                                ],
+                                                '01tdp000006m0jpAAA': [  # HRM Advanced Bundle
+                                                    {'id': '01tdp000006iLGcAAM', 'name': 'HRM Core Module', 'seq': 10},
+                                                    {'id': '01tdp000006iLGdAAM', 'name': 'HRM Basic Training', 'seq': 20},
+                                                    {'id': '01tdp000006iLGeAAM', 'name': 'HRM Phishing Simulation', 'seq': 30},
+                                                    {'id': '01tdp000006iLGfAAM', 'name': 'HRM Advanced Analytics', 'seq': 40}
+                                                ],
+                                                '01tdp000006m14nAAA': [  # HRM Elite Bundle
+                                                    {'id': '01tdp000006iLGcAAM', 'name': 'HRM Core Module', 'seq': 10},
+                                                    {'id': '01tdp000006iLGdAAM', 'name': 'HRM Basic Training', 'seq': 20},
+                                                    {'id': '01tdp000006iLGeAAM', 'name': 'HRM Phishing Simulation', 'seq': 30},
+                                                    {'id': '01tdp000006iLGfAAM', 'name': 'HRM Advanced Analytics', 'seq': 40},
+                                                    {'id': '01tdp000006iLGgAAM', 'name': 'HRM Executive Dashboard', 'seq': 50},
+                                                    {'id': '01tdp000006iLGhAAM', 'name': 'HRM Custom Campaigns', 'seq': 60}
                                                 ]
                                             }
                                             
@@ -1523,8 +1851,20 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                                 prod_node['children'].sort(key=lambda x: x.get('sequence', 0))
                                             
                                             cat_node['children'].append(prod_node)
+                                            # Mark this product as assigned
+                                            assigned_products.add(prod_node['id'])
                                     
+                                    # Recursively process sub-categories
+                                    for child_cat in cat_node['children']:
+                                        if child_cat['type'] in ['category', 'subcategory']:
+                                            add_products_to_category(child_cat)
+                                
+                                # Process all root categories
+                                print(f"[DEBUG] Found {len(root_categories)} root categories for catalog {catalog_name}")
+                                for cat_node in root_categories:
+                                    add_products_to_category(cat_node)
                                     catalog_node['children'].append(cat_node)
+                                print(f"[DEBUG] Catalog {catalog_name} has {len(catalog_node['children'])} children after adding categories")
                             
                             hierarchy_data['children'].append(catalog_node)
                     
@@ -1537,20 +1877,77 @@ class SimpleHandler(BaseHTTPRequestHandler):
                             'children': []
                         }
                         
+                        # Build a dictionary to track parent-child relationships
+                        category_dict = {}
                         for _, category in categories_df.iterrows():
+                            cat_id = str(category.get('Id', f'cat-{_}'))
+                            parent_id = str(category.get('ParentCategoryId', '')) if pd.notna(category.get('ParentCategoryId', '')) else None
+                            
                             cat_node = {
-                                'id': str(category.get('Id', f'cat-{_}')),
+                                'id': cat_id,
                                 'name': str(category.get('Name', f'Category {_}')),
-                                'type': 'category',
-                                'children': []
+                                'type': 'subcategory' if parent_id else 'category',
+                                'children': [],
+                                'parent_id': parent_id
                             }
+                            category_dict[cat_id] = cat_node
+                        
+                        # Build the hierarchy by connecting parents and children
+                        root_categories = []
+                        for cat_id, cat_node in category_dict.items():
+                            parent_id = cat_node.get('parent_id')
+                            if parent_id and parent_id in category_dict:
+                                # This is a sub-category, add it to its parent
+                                category_dict[parent_id]['children'].append(cat_node)
+                            else:
+                                # This is a root category
+                                root_categories.append(cat_node)
+                            # Remove the temporary parent_id field
+                            if 'parent_id' in cat_node:
+                                del cat_node['parent_id']
+                        
+                        # Track which products have been assigned in default catalog
+                        assigned_products_default = set()
+                        
+                        # Function to add products to a category and its subcategories
+                        def add_products_to_category_default(cat_node):
+                            cat_id = cat_node['id']
                             
                             # Add products in this category
                             if products_df is not None:
-                                if 'ProductCategory__c' in products_df.columns:
-                                    category_products = products_df[products_df['ProductCategory__c'] == category.get('Id', '')]
-                                else:
-                                    category_products = products_df.head(3)
+                                category_products = pd.DataFrame()
+                                
+                                # Use ProductCategoryProduct junction table if available
+                                if product_category_df is not None and len(product_category_df) > 0:
+                                    # Get product IDs for this category from junction table
+                                    try:
+                                        category_mappings = product_category_df[product_category_df['ProductCategoryId*'] == cat_id]
+                                        if len(category_mappings) > 0:
+                                            product_ids = category_mappings['ProductId*'].tolist()
+                                            category_products = products_df[products_df['Id'].isin(product_ids)]
+                                    except Exception as e:
+                                        print(f"[DEBUG] Error in default catalog product mapping: {e}")
+                                # Fallback to ProductCategory__c field if junction table not available
+                                elif 'ProductCategory__c' in products_df.columns:
+                                    category_products = products_df[products_df['ProductCategory__c'] == cat_id]
+                                # If no mappings exist, assign products to categories based on name matching
+                                if len(category_products) == 0 and 'Family' in products_df.columns:
+                                    # For demo purposes, assign products to lowest level categories based on name patterns
+                                    # Check if this is a leaf node (no child categories)
+                                    has_child_categories = any(child['type'] in ['category', 'subcategory'] for child in cat_node.get('children', []))
+                                    if cat_node['type'] == 'subcategory' and not has_child_categories:
+                                        # This is a leaf subcategory - assign products based on specific patterns
+                                        cat_name = cat_node['name']
+                                        
+                                        # Create specific mappings based on category names
+                                        # For default catalog, assign all products to Data Classification
+                                        if cat_name == 'Data Classification':
+                                            # All products go to Data Classification in default catalog
+                                            category_products = products_df
+                                            # Filter out already assigned products
+                                            category_products = category_products[~category_products['Id'].isin(assigned_products_default)]
+                                            print(f"[DEBUG] Assigning {len(category_products)} products to {cat_name} in default catalog")
+                                        # Don't assign products to other categories in default catalog
                                 
                                 for _, product in category_products.iterrows():
                                     prod_node = {
@@ -1586,6 +1983,25 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                             {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 130},
                                             {'id': '01tdp000006HfplAAC', 'name': 'Unlimited Classification', 'seq': 140},
                                             {'id': '01tdp000006HfpqAAC', 'name': 'Software Development Kit', 'seq': 150, 'required': False}
+                                        ],
+                                        # HRM Bundles
+                                        '01tdp000006iLGbAAM': [  # HRM Essentials Bundle
+                                            {'id': '01tdp000006iLGcAAM', 'name': 'HRM Core Module', 'seq': 10},
+                                            {'id': '01tdp000006iLGdAAM', 'name': 'HRM Basic Training', 'seq': 20}
+                                        ],
+                                        '01tdp000006m0jpAAA': [  # HRM Advanced Bundle
+                                            {'id': '01tdp000006iLGcAAM', 'name': 'HRM Core Module', 'seq': 10},
+                                            {'id': '01tdp000006iLGdAAM', 'name': 'HRM Basic Training', 'seq': 20},
+                                            {'id': '01tdp000006iLGeAAM', 'name': 'HRM Phishing Simulation', 'seq': 30},
+                                            {'id': '01tdp000006iLGfAAM', 'name': 'HRM Advanced Analytics', 'seq': 40}
+                                        ],
+                                        '01tdp000006m14nAAA': [  # HRM Elite Bundle
+                                            {'id': '01tdp000006iLGcAAM', 'name': 'HRM Core Module', 'seq': 10},
+                                            {'id': '01tdp000006iLGdAAM', 'name': 'HRM Basic Training', 'seq': 20},
+                                            {'id': '01tdp000006iLGeAAM', 'name': 'HRM Phishing Simulation', 'seq': 30},
+                                            {'id': '01tdp000006iLGfAAM', 'name': 'HRM Advanced Analytics', 'seq': 40},
+                                            {'id': '01tdp000006iLGgAAM', 'name': 'HRM Executive Dashboard', 'seq': 50},
+                                            {'id': '01tdp000006iLGhAAM', 'name': 'HRM Custom Campaigns', 'seq': 60}
                                         ]
                                     }
                                     
@@ -1617,7 +2033,17 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                         prod_node['children'].sort(key=lambda x: x.get('sequence', 0))
                                     
                                     cat_node['children'].append(prod_node)
+                                    # Mark this product as assigned
+                                    assigned_products_default.add(prod_node['id'])
                             
+                            # Recursively process sub-categories
+                            for child_cat in cat_node['children']:
+                                if child_cat['type'] in ['category', 'subcategory']:
+                                    add_products_to_category_default(child_cat)
+                        
+                        # Process all root categories
+                        for cat_node in root_categories:
+                            add_products_to_category_default(cat_node)
                             default_catalog['children'].append(cat_node)
                         
                         hierarchy_data['children'].append(default_catalog)
@@ -1629,12 +2055,13 @@ class SimpleHandler(BaseHTTPRequestHandler):
                             'categories': len(categories_df) if categories_df is not None else 0,
                             'products': len(products_df) if products_df is not None else 0
                         }
+                        print(f"[DEBUG] Real hierarchy built successfully with {len(hierarchy_data.get('children', []))} root items")
                 
             except Exception as e:
                 print(f"[DEBUG] Error loading real data: {e}")
             
             # If no real data loaded, use sample data
-            if not hierarchy_data:
+            if not hierarchy_data or (hierarchy_data and 'children' in hierarchy_data and len(hierarchy_data['children']) == 0):
                 print("[DEBUG] Using sample data as fallback")
                 hierarchy_data = {
                 'id': 'catalog-1',
@@ -1764,7 +2191,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 import os
                 
                 server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx')
+                workbook_path = os.path.join(server_dir, 'data', 'templates', 'master', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
                 
                 if not os.path.exists(workbook_path):
                     workbook_path = os.path.join(server_dir, 'data', 'Revenue_Cloud_Complete_Upload_Template.xlsx')
@@ -1798,6 +2225,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 
             except Exception as e:
                 print(f"Error getting real stats: {e}")
+            
+            print(f"[DEBUG] Sending hierarchy response with {len(hierarchy_data.get('children', [])) if hierarchy_data else 0} children")
+            print(f"[DEBUG] Hierarchy type: {hierarchy_data.get('type') if hierarchy_data else 'None'}")
             
             self.send_json_response({
                 'success': True,
@@ -1986,6 +2416,227 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
         except Exception as e:
             print(f"Error updating field config: {e}")
+            self.send_error(500)
+    
+    def handle_validate_changes(self):
+        """Handle POST /api/edit/changes/validate"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+            
+            changes = data.get('changes', [])
+            deletions = data.get('deletions', [])
+            
+            # Basic validation
+            validation_result = {
+                'valid': True,
+                'errors': [],
+                'warnings': []
+            }
+            
+            # Check for any obvious issues
+            for change in changes:
+                if not change.get('nodeId'):
+                    validation_result['valid'] = False
+                    validation_result['errors'].append(f"Missing nodeId in change: {change}")
+            
+            for deletion in deletions:
+                if not deletion.get('nodeId'):
+                    validation_result['valid'] = False
+                    validation_result['errors'].append(f"Missing nodeId in deletion: {deletion}")
+                    
+                # Warn about deletions with children
+                if deletion.get('deleteChildren'):
+                    validation_result['warnings'].append(
+                        f"Node {deletion.get('nodeName')} and all its children will be deleted"
+                    )
+            
+            self.send_json_response(validation_result)
+            
+        except Exception as e:
+            print(f"Error validating changes: {e}")
+            self.send_error(500)
+    
+    def handle_commit_changes(self):
+        """Handle POST /api/edit/changes/commit"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            user_session = session_manager.get_session(session_id)
+            user_id = user_session.get('user_id', 'default_user')
+            
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+            
+            changes = data.get('changes', [])
+            deletions = data.get('deletions', [])
+            org_id = data.get('org_id', user_session.get('active_connection_id'))
+            
+            if not org_id:
+                self.send_json_response({'error': 'No organization selected'}, 400)
+                return
+            
+            # Get active connection
+            connection = connection_manager.get_active_connection(user_session)
+            if not connection:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'No active Salesforce connection'
+                })
+                return
+            
+            connection_alias = connection.get('cli_alias')
+            
+            # Import SalesforceService
+            from app.services.salesforce_service import SalesforceService
+            salesforce_service = SalesforceService()
+            
+            # Process results
+            results = {
+                'success': True,
+                'changes_processed': 0,
+                'deletions_processed': 0,
+                'deletion_details': [],
+                'errors': []
+            }
+            
+            # Log to change history
+            from datetime import datetime
+            batch_id = datetime.now().strftime('%Y%m%d%H%M%S')
+            
+            # Process field changes first
+            print(f"[COMMIT] Processing {len(changes)} field changes")
+            for change in changes:
+                try:
+                    node_id = change.get('nodeId')
+                    node_type = change.get('nodeType', 'unknown')
+                    field_name = change.get('fieldName')
+                    new_value = change.get('newValue')
+                    
+                    # Determine object name from node type
+                    object_name = 'Product2' if node_type == 'product' else 'Product2'
+                    
+                    # Update the record
+                    success, result = salesforce_service.update_record(
+                        object_name, 
+                        node_id, 
+                        {field_name: new_value},
+                        connection_alias
+                    )
+                    
+                    if success:
+                        results['changes_processed'] += 1
+                        # Log successful change
+                        edit_service.log_change_history(
+                            user_id, org_id, node_id, node_type, 'update',
+                            change, 'committed', batch_id
+                        )
+                    else:
+                        results['errors'].append(f"Failed to update {node_id}: {result}")
+                        # Log failed change
+                        edit_service.log_change_history(
+                            user_id, org_id, node_id, node_type, 'update',
+                            change, 'failed', batch_id
+                        )
+                except Exception as e:
+                    error_msg = f"Error updating {change.get('nodeId')}: {str(e)}"
+                    print(f"[COMMIT] {error_msg}")
+                    results['errors'].append(error_msg)
+            
+            # Process deletions
+            print(f"[COMMIT] Processing {len(deletions)} deletions")
+            for deletion in deletions:
+                try:
+                    node_id = deletion.get('nodeId')
+                    node_type = deletion.get('nodeType', 'product')
+                    delete_children = deletion.get('deleteChildren', False)
+                    new_parent_id = deletion.get('newParentId')
+                    
+                    # Use unified delete method
+                    success, result = salesforce_service.delete_with_children(
+                        node_id, node_type, delete_children, new_parent_id, connection_alias
+                    )
+                    
+                    if success:
+                        results['deletions_processed'] += 1
+                        results['deletion_details'].append(result)
+                        # Log successful deletion
+                        edit_service.log_change_history(
+                            user_id, org_id, node_id, node_type, 'delete',
+                            deletion, 'committed', batch_id
+                        )
+                    else:
+                        results['errors'].append(f"Failed to delete {node_id}: {result}")
+                        # Log failed deletion
+                        edit_service.log_change_history(
+                            user_id, org_id, node_id, node_type, 'delete',
+                            deletion, 'failed', batch_id
+                        )
+                except Exception as e:
+                    error_msg = f"Error deleting {deletion.get('nodeId')}: {str(e)}"
+                    print(f"[COMMIT] {error_msg}")
+                    results['errors'].append(error_msg)
+            
+            # Set success based on whether there were errors
+            results['success'] = len(results['errors']) == 0
+            
+            print(f"[COMMIT] Commit complete. Changes: {results['changes_processed']}, Deletions: {results['deletions_processed']}, Errors: {len(results['errors'])}")
+            
+            self.send_json_response(results)
+            
+        except Exception as e:
+            print(f"Error committing changes: {e}")
+            self.send_json_response({
+                'success': False,
+                'error': f'Commit error: {str(e)}'
+            })
+    
+    def handle_get_change_history(self):
+        """Handle GET /api/edit/changes/history"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            user_session = session_manager.get_session(session_id)
+            
+            # Parse query params
+            from urllib.parse import parse_qs
+            query_string = urlparse(self.path).query
+            params = parse_qs(query_string)
+            
+            org_id = params.get('org_id', [user_session.get('active_connection_id')])[0]
+            limit = int(params.get('limit', ['50'])[0])
+            
+            # Get history
+            history = edit_service.get_change_history(org_id, limit)
+            
+            self.send_json_response({
+                'history': history,
+                'total': len(history)
+            })
+            
+        except Exception as e:
+            print(f"Error getting change history: {e}")
             self.send_error(500)
     
     def log_message(self, format, *args):

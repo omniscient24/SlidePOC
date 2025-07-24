@@ -18,6 +18,8 @@ fortradp2Upload/
 │   └── imports/                    # Import staging
 ├── salesforce/                     # Salesforce project files
 ├── docs/                          # Documentation
+│   ├── SALESFORCE_INTEGRATION.md  # Salesforce integration guide
+│   └── PRODUCT_HIERARCHY_DELETE.md # Delete functionality guide
 ├── logs/                          # Log files
 └── archive/                       # Archived files
 ```
