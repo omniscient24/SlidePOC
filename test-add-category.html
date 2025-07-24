@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Add Product Category</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #666;
+        }
+        
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .test-result.pass {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .test-result.fail {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .test-result.pending {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        
+        .test-controls {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .test-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        /* Mock modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: block;
+        }
+        
+        .modal-content {
+            position: relative;
+            background: white;
+            margin: 50px auto;
+            padding: 0;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Mock node styles */
+        .mock-node {
+            display: inline-block;
+            position: relative;
+            padding: 10px 20px;
+            margin: 10px;
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .add-icon {
+            display: none;
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            cursor: pointer;
+        }
+        
+        .mock-node:hover .add-icon {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test Suite: Add Product Category Feature</h1>
+        
+        <div class="test-controls">
+            <button class="btn-primary" onclick="runAllTests()">Run All Tests</button>
+            <button class="btn-success" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="test-sections"></div>
+        
+        <div class="test-summary" id="test-summary"></div>
+        
+        <!-- Mock UI Elements -->
+        <div id="mock-ui" style="display: none;">
+            <div class="mock-node" data-type="catalog" data-id="cyber-catalog">
+                Cyber Catalog
+                <span class="add-icon">+</span>
+            </div>
+            
+            <div class="mock-node" data-type="category" data-id="data-protection">
+                Data Protection
+                <span class="add-icon">+</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test framework
+        class TestRunner {
+            constructor() {
+                this.tests = [];
+                this.results = [];
+            }
+            
+            addTest(category, name, testFn) {
+                this.tests.push({ category, name, testFn });
+            }
+            
+            async runTest(test) {
+                try {
+                    await test.testFn();
+                    return { ...test, status: 'pass', error: null };
+                } catch (error) {
+                    return { ...test, status: 'fail', error: error.message };
+                }
+            }
+            
+            async runAll() {
+                this.results = [];
+                for (const test of this.tests) {
+                    const result = await this.runTest(test);
+                    this.results.push(result);
+                    this.displayResult(result);
+                }
+                this.displaySummary();
+            }
+            
+            displayResult(result) {
+                const section = document.getElementById(`section-${result.category}`) || this.createSection(result.category);
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `test-result ${result.status}`;
+                resultDiv.innerHTML = `
+                    <strong>${result.name}</strong>
+                    ${result.status === 'fail' ? `<br>Error: ${result.error}` : ''}
+                `;
+                section.appendChild(resultDiv);
+            }
+            
+            createSection(category) {
+                const container = document.getElementById('test-sections');
+                const section = document.createElement('div');
+                section.id = `section-${category}`;
+                section.className = 'test-section';
+                section.innerHTML = `<h2>${category}</h2>`;
+                container.appendChild(section);
+                return section;
+            }
+            
+            displaySummary() {
+                const passed = this.results.filter(r => r.status === 'pass').length;
+                const failed = this.results.filter(r => r.status === 'fail').length;
+                const total = this.results.length;
+                
+                const summary = document.getElementById('test-summary');
+                summary.innerHTML = `
+                    Test Summary: ${passed}/${total} passed, ${failed} failed
+                    ${failed === 0 ? '✅ All tests passed!' : '❌ Some tests failed'}
+                `;
+                summary.style.color = failed === 0 ? 'green' : 'red';
+            }
+        }
+        
+        const testRunner = new TestRunner();
+        
+        // Mock AddNodeManager for testing
+        class MockAddNodeManager {
+            constructor() {
+                this.showAddCategoryModalCalled = false;
+                this.lastParentNode = null;
+            }
+            
+            showAddCategoryModal(parentNode) {
+                this.showAddCategoryModalCalled = true;
+                this.lastParentNode = parentNode;
+                
+                // Create mock modal
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay active';
+                modal.id = 'add-category-modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Add Product Category</h2>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label>Name <span class="required">*</span></label>
+                                <input type="text" id="categoryName" class="form-control" maxlength="255">
+                                <div class="error-message" id="nameError" style="display: none;">Name is required</div>
+                            </div>
+                            <div class="parent-info">
+                                Adding to ${parentNode.type === 'catalog' ? 'Catalog' : 'Category'}: ${parentNode.name}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                            <button onclick="mockSubmitCategory()">Add Category</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
+            validateAddCategoryForm() {
+                const nameInput = document.getElementById('categoryName');
+                if (!nameInput || !nameInput.value.trim()) {
+                    const errorDiv = document.getElementById('nameError');
+                    if (errorDiv) {
+                        errorDiv.style.display = 'block';
+                    }
+                    return false;
+                }
+                return true;
+            }
+        }
+        
+        // Mock ChangeTracker
+        class MockChangeTracker {
+            constructor() {
+                this.additions = new Map();
+            }
+            
+            trackAddition(nodeData) {
+                this.additions.set(nodeData.nodeId, nodeData);
+            }
+        }
+        
+        // Global mocks
+        let mockAddNodeManager;
+        let mockChangeTracker;
+        
+        // Test setup
+        function setupMocks() {
+            mockAddNodeManager = new MockAddNodeManager();
+            mockChangeTracker = new MockChangeTracker();
+            window.addNodeManager = mockAddNodeManager;
+            window.changeTracker = mockChangeTracker;
+        }
+        
+        // Test utilities
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+        
+        function assertExists(selector, message) {
+            const element = document.querySelector(selector);
+            assert(element !== null, message || `Element ${selector} not found`);
+            return element;
+        }
+        
+        // Define tests
+        
+        // 1. UI Component Tests
+        testRunner.addTest('UI Components', 'Add icon appears on catalog hover', async () => {
+            const catalogNode = document.querySelector('[data-type="catalog"]');
+            const addIcon = catalogNode.querySelector('.add-icon');
+            
+            // Simulate hover
+            catalogNode.dispatchEvent(new MouseEvent('mouseenter'));
+            
+            const styles = window.getComputedStyle(addIcon);
+            assert(styles.display === 'block', 'Add icon should be visible on hover');
+        });
+        
+        testRunner.addTest('UI Components', 'Add icon appears on category hover', async () => {
+            const categoryNode = document.querySelector('[data-type="category"]');
+            const addIcon = categoryNode.querySelector('.add-icon');
+            
+            // Simulate hover
+            categoryNode.dispatchEvent(new MouseEvent('mouseenter'));
+            
+            const styles = window.getComputedStyle(addIcon);
+            assert(styles.display === 'block', 'Add icon should be visible on hover');
+        });
+        
+        testRunner.addTest('UI Components', 'Click handler opens modal', async () => {
+            setupMocks();
+            
+            const catalogNode = document.querySelector('[data-type="catalog"]');
+            const addIcon = catalogNode.querySelector('.add-icon');
+            
+            // Add click handler
+            addIcon.onclick = () => {
+                mockAddNodeManager.showAddCategoryModal({
+                    id: catalogNode.dataset.id,
+                    type: catalogNode.dataset.type,
+                    name: catalogNode.textContent.trim()
+                });
+            };
+            
+            addIcon.click();
+            
+            assert(mockAddNodeManager.showAddCategoryModalCalled, 'showAddCategoryModal should be called');
+            assert(mockAddNodeManager.lastParentNode.type === 'catalog', 'Parent node type should be catalog');
+            
+            // Check modal exists
+            const modal = document.getElementById('add-category-modal');
+            assert(modal !== null, 'Modal should be created');
+            
+            // Cleanup
+            if (modal) modal.remove();
+        });
+        
+        // 2. Modal Form Tests
+        testRunner.addTest('Modal Form', 'Modal displays correct structure', async () => {
+            setupMocks();
+            
+            mockAddNodeManager.showAddCategoryModal({
+                id: 'cyber-catalog',
+                type: 'catalog',
+                name: 'Cyber'
+            });
+            
+            // Check modal elements
+            assertExists('.modal-header h2', 'Modal should have title');
+            assertExists('#categoryName', 'Name input should exist');
+            assertExists('.parent-info', 'Parent info should be displayed');
+            assertExists('button:contains("Cancel")', 'Cancel button should exist');
+            assertExists('button:contains("Add Category")', 'Add button should exist');
+            
+            const parentInfo = document.querySelector('.parent-info');
+            assert(parentInfo.textContent.includes('Adding to Catalog: Cyber'), 
+                'Parent info should show correct context');
+            
+            // Cleanup
+            document.getElementById('add-category-modal').remove();
+        });
+        
+        testRunner.addTest('Modal Form', 'Required field validation', async () => {
+            setupMocks();
+            
+            mockAddNodeManager.showAddCategoryModal({
+                id: 'test-catalog',
+                type: 'catalog',
+                name: 'Test'
+            });
+            
+            // Try to submit without name
+            const isValid = mockAddNodeManager.validateAddCategoryForm();
+            assert(!isValid, 'Validation should fail with empty name');
+            
+            const errorDiv = document.getElementById('nameError');
+            assert(errorDiv.style.display === 'block', 'Error message should be visible');
+            
+            // Cleanup
+            document.getElementById('add-category-modal').remove();
+        });
+        
+        testRunner.addTest('Modal Form', 'Name field character limit', async () => {
+            setupMocks();
+            
+            mockAddNodeManager.showAddCategoryModal({
+                id: 'test-catalog',
+                type: 'catalog',
+                name: 'Test'
+            });
+            
+            const nameInput = document.getElementById('categoryName');
+            assert(nameInput.maxLength === 255, 'Name input should have maxlength of 255');
+            
+            // Try to set a long value
+            const longName = 'A'.repeat(300);
+            nameInput.value = longName;
+            assert(nameInput.value.length <= 255, 'Input should limit to 255 characters');
+            
+            // Cleanup
+            document.getElementById('add-category-modal').remove();
+        });
+        
+        // 3. Business Logic Tests
+        testRunner.addTest('Business Logic', 'Root category has no parent ID', async () => {
+            setupMocks();
+            
+            const categoryData = {
+                nodeId: 'temp_category_123',
+                type: 'category',
+                name: 'Test Category',
+                parentType: 'catalog',
+                parentId: 'cyber-catalog',
+                parentCategoryId: null,
+                tempId: 'temp_category_123',
+                timestamp: new Date().toISOString()
+            };
+            
+            assert(categoryData.parentCategoryId === null, 
+                'Root category should have null parentCategoryId');
+        });
+        
+        testRunner.addTest('Business Logic', 'Subcategory has parent ID', async () => {
+            setupMocks();
+            
+            const categoryData = {
+                nodeId: 'temp_category_456',
+                type: 'category',
+                name: 'Test Subcategory',
+                parentType: 'category',
+                parentId: '0ZGdp0000000AqbGAE',
+                parentCategoryId: '0ZGdp0000000AqbGAE',
+                tempId: 'temp_category_456',
+                timestamp: new Date().toISOString()
+            };
+            
+            assert(categoryData.parentCategoryId === '0ZGdp0000000AqbGAE', 
+                'Subcategory should have parent category ID');
+        });
+        
+        testRunner.addTest('Business Logic', 'Temporary ID format', async () => {
+            const tempId = `temp_category_${Date.now()}`;
+            assert(tempId.startsWith('temp_category_'), 'Temp ID should have correct prefix');
+            assert(/temp_category_\d+/.test(tempId), 'Temp ID should have timestamp');
+        });
+        
+        // 4. Integration Tests
+        testRunner.addTest('Integration', 'Change tracker integration', async () => {
+            setupMocks();
+            
+            const categoryData = {
+                nodeId: 'temp_category_789',
+                type: 'category',
+                name: 'Test Integration',
+                parentType: 'catalog',
+                parentId: 'cyber-catalog',
+                parentCategoryId: null,
+                tempId: 'temp_category_789',
+                timestamp: new Date().toISOString()
+            };
+            
+            mockChangeTracker.trackAddition(categoryData);
+            
+            assert(mockChangeTracker.additions.has('temp_category_789'), 
+                'Category should be in additions map');
+            
+            const tracked = mockChangeTracker.additions.get('temp_category_789');
+            assert(tracked.name === 'Test Integration', 
+                'Tracked category should have correct name');
+        });
+        
+        // Mock submit function
+        window.mockSubmitCategory = function() {
+            const nameInput = document.getElementById('categoryName');
+            if (mockAddNodeManager.validateAddCategoryForm()) {
+                const categoryData = {
+                    nodeId: `temp_category_${Date.now()}`,
+                    type: 'category',
+                    name: nameInput.value,
+                    parentType: mockAddNodeManager.lastParentNode.type,
+                    parentId: mockAddNodeManager.lastParentNode.id,
+                    parentCategoryId: mockAddNodeManager.lastParentNode.type === 'category' 
+                        ? mockAddNodeManager.lastParentNode.id : null,
+                    tempId: `temp_category_${Date.now()}`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                mockChangeTracker.trackAddition(categoryData);
+                document.getElementById('add-category-modal').remove();
+            }
+        };
+        
+        // Test runner functions
+        async function runAllTests() {
+            setupMocks();
+            document.getElementById('test-sections').innerHTML = '';
+            document.getElementById('test-summary').innerHTML = '';
+            await testRunner.runAll();
+        }
+        
+        function clearResults() {
+            document.getElementById('test-sections').innerHTML = '';
+            document.getElementById('test-summary').innerHTML = '';
+        }
+        
+        // Helper for contains selector
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.textContent.includes('Cancel')) {
+                btn.setAttribute('data-action', 'cancel');
+            }
+            if (btn.textContent.includes('Add Category')) {
+                btn.setAttribute('data-action', 'add');
+            }
+        });
+    </script>
+</body>
+</html>

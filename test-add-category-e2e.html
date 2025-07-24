@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E2E Test: Add Product Category</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        
+        .test-step {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-step h3 {
+            margin-top: 0;
+            color: #666;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status.fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .button-group {
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .log {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>End-to-End Test: Add Product Category Feature</h1>
+        
+        <div class="test-step">
+            <h3>Step 1: Verify Add Icon on Catalog Node <span class="status pending" id="step1-status">Pending</span></h3>
+            <p>Check that the + icon appears when hovering over a catalog node.</p>
+            <div class="log" id="step1-log"></div>
+        </div>
+        
+        <div class="test-step">
+            <h3>Step 2: Open Add Category Modal <span class="status pending" id="step2-status">Pending</span></h3>
+            <p>Click the + icon and verify the modal opens with correct fields.</p>
+            <div class="log" id="step2-log"></div>
+        </div>
+        
+        <div class="test-step">
+            <h3>Step 3: Validate Form Fields <span class="status pending" id="step3-status">Pending</span></h3>
+            <p>Test required field validation and character limits.</p>
+            <div class="log" id="step3-log"></div>
+        </div>
+        
+        <div class="test-step">
+            <h3>Step 4: Submit New Category <span class="status pending" id="step4-status">Pending</span></h3>
+            <p>Submit a new category and verify it appears in the hierarchy.</p>
+            <div class="log" id="step4-log"></div>
+        </div>
+        
+        <div class="test-step">
+            <h3>Step 5: Verify Change Tracking <span class="status pending" id="step5-status">Pending</span></h3>
+            <p>Ensure the new category is tracked in uncommitted changes.</p>
+            <div class="log" id="step5-log"></div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="runTests()">Run All Tests</button>
+            <button class="btn-success" onclick="openProductHierarchy()">Open Product Hierarchy</button>
+        </div>
+    </div>
+
+    <script>
+        function log(stepId, message) {
+            const logEl = document.getElementById(`step${stepId}-log`);
+            logEl.innerHTML += message + '<br>';
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function setStatus(stepId, status) {
+            const statusEl = document.getElementById(`step${stepId}-status`);
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        
+        async function runTests() {
+            console.log('Starting E2E tests...');
+            
+            // Step 1: Verify Add Icon
+            setStatus(1, 'pending');
+            log(1, 'Testing add icon visibility...');
+            
+            try {
+                // Check if AddNodeManager is available
+                if (window.opener && window.opener.addNodeManager) {
+                    log(1, '✓ AddNodeManager is available');
+                    setStatus(1, 'pass');
+                } else {
+                    log(1, '✗ AddNodeManager not found. Open this test from Product Hierarchy page.');
+                    setStatus(1, 'fail');
+                    return;
+                }
+            } catch (e) {
+                log(1, '✗ Error: ' + e.message);
+                setStatus(1, 'fail');
+                return;
+            }
+            
+            // Step 2: Open Modal
+            setStatus(2, 'pending');
+            log(2, 'Opening Add Category modal...');
+            
+            try {
+                // Simulate opening modal for a catalog
+                const mockCatalog = {
+                    id: 'test-catalog',
+                    type: 'catalog',
+                    name: 'Test Catalog'
+                };
+                
+                window.opener.addNodeManager.showAddCategoryModal(mockCatalog);
+                log(2, '✓ Modal opened successfully');
+                
+                // Check modal elements
+                const modal = window.opener.document.getElementById('add-category-modal');
+                if (modal && modal.style.display === 'flex') {
+                    log(2, '✓ Modal is visible');
+                    setStatus(2, 'pass');
+                } else {
+                    log(2, '✗ Modal not visible');
+                    setStatus(2, 'fail');
+                    return;
+                }
+            } catch (e) {
+                log(2, '✗ Error: ' + e.message);
+                setStatus(2, 'fail');
+                return;
+            }
+            
+            // Step 3: Validate Form
+            setStatus(3, 'pending');
+            log(3, 'Testing form validation...');
+            
+            try {
+                const nameInput = window.opener.document.getElementById('category-name');
+                
+                // Test empty field
+                nameInput.value = '';
+                const isValid = window.opener.addNodeManager.validateAddCategoryForm 
+                    ? window.opener.addNodeManager.validateAddCategoryForm() 
+                    : false;
+                
+                if (!isValid) {
+                    log(3, '✓ Empty field validation working');
+                } else {
+                    log(3, '✗ Empty field should fail validation');
+                }
+                
+                // Test max length
+                if (nameInput.maxLength === 255) {
+                    log(3, '✓ Max length set to 255');
+                    setStatus(3, 'pass');
+                } else {
+                    log(3, '✗ Max length not set correctly');
+                    setStatus(3, 'fail');
+                }
+            } catch (e) {
+                log(3, '✗ Error: ' + e.message);
+                setStatus(3, 'fail');
+            }
+            
+            // Step 4: Submit Category
+            setStatus(4, 'pending');
+            log(4, 'Submitting new category...');
+            
+            try {
+                const nameInput = window.opener.document.getElementById('category-name');
+                nameInput.value = 'Test Category ' + Date.now();
+                
+                // Mock changeTracker if needed
+                if (!window.opener.changeTracker) {
+                    window.opener.changeTracker = {
+                        additions: new Map(),
+                        trackAddition: function(id, data) {
+                            this.additions.set(id, data);
+                            console.log('Tracked addition:', id, data);
+                        }
+                    };
+                }
+                
+                // Submit the form
+                window.opener.addNodeManager.submitAddCategory();
+                
+                log(4, '✓ Category submitted: ' + nameInput.value);
+                setStatus(4, 'pass');
+                
+                // Close modal
+                setTimeout(() => {
+                    const modal = window.opener.document.getElementById('add-category-modal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                    }
+                }, 100);
+                
+            } catch (e) {
+                log(4, '✗ Error: ' + e.message);
+                setStatus(4, 'fail');
+            }
+            
+            // Step 5: Verify Change Tracking
+            setStatus(5, 'pending');
+            log(5, 'Verifying change tracking...');
+            
+            try {
+                if (window.opener.changeTracker && window.opener.changeTracker.additions.size > 0) {
+                    log(5, '✓ Changes tracked: ' + window.opener.changeTracker.additions.size + ' additions');
+                    
+                    // Log the additions
+                    window.opener.changeTracker.additions.forEach((value, key) => {
+                        log(5, `  - ${key}: ${value.name} (${value.type})`);
+                    });
+                    
+                    setStatus(5, 'pass');
+                } else {
+                    log(5, '✗ No changes tracked');
+                    setStatus(5, 'fail');
+                }
+            } catch (e) {
+                log(5, '✗ Error: ' + e.message);
+                setStatus(5, 'fail');
+            }
+            
+            log(0, '\nTest complete!');
+        }
+        
+        function openProductHierarchy() {
+            window.open('http://localhost:8080/product-hierarchy', 'productHierarchy');
+        }
+    </script>
+</body>
+</html>

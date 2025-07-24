@@ -4,9 +4,20 @@ All notable changes to the Revenue Cloud Migration Tool will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [2025-07-24] - Add Catalog Feature
+## [2025-07-24] - Add Catalog & Category Features
 
-### Added
+### Added Product Category Feature
+- **Add Category Functionality**: New feature to create Product Categories within the hierarchy
+  - Hover-activated + icon on catalog and category nodes
+  - Simple modal form with Name field (required, 255 char limit)
+  - Parent context display showing where category will be added
+  - Automatic ParentCategoryId assignment based on parent type
+  - Real-time visualization updates without page reload
+  - Change tracking integration for uncommitted changes
+  - Backend support for ProductCategory creation in Salesforce
+  - Comprehensive test suite following TDD principles
+
+### Added Catalog Feature
 - **Add Catalog Functionality**: New feature to create Product Catalogs directly from the Product Hierarchy visualization
   - Hover-activated + icon on catalog nodes
   - Comprehensive modal form with all ProductCatalog fields

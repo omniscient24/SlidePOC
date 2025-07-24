@@ -294,6 +294,63 @@ class AddNodeManager {
     }
 
     /**
+     * Create the Add Category modal HTML
+     */
+    createAddCategoryModal() {
+        const modalHtml = `
+            <div id="add-category-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="anticon"><svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor"><path d="M880 112H144c-17.7 0-32 14.3-32 32v736c0 17.7 14.3 32 32 32h736c17.7 0 32-14.3 32-32V144c0-17.7-14.3-32-32-32zM704 536h-64v64c0 4.4-3.6 8-8 8h-56c-4.4 0-8-3.6-8-8v-64h-64c-4.4 0-8-3.6-8-8v-56c0-4.4 3.6-8 8-8h64v-64c0-4.4 3.6-8 8-8h56c4.4 0 8 3.6 8 8v64h64c4.4 0 8 3.6 8 8v56c0 4.4-3.6 8-8 8z"></path></svg></i> Add Product Category</h3>
+                        <button class="modal-close" onclick="window.addNodeManager.closeModal('add-category-modal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="add-category-form" onsubmit="return false;">
+                            <div class="form-group">
+                                <label for="category-name">Name <span class="required">*</span></label>
+                                <input type="text" id="category-name" name="name" class="form-control" required maxlength="255">
+                                <div class="error-message" id="category-name-error"></div>
+                            </div>
+                            <div class="parent-info">
+                                <!-- Parent context will be inserted here dynamically -->
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="window.addNodeManager.closeModal('add-category-modal')">Cancel</button>
+                        <button class="btn btn-primary" onclick="window.addNodeManager.submitAddCategory()">
+                            <i class="anticon"><svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor"><path d="M482 152h60q8 0 8 8v704q0 8-8 8h-60q-8 0-8-8V160q0-8 8-8z"></path><path d="M176 474h672q8 0 8 8v60q0 8-8 8H176q-8 0-8-8v-60q0-8 8-8z"></path></svg></i>
+                            Add Category
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to document body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Add click handler to close modal when clicking overlay
+        const modal = document.getElementById('add-category-modal');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeModal('add-category-modal');
+            }
+        });
+        
+        // Add ESC key handler
+        const escHandler = (e) => {
+            if (e.key === 'Escape' && modal.style.display !== 'none') {
+                this.closeModal('add-category-modal');
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+        
+        // Store handler for cleanup
+        modal.escHandler = escHandler;
+    }
+
+    /**
      * Show the appropriate add modal based on parent node type
      * @param {Object} parentNode - The parent node where the new node will be added
      */
@@ -408,12 +465,50 @@ class AddNodeManager {
     }
 
     /**
-     * Show Add Category modal (placeholder for future implementation)
+     * Show Add Category modal
+     * @param {Object} parentNode - The parent node (catalog or category)
      */
     showAddCategoryModal(parentNode) {
-        console.log('Add Category modal not yet implemented');
-        alert('Add Category functionality is not yet implemented.\n\nTo test Add Catalog, please click the add icon on the "Product Catalogs" root node at the top of the hierarchy.');
-        // TODO: Implement when extending to categories
+        console.log('ShowAddCategoryModal called for parent:', parentNode);
+        
+        // Store parent info
+        this.currentParentNode = parentNode;
+        
+        // Create modal if it doesn't exist
+        if (!document.getElementById('add-category-modal')) {
+            this.createAddCategoryModal();
+        }
+        
+        // Update parent context in modal
+        const parentInfo = document.querySelector('#add-category-modal .parent-info');
+        if (parentInfo) {
+            const parentType = parentNode.type === 'catalog' ? 'Catalog' : 'Category';
+            parentInfo.innerHTML = `<p>Adding to ${parentType}: <strong>${parentNode.name}</strong></p>`;
+        }
+        
+        // Reset form
+        const form = document.getElementById('add-category-form');
+        if (form) {
+            form.reset();
+            // Clear any previous error messages
+            const errorMessages = form.querySelectorAll('.error-message');
+            errorMessages.forEach(err => {
+                err.textContent = '';
+                err.style.display = 'none';
+            });
+        }
+        
+        // Show modal
+        const modal = document.getElementById('add-category-modal');
+        modal.style.display = 'flex';
+        
+        // Focus on name field
+        setTimeout(() => {
+            const nameField = document.getElementById('category-name');
+            if (nameField) {
+                nameField.focus();
+            }
+        }, 100);
     }
 
     /**
@@ -548,6 +643,76 @@ class AddNodeManager {
         }
         if (errorElem) {
             errorElem.textContent = message;
+        }
+    }
+
+    /**
+     * Submit the Add Category form
+     */
+    async submitAddCategory() {
+        console.log('Submitting Add Category form');
+        
+        // Validate form
+        const nameInput = document.getElementById('category-name');
+        if (!nameInput || !nameInput.value.trim()) {
+            this.showFieldError('category-name', 'Name is required');
+            return;
+        }
+        
+        const categoryName = nameInput.value.trim();
+        
+        // Validate name length
+        if (categoryName.length > 255) {
+            this.showFieldError('category-name', 'Name must be 255 characters or less');
+            return;
+        }
+        
+        // Clear any previous errors
+        this.clearFormErrors('add-category-form');
+        
+        // Generate temporary ID
+        const tempId = this.generateTempId('category');
+        
+        // Create new category data
+        const newCategory = {
+            id: tempId,
+            nodeId: tempId,
+            name: categoryName,
+            type: 'category',
+            parentType: this.currentParentNode.type,
+            parentId: this.currentParentNode.id,
+            // Only set ParentCategoryId if parent is a category
+            parentCategoryId: (this.currentParentNode.type === 'category' || this.currentParentNode.type === 'subcategory') 
+                ? this.currentParentNode.id : null,
+            children: [],
+            isNew: true,  // Flag to indicate this is a newly added node
+            isSynced: false,
+            tempId: tempId,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Add to hierarchy and track change
+        if (window.changeTracker) {
+            // Track the addition
+            window.changeTracker.trackAddition(tempId, newCategory);
+            
+            // Update the visualization
+            if (window.hierarchyVisualization && window.hierarchyVisualization.addNode) {
+                window.hierarchyVisualization.addNode(newCategory, this.currentParentNode);
+            } else {
+                console.error('Hierarchy visualization not ready for adding nodes');
+            }
+        }
+        
+        // Close modal
+        this.closeModal('add-category-modal');
+        
+        // Show success message
+        console.log('Category staged for addition:', newCategory);
+        
+        // Show toast notification if available
+        if (window.showToast) {
+            window.showToast(`Category "${categoryName}" added successfully`, 'success');
         }
     }
 

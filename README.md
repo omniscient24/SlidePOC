@@ -190,6 +190,31 @@ The Product Hierarchy page now includes the ability to create new catalogs direc
 - **Change Tracking**: All additions tracked and can be committed to Salesforce
 - **Visual Feedback**: Success modals with "Close & Update View" button for seamless workflow
 
+#### Add Product Category Feature
+
+Users can now create product categories within the hierarchy:
+
+- **Add Category Button**: Hover over any catalog or category node to reveal a + icon
+- **Simple Modal Form**: Create categories with minimal required fields:
+  - Name (required, max 255 characters)
+  - Parent context display showing where the category will be added
+- **Flexible Hierarchy**: 
+  - Add root categories directly under catalogs (ParentCategoryId = null)
+  - Add subcategories under existing categories (ParentCategoryId = parent's ID)
+  - No artificial depth limits - supports unlimited nesting
+- **Real-time Updates**: 
+  - New categories appear immediately in the visualization
+  - Temporary IDs assigned until committed to Salesforce
+  - Visual indicators for uncommitted changes
+- **Change Tracking Integration**: 
+  - All category additions tracked as uncommitted changes
+  - Batch commit to Salesforce with other changes
+  - Automatic ID replacement after successful commit
+- **Validation**: 
+  - Required field validation with inline error messages
+  - Character limit enforcement
+  - Parent relationship validation
+
 Access the visualization at `product-hierarchy-visualization.html` or through the web UI.
 
 ## Documentation
