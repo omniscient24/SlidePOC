@@ -544,6 +544,46 @@ a:hover {
     display: flex;
 }
 
+/* Delete confirmation modal styles */
+.delete-confirmation-content {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.warning-icon, .success-icon {
+    margin-bottom: 20px;
+}
+
+.warning-icon svg, .success-icon svg {
+    width: 48px;
+    height: 48px;
+}
+
+.delete-confirmation-content p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.delete-confirmation-content p.text-muted {
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
+.success-message {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.success-message p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.success-message p.text-muted {
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
 .modal-content {
     background: var(--white);
     border-radius: var(--border-radius-lg);

@@ -170,6 +170,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 self.handle_validate_changes()
             elif path == '/api/edit/changes/commit':
                 self.handle_commit_changes()
+            elif path == '/api/hierarchy/add':
+                self.handle_add_hierarchy_node()
             else:
                 self.send_error(404)
         except Exception as e:
@@ -1548,6 +1550,24 @@ class SimpleHandler(BaseHTTPRequestHandler):
         try:
             print("[DEBUG] handle_get_product_hierarchy called")
             
+            # Load deleted items list
+            deleted_items = set()
+            try:
+                import os
+                server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                deleted_items_path = os.path.join(server_dir, 'data', 'deleted_items.json')
+                
+                if os.path.exists(deleted_items_path):
+                    with open(deleted_items_path, 'r') as f:
+                        deleted_data = json.load(f)
+                        # Combine all deleted IDs into a single set
+                        for category in deleted_data.get('deletedItems', {}).values():
+                            if isinstance(category, list):
+                                deleted_items.update(category)
+                    print(f"[DEBUG] Loaded {len(deleted_items)} deleted items to filter")
+            except Exception as e:
+                print(f"[DEBUG] Could not load deleted items: {e}")
+            
             # Try to load real data from Excel first
             hierarchy_data = None
             
@@ -1639,6 +1659,11 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                 catalog_name = f'Catalog {idx + 1}'
                             
                             catalog_id = str(catalog.get('Id', f'catalog-{idx}'))
+                            
+                            # Skip deleted catalogs
+                            if catalog_id in deleted_items:
+                                print(f"[DEBUG] Skipping deleted catalog: {catalog_name} ({catalog_id})")
+                                continue
                             catalog_node = {
                                 'id': catalog_id,
                                 'name': str(catalog_name),
@@ -1654,19 +1679,28 @@ class SimpleHandler(BaseHTTPRequestHandler):
                             # Add categories that belong to this catalog
                             if categories_df is not None and catalog_id:
                                 print(f"[DEBUG] Category columns: {categories_df.columns.tolist()}")
-                                # Check if there's a CatalogId field linking categories to catalogs
-                                if 'CatalogId' in categories_df.columns:
+                                
+                                # Check if this is a newly created catalog (has a Salesforce ID)
+                                # New catalogs should not have any categories initially
+                                is_new_catalog = not catalog_id.startswith('0ZS')  # ProductCatalog IDs start with 0ZS
+                                
+                                if is_new_catalog:
+                                    print(f"[DEBUG] New catalog {catalog_name} - not assigning any categories")
+                                    catalog_categories = pd.DataFrame()  # Empty dataframe
+                                elif 'CatalogId' in categories_df.columns:
+                                    # Check if there's a CatalogId field linking categories to catalogs
                                     catalog_categories = categories_df[categories_df['CatalogId'] == catalog_id]
                                     print(f"[DEBUG] Found {len(catalog_categories)} categories for catalog {catalog_id}")
                                 else:
-                                    # If no direct link, only show root categories under the first catalog
-                                    # to avoid duplication
-                                    if idx == 0:  # First catalog gets all root categories
+                                    # For existing catalogs without CatalogId field, only assign categories to known catalogs
+                                    # This is a temporary measure - ideally we should have a CatalogId field
+                                    if catalog_name in ['Cyber', 'Tech']:
                                         catalog_categories = categories_df
-                                        print(f"[DEBUG] No CatalogId column, assigning all {len(catalog_categories)} categories to first catalog")
+                                        print(f"[DEBUG] No CatalogId field found - assigning all categories to existing {catalog_name} catalog")
                                     else:
-                                        catalog_categories = pd.DataFrame()  # Empty dataframe for other catalogs
-                                        print(f"[DEBUG] No CatalogId column, skipping categories for catalog {idx+1}")
+                                        # For other catalogs, don't assign any categories
+                                        catalog_categories = pd.DataFrame()
+                                        print(f"[DEBUG] No CatalogId field found - not assigning categories to {catalog_name} catalog")
                                 
                                 # Build a dictionary to track parent-child relationships
                                 category_dict = {}
@@ -1739,7 +1773,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                                 # Only assign products to specific catalog-category combinations
                                                 catalog_name = catalog_node.get('name', '')
                                                 
-                                                if cat_name == 'Data Classification' and catalog_name == 'Cyber':
+                                                if cat_name == 'Data Classification':
                                                     # Only DCS core products and bundles go to Data Classification
                                                     # Exclude HRM, Professional Services, Support, and Training
                                                     category_products = products_df[
@@ -1749,7 +1783,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                                     # Filter out already assigned products
                                                     category_products = category_products[~category_products['Id'].isin(assigned_products)]
                                                     print(f"[DEBUG] Assigning {len(category_products)} DCS products to {cat_name} in {catalog_name}")
-                                                elif cat_name == 'Human Risk Management' and catalog_name == 'Cyber':
+                                                elif cat_name == 'Human Risk Management':
                                                     # Check if this is the L2 node by checking if ID matches the L2 HRM ID
                                                     # L2 HRM ID is 0ZGdp0000000AyfGAE
                                                     if cat_id == '0ZGdp0000000AyfGAE':
@@ -1768,8 +1802,14 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                                 # Don't assign products to other catalog-category combinations
                                         
                                         for _, product in category_products.iterrows():
+                                            prod_id = str(product.get('Id', f'prod-{_}'))
+                                            
+                                            # Skip deleted products
+                                            if prod_id in deleted_items:
+                                                continue
+                                                
                                             prod_node = {
-                                                'id': str(product.get('Id', f'prod-{_}')),
+                                                'id': prod_id,
                                                 'name': str(product.get('Name', f'Product {_}')),
                                                 'type': 'product',
                                                 'productCode': str(product.get('ProductCode', '')),
@@ -1881,6 +1921,12 @@ class SimpleHandler(BaseHTTPRequestHandler):
                         category_dict = {}
                         for _, category in categories_df.iterrows():
                             cat_id = str(category.get('Id', f'cat-{_}'))
+                            
+                            # Skip deleted categories
+                            if cat_id in deleted_items:
+                                print(f"[DEBUG] Skipping deleted category: {cat_id}")
+                                continue
+                                
                             parent_id = str(category.get('ParentCategoryId', '')) if pd.notna(category.get('ParentCategoryId', '')) else None
                             
                             cat_node = {
@@ -1950,8 +1996,14 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                         # Don't assign products to other categories in default catalog
                                 
                                 for _, product in category_products.iterrows():
+                                    prod_id = str(product.get('Id', f'prod-{_}'))
+                                    
+                                    # Skip deleted products
+                                    if prod_id in deleted_items:
+                                        continue
+                                        
                                     prod_node = {
-                                        'id': str(product.get('Id', f'prod-{_}')),
+                                        'id': prod_id,
                                         'name': str(product.get('Name', f'Product {_}')),
                                         'type': 'product',
                                         'productCode': str(product.get('ProductCode', '')),
@@ -2486,6 +2538,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
             changes = data.get('changes', [])
             deletions = data.get('deletions', [])
+            additions = data.get('additions', [])
             org_id = data.get('org_id', user_session.get('active_connection_id'))
             
             if not org_id:
@@ -2505,6 +2558,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
             
             # Import SalesforceService
             from app.services.salesforce_service import SalesforceService
+            import os
             salesforce_service = SalesforceService()
             
             # Process results
@@ -2512,7 +2566,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 'success': True,
                 'changes_processed': 0,
                 'deletions_processed': 0,
+                'additions_processed': 0,
                 'deletion_details': [],
+                'addition_details': [],
                 'errors': []
             }
             
@@ -2581,6 +2637,38 @@ class SimpleHandler(BaseHTTPRequestHandler):
                             user_id, org_id, node_id, node_type, 'delete',
                             deletion, 'committed', batch_id
                         )
+                        
+                        # Track deleted item to filter from Excel data
+                        try:
+                            deleted_items_path = os.path.join(
+                                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                                'data', 'deleted_items.json'
+                            )
+                            
+                            # Load existing deleted items
+                            deleted_data = {'deletedItems': {'catalogs': [], 'categories': [], 'products': []}}
+                            if os.path.exists(deleted_items_path):
+                                with open(deleted_items_path, 'r') as f:
+                                    deleted_data = json.load(f)
+                            
+                            # Add this item to the appropriate list
+                            if node_type == 'catalog' and node_id not in deleted_data['deletedItems']['catalogs']:
+                                deleted_data['deletedItems']['catalogs'].append(node_id)
+                            elif node_type == 'category' and node_id not in deleted_data['deletedItems']['categories']:
+                                deleted_data['deletedItems']['categories'].append(node_id)
+                            elif node_type == 'product' and node_id not in deleted_data['deletedItems']['products']:
+                                deleted_data['deletedItems']['products'].append(node_id)
+                            
+                            # Update timestamp
+                            deleted_data['lastUpdated'] = datetime.now().isoformat()
+                            
+                            # Save back to file
+                            with open(deleted_items_path, 'w') as f:
+                                json.dump(deleted_data, f, indent=2)
+                                
+                            print(f"[COMMIT] Added {node_id} to deleted items tracking")
+                        except Exception as e:
+                            print(f"[COMMIT] Warning: Could not track deleted item: {e}")
                     else:
                         results['errors'].append(f"Failed to delete {node_id}: {result}")
                         # Log failed deletion
@@ -2593,10 +2681,95 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     print(f"[COMMIT] {error_msg}")
                     results['errors'].append(error_msg)
             
+            # Process additions
+            print(f"[COMMIT] Processing {len(additions)} additions")
+            for addition in additions:
+                try:
+                    print(f"[COMMIT] Addition data: {addition}")
+                    node_id = addition.get('nodeId')
+                    node_type = addition.get('type', 'unknown')
+                    print(f"[COMMIT] Node ID: {node_id}, Type: {node_type}")
+                    
+                    # The addition object now has the data directly at the top level
+                    # Determine object name and data from node type
+                    if node_type == 'catalog':
+                        object_name = 'ProductCatalog'
+                        record_data = {
+                            'Name': addition.get('name'),
+                            'Code': addition.get('code', addition.get('name', '').replace(' ', '_')),  # Use provided code or generate from name
+                            'Description': addition.get('description', ''),
+                            'CatalogType': addition.get('catalogType', 'Sales'),  # Use provided type or default to Sales
+                        }
+                        
+                        # Handle dates - convert from HTML datetime-local format to Salesforce format
+                        if addition.get('effectiveStartDate'):
+                            # Convert from YYYY-MM-DDTHH:MM to Salesforce format
+                            start_date = addition.get('effectiveStartDate').replace('T', ' ') + ':00'
+                            record_data['EffectiveStartDate'] = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S.000+0000')
+                        else:
+                            # Default to current date if not provided
+                            record_data['EffectiveStartDate'] = datetime.now().strftime('%Y-%m-%dT00:00:00.000+0000')
+                            
+                        if addition.get('effectiveEndDate'):
+                            # Convert from YYYY-MM-DDTHH:MM to Salesforce format
+                            end_date = addition.get('effectiveEndDate').replace('T', ' ') + ':00'
+                            record_data['EffectiveEndDate'] = datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S.000+0000')
+                        # Note: IsActive might not be a field on ProductCatalog
+                    elif node_type == 'category':
+                        object_name = 'ProductCategory'
+                        record_data = {
+                            'Name': addition.get('name'),
+                            'Description': addition.get('description', ''),
+                            'ParentCategoryId': addition.get('parentCategoryId')
+                        }
+                    elif node_type == 'product':
+                        object_name = 'Product2'
+                        record_data = {
+                            'Name': addition.get('name'),
+                            'Description': addition.get('description', ''),
+                            'IsActive': addition.get('isActive', True),
+                            'ProductCode': addition.get('productCode', '')
+                        }
+                    else:
+                        results['errors'].append(f"Unsupported node type for addition: {node_type}")
+                        continue
+                    
+                    # Create the record
+                    success, result = salesforce_service.create_record(
+                        object_name,
+                        record_data,
+                        connection_alias
+                    )
+                    
+                    if success:
+                        results['additions_processed'] += 1
+                        results['addition_details'].append({
+                            'temp_id': node_id,
+                            'real_id': result.get('id'),
+                            'type': node_type,
+                            'name': addition.get('name')
+                        })
+                        # Log successful addition
+                        edit_service.log_change_history(
+                            user_id, org_id, result.get('id'), node_type, 'create',
+                            addition, 'committed', batch_id
+                        )
+                    else:
+                        results['errors'].append(f"Failed to create {node_type}: {result}")
+                        # Log failed addition
+                        edit_service.log_change_history(
+                            user_id, org_id, node_id, node_type, 'create',
+                            addition, 'failed', batch_id
+                        )
+                except Exception as e:
+                    error_msg = f"Error creating {addition.get('type')}: {str(e)}"
+                    print(f"[COMMIT] {error_msg}")
+                    results['errors'].append(error_msg)
+            
             # Set success based on whether there were errors
             results['success'] = len(results['errors']) == 0
             
-            print(f"[COMMIT] Commit complete. Changes: {results['changes_processed']}, Deletions: {results['deletions_processed']}, Errors: {len(results['errors'])}")
+            print(f"[COMMIT] Commit complete. Changes: {results['changes_processed']}, Additions: {results['additions_processed']}, Deletions: {results['deletions_processed']}, Errors: {len(results['errors'])}")
             
             self.send_json_response(results)
             
@@ -2638,6 +2811,123 @@ class SimpleHandler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"Error getting change history: {e}")
             self.send_error(500)
+    
+    def handle_add_hierarchy_node(self):
+        """Handle POST /api/hierarchy/add - Add new node to hierarchy"""
+        try:
+            # Check auth
+            cookie = self.headers.get('Cookie', '')
+            session_id = session_manager.get_session_cookie(cookie)
+            if not session_id or not session_manager.is_session_valid(session_id):
+                self.send_error(401)
+                return
+                
+            user_session = session_manager.get_session(session_id)
+            user_id = user_session.get('user_id', 'default_user')
+            
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+            
+            node_type = data.get('type')
+            parent_id = data.get('parent_id')
+            node_data = data.get('data', {})
+            org_id = data.get('org_id', user_session.get('active_connection_id'))
+            
+            if not node_type or not node_data:
+                self.send_json_response({'error': 'Missing required fields'}, 400)
+                return
+            
+            if not org_id:
+                self.send_json_response({'error': 'No organization selected'}, 400)
+                return
+            
+            # Get active connection
+            connection = connection_manager.get_active_connection(user_session)
+            if not connection:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'No active Salesforce connection'
+                })
+                return
+            
+            connection_alias = connection.get('cli_alias')
+            
+            # Import SalesforceService
+            from app.services.salesforce_service import SalesforceService
+            salesforce_service = SalesforceService()
+            
+            # Handle based on node type
+            if node_type == 'catalog':
+                # Create ProductCatalog record
+                catalog_data = {
+                    'Name': node_data.get('name'),
+                    'Description': node_data.get('description', ''),
+                    'IsActive': node_data.get('isActive', True)
+                }
+                
+                success, result = salesforce_service.create_record(
+                    'ProductCatalog',
+                    catalog_data,
+                    connection_alias
+                )
+                
+                if success:
+                    # Log successful creation
+                    from datetime import datetime
+                    batch_id = datetime.now().strftime('%Y%m%d%H%M%S')
+                    edit_service.log_change_history(
+                        user_id, org_id, result.get('id'), 'catalog', 'create',
+                        catalog_data, 'committed', batch_id
+                    )
+                    
+                    self.send_json_response({
+                        'success': True,
+                        'id': result.get('id'),
+                        'message': f"Created catalog: {node_data.get('name')}"
+                    })
+                else:
+                    self.send_json_response({
+                        'success': False,
+                        'error': f"Failed to create catalog: {result}"
+                    })
+            
+            elif node_type == 'category':
+                # TODO: Implement category creation
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Category creation not yet implemented'
+                })
+            
+            elif node_type == 'product':
+                # TODO: Implement product creation
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Product creation not yet implemented'
+                })
+            
+            elif node_type == 'component':
+                # TODO: Implement component creation
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Component creation not yet implemented'
+                })
+            
+            else:
+                self.send_json_response({
+                    'success': False,
+                    'error': f'Unknown node type: {node_type}'
+                })
+                
+        except Exception as e:
+            print(f"[DEBUG] Error in handle_add_hierarchy_node: {e}")
+            import traceback
+            traceback.print_exc()
+            self.send_json_response({
+                'success': False,
+                'error': str(e)
+            })
     
     def log_message(self, format, *args):
         """Custom log format"""

@@ -16,7 +16,8 @@ class SyncService:
     """Service for syncing data between Salesforce and local workbook"""
     
     def __init__(self):
-        self.workbook_path = DATA_ROOT / 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx'
+        # Use the same workbook path as the web UI
+        self.workbook_path = DATA_ROOT / 'templates' / 'master' / 'Revenue_Cloud_Complete_Upload_Template.xlsx'
         self.sync_log_dir = DATA_ROOT / 'sync-logs'
         self.sync_log_dir.mkdir(exist_ok=True)
         
@@ -137,6 +138,9 @@ class SyncService:
             
             # Update workbook with the records
             print(f"[SYNC] Updating workbook sheet {sheet_name}...")
+            print(f"[SYNC] Records to write: {len(records) if records else 0}")
+            if object_name == 'ProductCategory':
+                print(f"[DEBUG] ProductCategory records passed to update: {records}")
             success = self._update_workbook_sheet(sheet_name, records, object_name)
             
             if success:
@@ -171,6 +175,15 @@ class SyncService:
                 print(f"[ERROR] Could not retrieve fields for {object_name}")
                 return None
             
+            # Debug ProductCategory fields
+            if object_name == 'ProductCategory':
+                print(f"[DEBUG] ProductCategory has {len(existing_fields)} fields")
+                print(f"[DEBUG] ProductCategory has IsDeleted field: {'IsDeleted' in existing_fields}")
+                if 'IsDeleted' in existing_fields:
+                    print("[DEBUG] IsDeleted field found - will filter deleted records")
+                else:
+                    print("[DEBUG] IsDeleted field NOT found - will query all records")
+            
             # Build the query - always include Id as first field
             fields = self._get_object_fields(object_name)
             if not fields:
@@ -194,13 +207,24 @@ class SyncService:
             elif 'Id' not in valid_fields:
                 valid_fields = ['Id'] + valid_fields
             
-            query = f"SELECT {', '.join(valid_fields)} FROM {object_name} LIMIT 1000"
+            # Build query - check if object has IsDeleted field
+            # Some objects like ProductCategory might not have IsDeleted field
+            base_query = f"SELECT {', '.join(valid_fields)} FROM {object_name}"
+            
+            # Only add WHERE clause if IsDeleted is in the field list
+            if 'IsDeleted' in existing_fields:
+                query = f"{base_query} WHERE IsDeleted = false"
+                print(f"[SYNC] Adding IsDeleted filter for {object_name}")
+            else:
+                query = base_query
+                print(f"[SYNC] No IsDeleted field found for {object_name}, querying all records")
             
             # Execute query using CLI
             cmd = [
                 CLI_COMMAND, 'data', 'query',
                 '--query', query,
                 '--target-org', connection_alias,
+                '--result-format', 'json',
                 '--json'
             ]
             
@@ -246,7 +270,21 @@ STDOUT: {result.stdout}
                 return None
             
             # Extract records
-            records = data.get('result', {}).get('records', [])
+            result_data = data.get('result', {})
+            records = result_data.get('records', [])
+            total_size = result_data.get('totalSize', len(records))
+            
+            print(f"[SYNC] Query returned {len(records)} records (totalSize: {total_size})")
+            
+            # Special logging for ProductCategory to debug deletion issue
+            if object_name == 'ProductCategory':
+                print(f"[DEBUG] ProductCategory query executed: {query}")
+                if records:
+                    print(f"[DEBUG] First ProductCategory record: {json.dumps(records[0], indent=2)}")
+                    # Check if IsDeleted field exists in the response
+                    if 'IsDeleted' in records[0]:
+                        deleted_count = sum(1 for r in records if r.get('IsDeleted', False))
+                        print(f"[DEBUG] ProductCategory records with IsDeleted=true: {deleted_count}")
             
             # Clean up records (remove attributes field)
             cleaned_records = []
@@ -365,8 +403,39 @@ STDOUT: {result.stdout}
         """
         try:
             if not records:
-                print(f"[SYNC] No records to update for {sheet_name}")
-                return True
+                print(f"[SYNC] No records returned from Salesforce for {sheet_name}")
+                print(f"[SYNC] Will clear sheet {sheet_name} in {self.workbook_path}")
+                # Clear the sheet by keeping only headers
+                try:
+                    # Read existing sheet to get headers
+                    existing_df = pd.read_excel(self.workbook_path, sheet_name=sheet_name, nrows=0)
+                    print(f"[SYNC] Read headers from {sheet_name}: {list(existing_df.columns)}")
+                    empty_df = pd.DataFrame(columns=existing_df.columns)
+                    
+                    # Read all sheets
+                    with pd.ExcelFile(self.workbook_path) as xl_file:
+                        sheet_dict = {}
+                        for sheet in xl_file.sheet_names:
+                            sheet_dict[sheet] = pd.read_excel(xl_file, sheet_name=sheet)
+                    
+                    # Update with empty dataframe (headers only)
+                    sheet_dict[sheet_name] = empty_df
+                    
+                    # Write back all sheets
+                    with pd.ExcelWriter(self.workbook_path, engine='openpyxl') as writer:
+                        for sheet, df in sheet_dict.items():
+                            df.to_excel(writer, sheet_name=sheet, index=False)
+                    
+                    print(f"[SYNC] Cleared {sheet_name} sheet (0 records in Salesforce)")
+                    
+                    # Verify the sheet was cleared
+                    verify_df = pd.read_excel(self.workbook_path, sheet_name=sheet_name)
+                    print(f"[SYNC] Verification: {sheet_name} now has {len(verify_df)} records")
+                    
+                    return True
+                except Exception as e:
+                    print(f"[ERROR] Failed to clear sheet {sheet_name}: {e}")
+                    return False
             
             # Convert records to DataFrame
             df_new = pd.DataFrame(records)

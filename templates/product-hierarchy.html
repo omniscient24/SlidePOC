@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Hierarchy Visualization - Revenue Cloud Migration</title>
+    <!-- 
+    ╔═══════════════════════════════════════════════════════════════════════════════╗
+    ║ CRITICAL REQUIREMENT: COLLAPSED STATE ON LOAD                                ║
+    ║                                                                               ║
+    ║ This visualization MUST always load with the hierarchy in a collapsed state.  ║
+    ║ Only top-level catalogs should be visible initially.                         ║
+    ║ Users must manually expand nodes to see their children.                      ║
+    ║                                                                               ║
+    ║ DO NOT CHANGE THIS BEHAVIOR WITHOUT EXPLICIT AUTHORIZATION                    ║
+    ╚═══════════════════════════════════════════════════════════════════════════════╝
+    -->
     
     <!-- CSS Libraries -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -22,6 +33,7 @@
     <!-- Edit functionality scripts -->
     <script src="/static/js/inline-edit.js"></script>
     <script src="/static/js/change-tracker.js"></script>
+    <script src="/static/js/add-node-manager.js"></script>
     
     <style>
         :root {
@@ -558,6 +570,203 @@
             opacity: 0.6;
             font-style: italic;
         }
+        
+        /* Delete functionality styles */
+        .node.pending-delete rect {
+            opacity: 0.5 !important;
+            stroke: #dc3545 !important;
+            stroke-width: 2px !important;
+            stroke-dasharray: 4,2 !important;
+        }
+        
+        .node.pending-delete text {
+            opacity: 0.7;
+        }
+        
+        .deletion-indicator {
+            fill: #dc3545;
+            font-size: 11px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        
+        .node.inactive rect {
+            opacity: 0.6;
+            stroke-dasharray: 2,2;
+        }
+        
+        .node.inactive text {
+            opacity: 0.7;
+            text-decoration: line-through;
+        }
+        
+        /* Undo notification styles */
+        .undo-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .undo-notification button {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .undo-notification button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Deletion dialog styles */
+        .deletion-options {
+            padding: 10px 0;
+        }
+        
+        .deletion-option {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .deletion-option:hover {
+            background: #f8f9fa;
+            border-color: #0176D3;
+        }
+        
+        .deletion-option input[type="radio"] {
+            margin-right: 10px;
+        }
+        
+        .deletion-option label {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+        
+        .deletion-option label strong {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .option-description {
+            font-size: 12px;
+            color: #666;
+            margin-left: 22px;
+        }
+        
+        #parent-selector {
+            margin-top: 10px;
+            margin-left: 25px;
+            display: none;
+        }
+        
+        #parent-selector label {
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        
+        #parent-selector select {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        /* Deletion row in change summary */
+        .deletion-row {
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+        
+        .deletion-row:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        
+        /* Progress bar styles */
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #0176D3;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+            background-image: linear-gradient(
+                45deg,
+                rgba(255,255,255,.15) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255,255,255,.15) 50%,
+                rgba(255,255,255,.15) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 40px 40px;
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+        
+        @keyframes progress-bar-stripes {
+            from {
+                background-position: 40px 0;
+            }
+            to {
+                background-position: 0 0;
+            }
+        }
+        
+        .progress-message {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Modal variants */
+        .modal-success .modal-header {
+            background-color: #2E844A;
+            color: white;
+        }
+        
+        .modal-error .modal-header {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .modal-warning .modal-header {
+            background-color: #FFB75D;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -675,6 +884,7 @@
         let currentData = null;
         let d3Root = null;
         let d3Update = null;
+        let root = null; // D3 hierarchy root for deletion functions
         window.hierarchyData = { nodes: [] }; // For inline editor
 
 
@@ -945,6 +1155,80 @@
             detailsContent.innerHTML = detailsHTML;
         }
 
+        // Modal functions
+        function showModal(title, content, type = 'info', buttons = null, onShow = null) {
+            console.log('showModal called with:', { title, content, type, buttons });
+            
+            const existingModal = document.querySelector('.modal-overlay');
+            if (existingModal) {
+                console.log('Removing existing modal');
+                existingModal.remove();
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay active';
+            
+            const modalClass = type === 'error' ? 'modal-error' : 
+                             type === 'warning' ? 'modal-warning' : 
+                             type === 'success' ? 'modal-success' : '';
+            
+            const defaultButtons = buttons || [
+                {
+                    text: 'OK',
+                    className: 'btn-primary',
+                    onClick: () => closeModal()
+                }
+            ];
+            
+            const buttonsHtml = defaultButtons.map((btn, index) => 
+                `<button class="btn ${btn.className}" data-button-index="${index}">${btn.text}</button>`
+            ).join('');
+            
+            modal.innerHTML = `
+                <div class="modal-content ${modalClass}">
+                    <div class="modal-header">
+                        <h2>${title}</h2>
+                        <button class="close-button" onclick="closeModal()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        ${typeof content === 'string' ? content : ''}
+                    </div>
+                    <div class="modal-footer">
+                        ${buttonsHtml}
+                    </div>
+                </div>
+            `;
+            
+            console.log('Appending modal to body');
+            document.body.appendChild(modal);
+            console.log('Modal appended, checking if visible...');
+            console.log('Modal element:', modal);
+            console.log('Modal display style:', window.getComputedStyle(modal).display);
+            
+            // Attach click handlers to buttons
+            modal.querySelectorAll('button[data-button-index]').forEach(button => {
+                const index = parseInt(button.getAttribute('data-button-index'));
+                button.addEventListener('click', defaultButtons[index].onClick);
+            });
+            
+            // Call onShow callback if provided
+            if (onShow) {
+                setTimeout(onShow, 10);
+            }
+        }
+        
+        function closeModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
         // Control Functions (these will be reimplemented for D3)
         function fitView() {
             // TODO: Implement for D3
@@ -1136,7 +1420,7 @@
             // Layout configuration
             const columnWidth = 250;  // Fixed width between columns
             const nodeHeight = 60;    // Vertical space per node
-            const nodeWidth = 180;    // Width of each node
+            const nodeWidth = 200;    // Increased width for better text display
             const nodePadding = 12;   // Padding inside nodes
             
             // Define zoom behavior early to avoid initialization errors
@@ -1149,13 +1433,15 @@
                     updateColumnHeaderPositions(transform);
                 });
             
-            const root = d3.hierarchy(data);
+            root = d3.hierarchy(data);
             
-            // Set initial collapsed state - start with everything collapsed except root and catalog
+            // CRITICAL REQUIREMENT: Always load with hierarchy collapsed
+            // Only the root level should be visible on initial load
+            // Users must manually expand nodes to see their children
             root.descendants().forEach(d => {
                 if (d.children && d.children.length > 0) {
-                    // Only keep root and catalog expanded, collapse everything else
-                    if (d.depth > 1) {  // Collapse everything below catalog level
+                    // Collapse ALL nodes except the root (depth 0)
+                    if (d.depth > 0) {  // This will collapse catalogs and everything below
                         d._children = d.children;
                         d.children = null;
                     }
@@ -1629,6 +1915,14 @@
             
             // Function to update the tree
             function update(source) {
+                // Make update function globally accessible
+                window.update = update;
+                // Ensure permissions are loaded
+                if (!window.userPermissions) {
+                    console.log('Permissions not loaded yet, loading now...');
+                    loadUserPermissions();
+                }
+                
                 // Apply pending changes to node data before rendering
                 if (window.changeTracker && window.changeTracker.pendingChanges.size > 0) {
                     root.descendants().forEach(node => {
@@ -1762,7 +2056,20 @@
                     .attr('class', d => 'node' + (d.data.shownForChildren ? ' node-shown-for-children' : ''))
                     .transition()
                     .duration(500)
-                    .style('opacity', 1)
+                    .style('opacity', d => {
+                        // Reduced opacity for pending additions (temp IDs) and deletions
+                        if (d.data.id && d.data.id.startsWith('temp_')) {
+                            return 0.5;
+                        }
+                        // Check if marked for deletion
+                        if (window.changeTracker && window.changeTracker.pendingChanges.has(d.data.id)) {
+                            const changes = window.changeTracker.pendingChanges.get(d.data.id);
+                            if (changes && changes.has('deletion')) {
+                                return 0.5;
+                            }
+                        }
+                        return 1;
+                    })
                     .attr('transform', d => `translate(${d.x},${d.y})`)
                     .on('end', function() {
                         // Update column headers after all transitions complete
@@ -1978,8 +2285,9 @@
                         window.addEventListener('pointerup', handlePointerUp);
                     });
                     
-                    // For existing nodes, remove old expand/collapse circles to rebuild them
+                    // For existing nodes, remove old expand/collapse circles and delete icons to rebuild them
                     node.selectAll('.expand-collapse-circle').remove();
+                    node.selectAll('.delete-icon-group').remove();
                     
                     // Build content for new nodes
                     if (node.selectAll('rect').empty()) {
@@ -2063,7 +2371,7 @@
                         const text = node.append('text')
                             .attr('text-anchor', 'start')
                             .attr('x', -nodeWidth / 2 + 10)  // 10px padding from left edge
-                            .attr('dy', '0.35em')
+                            .attr('y', 0)  // Center vertically
                             .attr('fill', d => {
                                 // Use dark text color for better contrast on light backgrounds
                                 return '#181818'; // var(--text-primary)
@@ -2158,6 +2466,211 @@
                         }
                     }
                     
+                    // Add delete icon for nodes where user has delete permission
+                    // Only show on hover to avoid clutter
+                    if (window.userPermissions && window.userPermissions.capabilities && window.userPermissions.capabilities.can_delete) {
+                        const deleteGroup = node.append('g')
+                            .attr('class', 'delete-icon-group')
+                            .attr('transform', `translate(${-nodeWidth / 2 - 25}, 0)`) // Position to the left of the node
+                            .style('opacity', 0) // Hidden by default
+                            .style('cursor', 'pointer')
+                            .style('pointer-events', 'all');
+                        
+                        // Delete icon background circle
+                        deleteGroup.append('circle')
+                            .attr('r', 12)
+                            .attr('fill', '#fff')
+                            .attr('stroke', '#dc3545')
+                            .attr('stroke-width', 1.5);
+                        
+                        // Delete icon (trash can)
+                        const iconGroup = deleteGroup.append('g')
+                            .attr('transform', 'scale(0.8)'); // Scale down the icon
+                        
+                        // Trash can body
+                        iconGroup.append('rect')
+                            .attr('x', -5)
+                            .attr('y', -3)
+                            .attr('width', 10)
+                            .attr('height', 12)
+                            .attr('rx', 1)
+                            .attr('fill', '#dc3545');
+                        
+                        // Trash can lid
+                        iconGroup.append('rect')
+                            .attr('x', -7)
+                            .attr('y', -5)
+                            .attr('width', 14)
+                            .attr('height', 2)
+                            .attr('fill', '#dc3545');
+                        
+                        // Trash can handle
+                        iconGroup.append('rect')
+                            .attr('x', -2)
+                            .attr('y', -7)
+                            .attr('width', 4)
+                            .attr('height', 2)
+                            .attr('rx', 1)
+                            .attr('fill', '#dc3545');
+                        
+                        // Trash can lines
+                        [-2, 0, 2].forEach(x => {
+                            iconGroup.append('rect')
+                                .attr('x', x - 0.5)
+                                .attr('y', -1)
+                                .attr('width', 1)
+                                .attr('height', 7)
+                                .attr('fill', '#fff');
+                        });
+                        
+                        // Show/hide delete icon on node hover
+                        node.on('mouseenter.delete', function(event, d) {
+                            d3.select(this).select('.delete-icon-group')
+                                .transition()
+                                .duration(200)
+                                .style('opacity', 1);
+                        })
+                        .on('mouseleave.delete', function(event, d) {
+                            d3.select(this).select('.delete-icon-group')
+                                .transition()
+                                .duration(200)
+                                .style('opacity', 0);
+                        });
+                        
+                        // Delete icon hover effect
+                        deleteGroup
+                            .on('mouseenter', function(event, d) {
+                                d3.select(this).select('circle')
+                                    .attr('fill', 'rgba(220, 53, 69, 0.1)')
+                                    .attr('stroke-width', 2);
+                            })
+                            .on('mouseleave', function(event, d) {
+                                d3.select(this).select('circle')
+                                    .attr('fill', '#fff')
+                                    .attr('stroke-width', 1.5);
+                            })
+                            .on('pointerdown', function(event, d) {
+                                event.stopPropagation();
+                                event.stopImmediatePropagation();
+                                event.preventDefault();
+                                console.log('Delete icon clicked for node:', d.data.name, d.data);
+                                console.log('User permissions:', window.userPermissions);
+                                initiateNodeDeletion(d);
+                            })
+                            .on('click', function(event, d) {
+                                event.stopPropagation();
+                                event.stopImmediatePropagation();
+                                event.preventDefault();
+                            });
+                    }
+                    
+                    // Add add icon for nodes where user has create permission
+                    // Only show on hover to avoid clutter
+                    // Default to showing if permissions not loaded yet
+                    const hasPermission = !window.userPermissions || !window.userPermissions.capabilities || 
+                        window.userPermissions.capabilities.can_create || 
+                        window.userPermissions.capabilities.can_edit_structure ||
+                        window.userPermissions.capabilities.can_admin;
+                    
+                    if (hasPermission) {
+                        console.log('Creating add icon - permissions:', window.userPermissions?.capabilities);
+                        const addGroup = node.append('g')
+                            .attr('class', 'add-icon-group')
+                            .attr('transform', `translate(${-nodeWidth / 2 - 25}, -30)`) // Position above the delete icon
+                            .style('opacity', 0) // Hidden by default
+                            .style('cursor', 'pointer')
+                            .style('pointer-events', 'all');
+                        
+                        // Add icon background circle
+                        addGroup.append('circle')
+                            .attr('r', 12)
+                            .attr('fill', '#fff')
+                            .attr('stroke', '#2E844A') // Success green color
+                            .attr('stroke-width', 1.5);
+                        
+                        // Plus icon
+                        const plusGroup = addGroup.append('g');
+                        
+                        // Horizontal line of plus
+                        plusGroup.append('rect')
+                            .attr('x', -6)
+                            .attr('y', -1)
+                            .attr('width', 12)
+                            .attr('height', 2)
+                            .attr('fill', '#2E844A');
+                        
+                        // Vertical line of plus
+                        plusGroup.append('rect')
+                            .attr('x', -1)
+                            .attr('y', -6)
+                            .attr('width', 2)
+                            .attr('height', 12)
+                            .attr('fill', '#2E844A');
+                        
+                        // Show/hide add icon on node hover
+                        node.on('mouseenter.add', function(event, d) {
+                            // Show add icon for all nodes for debugging
+                            const nodeType = d.data.type;
+                            console.log('Mouse enter node:', d.data.name, 'Type:', nodeType);
+                            
+                            // Always show the add icon for debugging
+                            const addIcon = d3.select(this).select('.add-icon-group');
+                            console.log('Showing add icon for:', d.data.name, 'Icon found:', !addIcon.empty());
+                            if (!addIcon.empty()) {
+                                addIcon
+                                    .transition()
+                                    .duration(200)
+                                    .style('opacity', 1);
+                            } else {
+                                console.error('No add icon found for node:', d.data.name);
+                            }
+                        })
+                        .on('mouseleave.add', function(event, d) {
+                            d3.select(this).select('.add-icon-group')
+                                .transition()
+                                .duration(200)
+                                .style('opacity', 0);
+                        });
+                        
+                        // Add icon hover effect
+                        addGroup
+                            .on('mouseenter', function(event, d) {
+                                d3.select(this).select('circle')
+                                    .attr('fill', 'rgba(46, 132, 74, 0.1)')
+                                    .attr('stroke-width', 2);
+                            })
+                            .on('mouseleave', function(event, d) {
+                                d3.select(this).select('circle')
+                                    .attr('fill', '#fff')
+                                    .attr('stroke-width', 1.5);
+                            })
+                            .on('pointerdown', function(event, d) {
+                                console.log('Add icon pointerdown event triggered');
+                                event.stopPropagation();
+                                event.stopImmediatePropagation();
+                                event.preventDefault();
+                                console.log('Add icon clicked for node:', d.data.name, d.data);
+                                
+                                // Call AddNodeManager to handle the add operation
+                                if (!window.addNodeManager && typeof AddNodeManager !== 'undefined') {
+                                    console.log('Creating AddNodeManager instance on demand');
+                                    window.addNodeManager = new AddNodeManager();
+                                }
+                                
+                                if (window.addNodeManager) {
+                                    console.log('Calling addNodeManager.handleAddClick');
+                                    window.addNodeManager.handleAddClick(d);
+                                } else {
+                                    console.error('AddNodeManager not available');
+                                }
+                            })
+                            .on('click', function(event, d) {
+                                event.stopPropagation();
+                                event.stopImmediatePropagation();
+                                event.preventDefault();
+                            });
+                    }
+                    
                     // Update selected node styling
                     node.classed('selected', d => selectedNode === d);
                     
@@ -2220,31 +2733,42 @@
                         let word;
                         let line = [];
                         let lineNumber = 0;
-                        const lineHeight = 10;  // Optimal spacing for multi-line text
+                        const lineHeight = 14;  // Increased line height for better spacing
                         const y = text.attr('y') || 0;
-                        const dy = parseFloat(text.attr('dy') || 0);
-                        let tspan = text.text(null).append('tspan').attr('x', text.attr('x')).attr('y', y).attr('dy', dy + 'em');
+                        
+                        // Clear any existing text and tspans
+                        text.text(null);
+                        
+                        // Create first tspan
+                        let tspan = text.append('tspan')
+                            .attr('x', text.attr('x'))
+                            .attr('y', y);
                         
                         while (word = words.pop()) {
                             line.push(word);
                             tspan.text(line.join(' '));
-                            if (tspan.node().getComputedTextLength() > width) {
+                            if (tspan.node().getComputedTextLength() > width && line.length > 1) {
                                 line.pop();
                                 tspan.text(line.join(' '));
                                 line = [word];
-                                tspan = text.append('tspan')
-                                    .attr('x', text.attr('x'))  // Maintain the same x position for all lines
-                                    .attr('y', y)
-                                    .attr('dy', lineHeight + 'px')
-                                    .text(word);
                                 lineNumber++;
+                                tspan = text.append('tspan')
+                                    .attr('x', text.attr('x'))
+                                    .attr('y', y)
+                                    .attr('dy', (lineNumber * lineHeight) + 'px')
+                                    .text(word);
                             }
                         }
                         
-                        // Center the text vertically with adjusted spacing
+                        // Center the text vertically
+                        const totalLines = lineNumber + 1;
                         const totalHeight = lineNumber * lineHeight;
-                        text.selectAll('tspan').attr('dy', function(d, i) {
-                            return i === 0 ? -totalHeight/2 + 'px' : lineHeight + 'px';
+                        const startOffset = -totalHeight / 2;
+                        
+                        text.selectAll('tspan').each(function(d, i) {
+                            if (i === 0) {
+                                d3.select(this).attr('dy', startOffset + 'px');
+                            }
                         });
                     });
                 }
@@ -2269,6 +2793,50 @@
                 }
             }
             
+            
+            // Function to add a new node to the hierarchy
+            window.hierarchyVisualization = {
+                addNode: function(newNodeData, parentNode) {
+                    console.log('Adding new node:', newNodeData, 'to parent:', parentNode);
+                    
+                    // Find the parent in the hierarchy
+                    let parent = null;
+                    if (!parentNode || parentNode.type === 'root') {
+                        // Adding to root level
+                        parent = root;
+                    } else {
+                        // Find the parent node in the tree
+                        parent = root.descendants().find(d => d.data.id === parentNode.id);
+                    }
+                    
+                    if (!parent) {
+                        console.error('Parent node not found:', parentNode);
+                        return;
+                    }
+                    
+                    // Create the new D3 hierarchy node
+                    const newD3Node = d3.hierarchy(newNodeData);
+                    newD3Node.depth = parent.depth + 1;
+                    newD3Node.parent = parent;
+                    
+                    // Add to parent's children
+                    if (!parent.children) {
+                        parent.children = [];
+                    }
+                    parent.children.push(newD3Node);
+                    
+                    // If parent was collapsed, expand it to show the new node
+                    if (parent._children && !parent.children) {
+                        parent.children = parent._children;
+                        parent._children = null;
+                    }
+                    
+                    // Update the tree
+                    update(parent);
+                    
+                    console.log('Node added successfully');
+                }
+            };
             
             // Initial update
             update(root);
@@ -2361,6 +2929,473 @@
             }
         }
 
+        // Load user permissions
+        async function loadUserPermissions() {
+            try {
+                const orgId = localStorage.getItem('selectedOrgId') || 'default';
+                console.log('Loading permissions for org:', orgId);
+                
+                const response = await fetch(`/api/edit/permissions?org_id=${encodeURIComponent(orgId)}`);
+                if (response.ok) {
+                    const permissions = await response.json();
+                    window.userPermissions = permissions;
+                    console.log('User permissions loaded:', permissions);
+                    
+                    // Update UI to show delete capabilities if available
+                    updateUIForPermissions();
+                } else {
+                    console.error('Failed to load permissions:', response.statusText);
+                    // Default to view-only permissions
+                    window.userPermissions = {
+                        permission_level: 'view_only',
+                        capabilities: {
+                            can_view: true,
+                            can_edit_basic: false,
+                            can_edit_structure: false,
+                            can_delete: false,
+                            can_admin: false
+                        }
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading permissions:', error);
+                // Default to view-only permissions on error
+                window.userPermissions = {
+                    permission_level: 'view_only',
+                    capabilities: {
+                        can_view: true,
+                        can_edit_basic: false,
+                        can_edit_structure: false,
+                        can_delete: false,
+                        can_admin: false
+                    }
+                };
+            }
+        }
+        
+        // Update UI based on user permissions
+        function updateUIForPermissions() {
+            if (!window.userPermissions) return;
+            
+            const capabilities = window.userPermissions.capabilities || {};
+            
+            // Show/hide delete-related UI elements based on permissions
+            if (capabilities.can_delete) {
+                console.log('User has delete permission');
+                // Any global UI updates for delete permission can go here
+            }
+            
+            // Update any other permission-based UI elements
+            if (capabilities.can_edit_structure) {
+                console.log('User has structure edit permission');
+            }
+            
+            if (capabilities.can_admin) {
+                console.log('User has admin permission');
+            }
+        }
+        
+        // Initiate node deletion process
+        function initiateNodeDeletion(node) {
+            console.log('initiateNodeDeletion called with node:', node);
+            console.log('Checking permissions:', window.userPermissions);
+            console.log('Capabilities:', window.userPermissions?.capabilities);
+            console.log('Can delete?', window.userPermissions?.capabilities?.can_delete);
+            
+            if (!window.userPermissions || !window.userPermissions.capabilities || !window.userPermissions.capabilities.can_delete) {
+                console.log('Permission check failed - showing error modal');
+                showModal('Permission Denied', 'You do not have permission to delete nodes.', 'error');
+                return;
+            }
+            
+            console.log('Permission check passed, proceeding with deletion...');
+            
+            const nodeData = node.data || node;
+            const hasChildren = (node.children && node.children.length > 0) || (node._children && node._children.length > 0);
+            
+            console.log('Node data:', nodeData);
+            console.log('Has children?', hasChildren);
+            console.log('Children:', node.children);
+            console.log('Hidden children:', node._children);
+            
+            if (hasChildren) {
+                console.log('Showing deletion dialog for node with children...');
+                // Show deletion dialog for nodes with children
+                showDeletionDialogForNodeWithChildren(node);
+            } else {
+                console.log('Showing simple confirmation for leaf node...');
+                console.log('showModal function exists?', typeof showModal);
+                // Simple confirmation for leaf nodes
+                try {
+                    const modalContent = `
+                        <div class="delete-confirmation-content">
+                            <div class="warning-icon">
+                                <i class="anticon">
+                                    <svg viewBox="64 64 896 896" width="48" height="48" fill="#faad14">
+                                        <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/>
+                                        <path d="M464 688a48 48 0 1096 0 48 48 0 10-96 0zm24-112h48c4.4 0 8-3.6 8-8V296c0-4.4-3.6-8-8-8h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8z"/>
+                                    </svg>
+                                </i>
+                            </div>
+                            <p>Are you sure you want to delete <strong>"${nodeData.name}"</strong>?</p>
+                            <p class="text-muted">This action will stage the deletion locally. You'll need to commit changes to apply it to Salesforce.</p>
+                        </div>
+                    `;
+                    
+                    showModal(
+                        'Delete Node',
+                        modalContent,
+                        'warning',
+                        [
+                        {
+                            text: 'Cancel',
+                            className: 'btn-secondary',
+                            onClick: () => closeModal()
+                        },
+                        {
+                            text: 'Delete',
+                            className: 'btn-danger',
+                            onClick: () => {
+                                markNodeForDeletion(node);
+                                // Show success message before closing
+                                showModal(
+                                    'Node Deleted',
+                                    `<div class="success-message">
+                                        <div class="success-icon">
+                                            <i class="anticon">
+                                                <svg viewBox="64 64 896 896" width="48" height="48" fill="#52c41a">
+                                                    <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm193.5 301.7l-210.6 292a31.8 31.8 0 01-51.7 0L318.5 484.9c-3.8-5.3 0-12.7 6.5-12.7h46.9c10.2 0 19.9 4.9 25.9 13.3l71.2 98.8 157.2-218c6-8.3 15.6-13.3 25.9-13.3H699c6.5 0 10.3 7.4 6.5 12.7z"/>
+                                                </svg>
+                                            </i>
+                                        </div>
+                                        <p><strong>"${nodeData.name}"</strong> has been marked for deletion.</p>
+                                        <p class="text-muted">Remember to commit your changes to apply them to Salesforce.</p>
+                                    </div>`,
+                                    'success',
+                                    [
+                                        {
+                                            text: 'OK',
+                                            className: 'btn-primary',
+                                            onClick: () => closeModal()
+                                        }
+                                    ]
+                                );
+                                // Auto-close after 2 seconds
+                                setTimeout(() => {
+                                    const modal = document.querySelector('.modal-overlay');
+                                    if (modal) modal.remove();
+                                }, 2000);
+                            }
+                        }
+                    ]
+                );
+                } catch (error) {
+                    console.error('Error showing modal:', error);
+                }
+            }
+        }
+        
+        // Mark node for deletion (stage it locally)
+        function markNodeForDeletion(node, deleteChildren = false, newParentId = null) {
+            const nodeData = node.data || node;
+            
+            // Add to pending deletions in change tracker
+            if (window.changeTracker) {
+                window.changeTracker.trackDeletion({
+                    nodeId: nodeData.id,
+                    nodeType: nodeData.type,
+                    nodeName: nodeData.name,
+                    deleteChildren: deleteChildren,
+                    newParentId: newParentId,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            // Visual indication of pending deletion
+            const nodeElement = d3.select(`[data-node-id="${nodeData.id}"]`);
+            if (nodeElement) {
+                nodeElement.classed('pending-delete', true);
+                nodeElement.select('rect')
+                    .style('opacity', 0.5)
+                    .style('stroke', '#dc3545')
+                    .style('stroke-width', '2px')
+                    .style('stroke-dasharray', '4,2');
+                
+                // Add deletion indicator text
+                const nodeHeightValue = nodeData._height || 60; // Use stored height or default
+                nodeElement.append('text')
+                    .attr('class', 'deletion-indicator')
+                    .attr('x', 0)
+                    .attr('y', -nodeHeightValue/2 - 10)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', '#dc3545')
+                    .style('font-size', '11px')
+                    .style('font-weight', 'bold')
+                    .text('PENDING DELETION');
+            }
+            
+            // Update node details panel if this node is selected
+            if (selectedNode && selectedNode.data.id === nodeData.id) {
+                showNodeDetails(nodeData);
+            }
+            
+            // Show undo option
+            showUndoNotification(nodeData);
+        }
+        
+        // Show deletion dialog for nodes with children
+        function showDeletionDialogForNodeWithChildren(node) {
+            const nodeData = node.data || node;
+            const childCount = (node.children ? node.children.length : 0) + (node._children ? node._children.length : 0);
+            
+            const modalContent = `
+                <div class="delete-confirmation-content">
+                    <div class="warning-icon">
+                        <i class="anticon">
+                            <svg viewBox="64 64 896 896" width="48" height="48" fill="#faad14">
+                                <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/>
+                                <path d="M464 688a48 48 0 1096 0 48 48 0 10-96 0zm24-112h48c4.4 0 8-3.6 8-8V296c0-4.4-3.6-8-8-8h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8z"/>
+                            </svg>
+                        </i>
+                    </div>
+                    <p><strong>"${nodeData.name}"</strong> has ${childCount} child node${childCount === 1 ? '' : 's'}.</p>
+                    <p class="text-muted">Choose how to handle the deletion:</p>
+                </div>
+                <div class="deletion-options">
+                    <div class="deletion-option">
+                        <input type="radio" id="reparent-children" name="deletion-option" value="reparent" checked>
+                        <label for="reparent-children">
+                            <strong>Reparent children</strong>
+                            <span class="option-description">Move child nodes to a different parent</span>
+                        </label>
+                        
+                        <div id="parent-selector" style="margin-top: 10px; margin-left: 25px;">
+                            <label for="new-parent">Select new parent:</label>
+                            <select id="new-parent" class="form-control" style="margin-top: 5px;">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="deletion-option">
+                        <input type="radio" id="delete-children" name="deletion-option" value="delete">
+                        <label for="delete-children">
+                            <strong>Delete all children</strong>
+                            <span class="option-description">Remove this node and all its descendants</span>
+                        </label>
+                    </div>
+                    
+                    <div class="deletion-option">
+                        <input type="radio" id="make-inactive" name="deletion-option" value="inactive">
+                        <label for="make-inactive">
+                            <strong>Make inactive</strong>
+                            <span class="option-description">Keep the node but mark it as inactive</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+            
+            showModal(
+                'Delete Node with Children',
+                modalContent,
+                'warning',
+                [
+                    {
+                        text: 'Cancel',
+                        className: 'btn-secondary',
+                        onClick: () => closeModal()
+                    },
+                    {
+                        text: 'Proceed',
+                        className: 'btn-danger',
+                        onClick: () => handleDeletionWithChildren(node)
+                    }
+                ],
+                () => {
+                    // Load potential parent nodes
+                    loadPotentialParents(node);
+                    
+                    // Handle radio button changes
+                    document.querySelectorAll('input[name="deletion-option"]').forEach(radio => {
+                        radio.addEventListener('change', (e) => {
+                            const parentSelector = document.getElementById('parent-selector');
+                            if (e.target.value === 'reparent') {
+                                parentSelector.style.display = 'block';
+                            } else {
+                                parentSelector.style.display = 'none';
+                            }
+                        });
+                    });
+                }
+            );
+        }
+        
+        // Load potential parent nodes for reparenting
+        async function loadPotentialParents(nodeToDelete) {
+            const select = document.getElementById('new-parent');
+            if (!select) return;
+            
+            // Get all nodes that could be valid parents
+            const validParents = [];
+            const nodeType = nodeToDelete.data.type;
+            
+            // Determine valid parent types based on node type
+            const validParentTypes = {
+                'catalog': ['root'],
+                'category': ['catalog'],
+                'subcategory': ['category'],
+                'product': ['category', 'subcategory'],
+                'component': ['product']
+            };
+            
+            const allowedTypes = validParentTypes[nodeType] || [];
+            
+            // Traverse the tree to find valid parents
+            root.descendants().forEach(d => {
+                if (allowedTypes.includes(d.data.type) && d.data.id !== nodeToDelete.data.id) {
+                    // Also exclude descendants of the node to delete
+                    if (!isDescendantOf(d, nodeToDelete)) {
+                        validParents.push({
+                            id: d.data.id,
+                            name: d.data.name,
+                            type: d.data.type,
+                            path: getNodePath(d)
+                        });
+                    }
+                }
+            });
+            
+            // Populate the select
+            select.innerHTML = '<option value="">-- Select a parent --</option>';
+            validParents.forEach(parent => {
+                const option = document.createElement('option');
+                option.value = parent.id;
+                option.textContent = parent.path;
+                select.appendChild(option);
+            });
+        }
+        
+        // Check if a node is a descendant of another
+        function isDescendantOf(node, potentialAncestor) {
+            let current = node.parent;
+            while (current) {
+                if (current === potentialAncestor) return true;
+                current = current.parent;
+            }
+            return false;
+        }
+        
+        // Get the full path of a node
+        function getNodePath(node) {
+            const path = [];
+            let current = node;
+            while (current && current.data.type !== 'root') {
+                path.unshift(current.data.name);
+                current = current.parent;
+            }
+            return path.join(' > ');
+        }
+        
+        // Handle deletion with children
+        function handleDeletionWithChildren(node) {
+            const selectedOption = document.querySelector('input[name="deletion-option"]:checked').value;
+            
+            switch (selectedOption) {
+                case 'reparent':
+                    const newParentId = document.getElementById('new-parent').value;
+                    if (!newParentId) {
+                        showModal('Error', 'Please select a new parent for the children.', 'error');
+                        return;
+                    }
+                    markNodeForDeletion(node, false, newParentId);
+                    break;
+                    
+                case 'delete':
+                    markNodeForDeletion(node, true);
+                    break;
+                    
+                case 'inactive':
+                    markNodeAsInactive(node);
+                    break;
+            }
+            
+            closeModal();
+        }
+        
+        // Mark node as inactive instead of deleting
+        function markNodeAsInactive(node) {
+            const nodeData = node.data || node;
+            
+            // Track the change
+            if (window.changeTracker) {
+                window.changeTracker.trackFieldChange(
+                    nodeData.id,
+                    nodeData.type,
+                    'isActive',
+                    nodeData.isActive !== undefined ? nodeData.isActive : true,
+                    false
+                );
+            }
+            
+            // Update the node data
+            nodeData.isActive = false;
+            
+            // Visual indication
+            const nodeElement = d3.select(`[data-node-id="${nodeData.id}"]`);
+            if (nodeElement) {
+                nodeElement.classed('inactive', true);
+                nodeElement.select('rect')
+                    .style('opacity', 0.6)
+                    .style('stroke-dasharray', '2,2');
+            }
+            
+            // Update details panel if selected
+            if (selectedNode && selectedNode.data.id === nodeData.id) {
+                showNodeDetails(nodeData);
+            }
+        }
+        
+        // Show undo notification for deletions
+        function showUndoNotification(nodeData) {
+            const notification = document.createElement('div');
+            notification.className = 'undo-notification';
+            notification.innerHTML = `
+                <span>Node "${nodeData.name}" marked for deletion</span>
+                <button class="btn btn-sm btn-link" onclick="undoDeletion('${nodeData.id}')">Undo</button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // Undo a deletion
+        window.undoDeletion = function(nodeId) {
+            // Remove from pending deletions
+            if (window.changeTracker) {
+                window.changeTracker.undoDeletion(nodeId);
+            }
+            
+            // Remove visual indication
+            const nodeElement = d3.select(`[data-node-id="${nodeId}"]`);
+            if (nodeElement) {
+                nodeElement.classed('pending-delete', false);
+                nodeElement.select('rect')
+                    .style('opacity', 1)
+                    .style('stroke', null)
+                    .style('stroke-width', null)
+                    .style('stroke-dasharray', null);
+                
+                nodeElement.select('.deletion-indicator').remove();
+            }
+            
+            // Remove notification
+            document.querySelector('.undo-notification')?.remove();
+        };
+        
         // Load org selector and show all connections
         async function loadOrgSelector() {
             try {
@@ -2608,7 +3643,7 @@
         }
         
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('DOM loaded');
             
             // Initialize inline editor and change tracker
@@ -2616,6 +3651,17 @@
                 window.inlineEditor.changeTracker = window.changeTracker;
                 window.inlineEditor.initialize();
             }
+            
+            // Ensure AddNodeManager is initialized
+            if (!window.addNodeManager && typeof AddNodeManager !== 'undefined') {
+                console.log('Creating AddNodeManager instance');
+                window.addNodeManager = new AddNodeManager();
+            } else if (typeof AddNodeManager === 'undefined') {
+                console.error('AddNodeManager class not loaded yet');
+            }
+            
+            // Load user permissions
+            await loadUserPermissions();
             
             // Load org selector
             loadOrgSelector();

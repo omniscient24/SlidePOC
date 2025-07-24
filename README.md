@@ -153,16 +153,42 @@ The Sync Data functionality includes:
 
 ### Product Hierarchy Visualization
 
-A powerful D3.js-based visualization tool for exploring Salesforce product hierarchies:
+A powerful D3.js-based visualization tool for exploring and managing Salesforce product hierarchies:
 
 - **Interactive Tree View**: Visual representation of product relationships and bundle structures
 - **Fixed Column Layout**: Products organized by hierarchy level with color-coded columns
+- **Default Collapsed State**: Always loads with hierarchy collapsed - users expand nodes as needed for optimal performance
 - **Drag & Drop**: Vertically reposition nodes while maintaining hierarchical structure
 - **Expand/Collapse**: Navigate complex hierarchies with +/- controls
 - **Bundle Support**: Automatic visualization of bundle components and relationships
 - **Node Details**: Click any product to view detailed information
 - **Zoom Controls**: Mouse wheel zoom for detailed inspection
 - **Responsive Design**: Full-width layout that adapts to screen size
+
+#### Add Catalog Feature
+
+The Product Hierarchy page now includes the ability to create new catalogs directly from the UI:
+
+- **Add Catalog Button**: Hover over any existing catalog to reveal a + icon
+- **Comprehensive Modal Form**: Create new catalogs with all required fields:
+  - Name (required)
+  - Code (auto-generated from Name, editable)
+  - Description
+  - Catalog Type (Sales/Service)
+  - Effective Start Date
+  - Effective End Date
+  - Is Active toggle
+- **Field Validation**: 
+  - Auto-generation of Code field from Name (uppercase, special chars removed)
+  - Date range validation (end date must be after start date)
+  - Required field validation
+- **Real-time UI Updates**: 
+  - New catalogs appear immediately in the hierarchy without page reload
+  - Temporary IDs are replaced with Salesforce IDs after commit
+  - Excel file automatically synchronized
+- **Empty Catalog Creation**: New catalogs start empty without inheriting categories/products
+- **Change Tracking**: All additions tracked and can be committed to Salesforce
+- **Visual Feedback**: Success modals with "Close & Update View" button for seamless workflow
 
 Access the visualization at `product-hierarchy-visualization.html` or through the web UI.
 

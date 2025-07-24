@@ -1,0 +1,318 @@
+/**
+ * Visual indicators for inline editing functionality
+ */
+
+/* Editable field hover state */
+.node [data-field] {
+    transition: all 0.2s ease;
+    position: relative;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.node [data-field]:hover {
+    background-color: rgba(255, 165, 0, 0.1);
+}
+
+.edit-icon {
+    display: inline-block;
+    font-size: 12px;
+    margin-left: 5px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+}
+
+.edit-icon:hover {
+    opacity: 1;
+}
+
+/* Field editing state */
+.field-editing {
+    border: 2px dotted #FFA500 !important;
+    background-color: #FFF8DC !important;
+    padding: 4px !important;
+    border-radius: 4px;
+}
+
+.inline-edit-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: inherit;
+    font-family: inherit;
+    background-color: white;
+    transition: all 0.3s;
+}
+
+.inline-edit-input:focus {
+    border-color: #40a9ff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Modified node indicator */
+.node-modified {
+    position: relative;
+}
+
+/* Removed border styling - using icon instead */
+
+/* Modified node icon indicator */
+.node-modified-icon {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background-color: #FF0000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.node-modified-icon svg {
+    width: 12px;
+    height: 12px;
+    fill: white;
+}
+
+/* Change count tooltip on hover */
+.node-modified-icon:hover::after {
+    content: attr(data-change-count) " change(s)";
+    position: absolute;
+    bottom: -25px;
+    right: -5px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Field validation error */
+.field-error {
+    border-color: #FF0000 !important;
+    background-color: #FFF5F5 !important;
+}
+
+.validation-tooltip {
+    position: fixed;
+    background: #FF0000;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1000;
+    max-width: 250px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.2s ease;
+}
+
+.validation-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #FF0000;
+}
+
+/* Change summary button */
+.change-summary-btn {
+    position: relative;
+    margin-left: 10px;
+}
+
+.change-count-badge {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #FF0000;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Change summary modal */
+.change-summary-content {
+    padding: 20px;
+}
+
+.summary-stats {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+}
+
+.summary-stats .stat {
+    font-size: 14px;
+    color: #666;
+}
+
+.summary-stats .stat strong {
+    font-size: 18px;
+    color: #1890ff;
+    margin-left: 5px;
+}
+
+.change-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.change-summary-table th {
+    background-color: #fafafa;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #e8e8e8;
+}
+
+.change-summary-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.change-summary-table tr:hover {
+    background-color: #fafafa;
+}
+
+.change-summary-table .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Keyboard focus indicators */
+.node:focus {
+    outline: 2px solid #1890ff;
+    outline-offset: 2px;
+}
+
+/* Edit mode animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 165, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 165, 0, 0);
+    }
+}
+
+/* Animation removed - using icon instead */
+
+/* Disabled field styling */
+[data-field][data-editable="false"] {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+[data-field][data-editable="false"]:hover {
+    background-color: transparent;
+}
+
+/* Multi-line text area */
+textarea.inline-edit-input {
+    resize: vertical;
+    min-height: 60px;
+    max-height: 200px;
+}
+
+/* Select dropdown styling */
+select.inline-edit-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 20px;
+    padding-right: 30px;
+}
+
+/* Checkbox styling */
+input[type="checkbox"].inline-edit-input {
+    width: auto;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Loading state */
+.field-saving {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.field-saving::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #1890ff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Undo/Redo buttons */
+.undo-redo-controls {
+    display: inline-flex;
+    gap: 5px;
+    margin-left: 10px;
+}
+
+.undo-redo-controls button {
+    padding: 5px 10px;
+    font-size: 12px;
+    border: 1px solid #d9d9d9;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.undo-redo-controls button:hover:not(:disabled) {
+    border-color: #40a9ff;
+    color: #40a9ff;
+}
+
+.undo-redo-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

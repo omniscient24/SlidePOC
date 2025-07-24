@@ -19,7 +19,8 @@ class UploadService:
     """Service for uploading data to Salesforce and updating workbook"""
     
     def __init__(self):
-        self.workbook_path = DATA_ROOT / 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx'
+        # Use the same workbook path as the web UI
+        self.workbook_path = DATA_ROOT / 'templates' / 'master' / 'Revenue_Cloud_Complete_Upload_Template.xlsx'
         self.upload_log_dir = DATA_ROOT / 'upload-logs'
         self.upload_log_dir.mkdir(exist_ok=True)
         
@@ -84,7 +85,7 @@ class UploadService:
             path = Path(file_path)
             
             # Check if this is the main workbook
-            if path.name == 'Revenue_Cloud_Complete_Upload_Template_FINAL.xlsx' and object_name:
+            if path.name == 'Revenue_Cloud_Complete_Upload_Template.xlsx' and object_name:
                 # Use the object to sheet mapping to get the right sheet
                 sheet_name = self.object_sheet_mapping.get(object_name)
                 if sheet_name:
@@ -336,9 +337,21 @@ class UploadService:
             print(f"[UPLOAD] Updating workbook with results for {object_name}")
             
             # Check if we had any successful records or duplicate errors with IDs
-            records_processed = upload_result.get('records_processed', 0)
-            records_failed = upload_result.get('records_failed', 0)
-            records_succeeded = records_processed - records_failed
+            # Handle different result structures for different operations
+            if 'records_processed' in upload_result:
+                # Upsert operation result
+                records_processed = upload_result.get('records_processed', 0)
+                records_failed = upload_result.get('records_failed', 0)
+                records_succeeded = records_processed - records_failed
+            elif 'result' in upload_result and isinstance(upload_result['result'], dict):
+                # Insert/update operation result from bulk API
+                result_data = upload_result['result']
+                records_processed = result_data.get('processedRecords', 0)
+                records_failed = result_data.get('failedRecords', 0)
+                records_succeeded = result_data.get('successfulRecords', records_processed - records_failed)
+            else:
+                # Default to assuming success if we have a success flag
+                records_succeeded = 1 if upload_result.get('success', False) else 0
             
             # Also check for duplicate errors that provide existing IDs
             duplicate_ids = {}

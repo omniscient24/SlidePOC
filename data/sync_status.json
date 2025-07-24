@@ -1,44 +1,211 @@
 {
-  "last_updated": "2025-07-17T06:57:24.358416",
+  "last_updated": "2025-07-23T08:53:46.919924",
   "objects": {
     "Product2": {
-      "last_sync": "2025-07-17T06:34:13.768861",
-      "record_count": 34,
+      "last_sync": "2025-07-20T12:56:28.583468",
+      "record_count": 36,
       "sync_success": true,
       "status": "Synced"
     },
     "Order": {
-      "last_sync": "2025-07-17T06:57:24.357733",
+      "last_sync": "2025-07-20T12:44:32.767421",
       "record_count": 3,
       "sync_success": true,
       "status": "Synced"
     },
     "OrderItem": {
-      "last_sync": "2025-07-17T06:57:24.357982",
+      "last_sync": "2025-07-20T12:44:32.767762",
       "record_count": 24,
       "sync_success": true,
       "status": "Synced"
     },
     "Asset": {
-      "last_sync": "2025-07-17T06:57:24.358091",
+      "last_sync": "2025-07-20T12:44:32.768109",
       "record_count": 25,
       "sync_success": true,
       "status": "Synced"
     },
     "AssetAction": {
-      "last_sync": "2025-07-17T06:57:24.358201",
+      "last_sync": "2025-07-20T12:44:32.768451",
       "record_count": 25,
       "sync_success": true,
       "status": "Synced"
     },
     "AssetActionSource": {
-      "last_sync": "2025-07-17T06:57:24.358300",
+      "last_sync": "2025-07-20T12:44:32.768792",
       "record_count": 25,
       "sync_success": true,
       "status": "Synced"
     },
     "Contract": {
-      "last_sync": "2025-07-17T06:57:24.358415",
+      "last_sync": "2025-07-20T12:44:32.769125",
+      "record_count": 1,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductCatalog": {
+      "last_sync": "2025-07-20T12:56:28.582044",
+      "record_count": 3,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductCategory": {
+      "last_sync": "2025-07-20T12:56:28.582717",
+      "record_count": 6,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductClassification": {
+      "last_sync": "2025-07-20T12:56:28.583102",
+      "record_count": 6,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductSellingModel": {
+      "last_sync": "2025-07-20T12:44:32.761126",
+      "record_count": 9,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductSellingModelOption": {
+      "last_sync": "2025-07-20T12:44:32.761534",
+      "record_count": 37,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductCategoryProduct": {
+      "last_sync": "2025-07-23T08:53:46.919921",
+      "record_count": 6,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductComponentGroup": {
+      "last_sync": "2025-07-20T12:44:32.762360",
+      "record_count": 11,
+      "sync_success": true,
+      "status": "Synced",
+      "last_upload": "2025-07-20T12:09:49.154887",
+      "upload_success": true,
+      "records_processed": 0,
+      "records_failed": 0,
+      "upload_message": "Processed 0 records, 0 failed"
+    },
+    "ProductRelatedComponent": {
+      "last_sync": "2025-07-20T12:44:32.762702",
+      "record_count": 30,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AttributeDefinition": {
+      "last_sync": "2025-07-20T12:44:32.763044",
+      "record_count": 20,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AttributeCategory": {
+      "last_sync": "2025-07-20T12:44:32.763379",
+      "record_count": 5,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AttributePicklist": {
+      "last_sync": "2025-07-20T12:44:32.763718",
+      "record_count": 10,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AttributePicklistValue": {
+      "last_sync": "2025-07-20T12:44:32.764064",
+      "record_count": 39,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "ProductAttributeDefinition": {
+      "last_sync": "2025-07-20T12:44:32.764412",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "Pricebook2": {
+      "last_sync": "2025-07-20T12:44:32.764823",
+      "record_count": 1,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "PricebookEntry": {
+      "last_sync": "2025-07-20T12:44:32.765190",
+      "record_count": 34,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "PriceAdjustmentSchedule": {
+      "last_sync": "2025-07-20T12:44:32.765904",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "PriceAdjustmentTier": {
+      "last_sync": "2025-07-20T12:44:32.766280",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AttributeBasedAdjRule": {
+      "last_sync": "2025-07-20T12:44:32.766681",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "AttributeBasedAdjustment": {
+      "last_sync": "2025-07-20T12:44:32.767068",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "CostBookEntry": {
+      "last_sync": "2025-07-20T12:44:32.765549",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "CostBook": {
+      "last_sync": "2025-07-20T12:44:32.758597",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "BillingPolicy": {
+      "last_sync": "2025-07-20T12:44:32.758943",
+      "record_count": 1,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "BillingTreatment": {
+      "last_sync": "2025-07-20T12:44:32.759309",
+      "record_count": 1,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "LegalEntity": {
+      "last_sync": "2025-07-20T12:44:32.756867",
+      "record_count": 1,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "TaxEngine": {
+      "last_sync": "2025-07-20T12:44:32.757480",
+      "record_count": 0,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "TaxPolicy": {
+      "last_sync": "2025-07-20T12:44:32.757880",
+      "record_count": 1,
+      "sync_success": true,
+      "status": "Synced"
+    },
+    "TaxTreatment": {
+      "last_sync": "2025-07-20T12:44:32.758243",
       "record_count": 1,
       "sync_success": true,
       "status": "Synced"

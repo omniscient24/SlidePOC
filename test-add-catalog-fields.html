@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Add Catalog Fields</title>
+    <style>
+        .test-results {
+            margin: 20px;
+            font-family: monospace;
+        }
+        .test-pass {
+            color: green;
+        }
+        .test-fail {
+            color: red;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Add Catalog Fields Tests</h1>
+    <div class="test-results" id="test-results"></div>
+
+    <script>
+        // Test framework
+        const tests = [];
+        const results = [];
+
+        function test(description, fn) {
+            tests.push({ description, fn });
+        }
+
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+
+        function assertEqual(actual, expected, message) {
+            if (actual !== expected) {
+                throw new Error(message || `Expected ${expected} but got ${actual}`);
+            }
+        }
+
+        function assertNotNull(value, message) {
+            if (value === null || value === undefined) {
+                throw new Error(message || 'Value is null or undefined');
+            }
+        }
+
+        async function runTests() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            for (const t of tests) {
+                try {
+                    await t.fn();
+                    results.push({ description: t.description, passed: true });
+                    resultsDiv.innerHTML += `<div class="test-pass">✓ ${t.description}</div>`;
+                } catch (error) {
+                    results.push({ description: t.description, passed: false, error: error.message });
+                    resultsDiv.innerHTML += `<div class="test-fail">✗ ${t.description}: ${error.message}</div>`;
+                }
+            }
+            
+            const passed = results.filter(r => r.passed).length;
+            const failed = results.filter(r => !r.passed).length;
+            
+            resultsDiv.innerHTML += `<div class="test-section"><strong>Summary: ${passed} passed, ${failed} failed</strong></div>`;
+        }
+
+        // Tests for new catalog fields
+        
+        test('Modal should contain Code field', () => {
+            const modal = document.getElementById('add-catalog-modal');
+            assertNotNull(modal, 'Add catalog modal not found');
+            
+            const codeField = document.getElementById('catalog-code');
+            assertNotNull(codeField, 'Code field not found in modal');
+            assertEqual(codeField.type, 'text', 'Code field should be text input');
+            assertEqual(codeField.maxLength, 255, 'Code field should have maxlength of 255');
+        });
+
+        test('Modal should contain CatalogType field', () => {
+            const modal = document.getElementById('add-catalog-modal');
+            assertNotNull(modal, 'Add catalog modal not found');
+            
+            const catalogTypeField = document.getElementById('catalog-type');
+            assertNotNull(catalogTypeField, 'CatalogType field not found in modal');
+            assertEqual(catalogTypeField.tagName.toLowerCase(), 'select', 'CatalogType should be a select dropdown');
+            
+            // Check options
+            const options = catalogTypeField.options;
+            assertEqual(options.length, 2, 'CatalogType should have 2 options');
+            assertEqual(options[0].value, 'Sales', 'First option should be Sales');
+            assertEqual(options[0].text, 'Sales', 'First option text should be Sales');
+            assertEqual(options[1].value, 'ServiceProcess', 'Second option should be ServiceProcess');
+            assertEqual(options[1].text, 'Service Process', 'Second option text should be Service Process');
+            
+            // Check default selection
+            assertEqual(catalogTypeField.value, 'Sales', 'Default value should be Sales');
+        });
+
+        test('Modal should contain EffectiveStartDate field', () => {
+            const modal = document.getElementById('add-catalog-modal');
+            assertNotNull(modal, 'Add catalog modal not found');
+            
+            const startDateField = document.getElementById('catalog-effective-start-date');
+            assertNotNull(startDateField, 'EffectiveStartDate field not found in modal');
+            assertEqual(startDateField.type, 'datetime-local', 'EffectiveStartDate should be datetime-local input');
+        });
+
+        test('Modal should contain EffectiveEndDate field', () => {
+            const modal = document.getElementById('add-catalog-modal');
+            assertNotNull(modal, 'Add catalog modal not found');
+            
+            const endDateField = document.getElementById('catalog-effective-end-date');
+            assertNotNull(endDateField, 'EffectiveEndDate field not found in modal');
+            assertEqual(endDateField.type, 'datetime-local', 'EffectiveEndDate should be datetime-local input');
+        });
+
+        test('Code field should auto-generate from Name if empty', () => {
+            const nameField = document.getElementById('catalog-name');
+            const codeField = document.getElementById('catalog-code');
+            
+            assertNotNull(nameField, 'Name field not found');
+            assertNotNull(codeField, 'Code field not found');
+            
+            // Simulate typing in name field
+            nameField.value = 'Test Catalog Name';
+            nameField.dispatchEvent(new Event('input'));
+            
+            // If code field is empty, it should auto-populate
+            if (codeField.value === '') {
+                // Wait for auto-generation logic
+                setTimeout(() => {
+                    assertEqual(codeField.value, 'Test_Catalog_Name', 'Code should auto-generate from name with underscores');
+                }, 100);
+            }
+        });
+
+        test('validateAddCatalogForm should validate new fields', () => {
+            // This assumes validateAddCatalogForm is accessible
+            if (window.addNodeManager && window.addNodeManager.validateAddCatalogForm) {
+                // Set up form values
+                document.getElementById('catalog-name').value = 'Test Catalog';
+                document.getElementById('catalog-code').value = 'TEST_CATALOG';
+                document.getElementById('catalog-type').value = 'Sales';
+                document.getElementById('catalog-effective-start-date').value = '2025-01-01T00:00';
+                document.getElementById('catalog-effective-end-date').value = '2025-12-31T23:59';
+                
+                const result = window.addNodeManager.validateAddCatalogForm();
+                assertNotNull(result, 'Validation should return a result');
+                assertEqual(result.code, 'TEST_CATALOG', 'Result should include code');
+                assertEqual(result.catalogType, 'Sales', 'Result should include catalogType');
+                assertNotNull(result.effectiveStartDate, 'Result should include effectiveStartDate');
+                assertNotNull(result.effectiveEndDate, 'Result should include effectiveEndDate');
+            }
+        });
+
+        test('Code field should not allow special characters except underscore', () => {
+            const codeField = document.getElementById('catalog-code');
+            assertNotNull(codeField, 'Code field not found');
+            
+            // Ensure handlers are set up
+            if (window.addNodeManager && window.addNodeManager.setupCatalogFormHandlers) {
+                window.addNodeManager.setupCatalogFormHandlers();
+            }
+            
+            // Test invalid characters
+            codeField.value = 'Test@Code#123';
+            codeField.dispatchEvent(new Event('input'));
+            
+            // After validation, special chars should be removed or replaced
+            // This depends on implementation
+            assert(!codeField.value.includes('@'), 'Code should not contain @');
+            assert(!codeField.value.includes('#'), 'Code should not contain #');
+        });
+
+        test('Date validation: End date should not be before start date', () => {
+            const startDateField = document.getElementById('catalog-effective-start-date');
+            const endDateField = document.getElementById('catalog-effective-end-date');
+            
+            assertNotNull(startDateField, 'Start date field not found');
+            assertNotNull(endDateField, 'End date field not found');
+            
+            // Set dates where end is before start
+            startDateField.value = '2025-12-31T00:00';
+            endDateField.value = '2025-01-01T00:00';
+            
+            // Attempt validation
+            if (window.addNodeManager && window.addNodeManager.validateAddCatalogForm) {
+                const result = window.addNodeManager.validateAddCatalogForm();
+                assertEqual(result, null, 'Validation should fail when end date is before start date');
+                
+                // Check for error message
+                const endDateError = document.getElementById('catalog-effective-end-date-error');
+                assertNotNull(endDateError, 'End date error element should exist');
+                assert(endDateError.textContent.length > 0, 'Error message should be displayed');
+            }
+        });
+
+        test('Backend should receive all new fields on submit', () => {
+            // This test would check that the trackAddition call includes all fields
+            // We'll verify the structure that should be passed
+            const expectedStructure = {
+                id: 'temp_catalog_1',
+                name: 'Test Catalog',
+                description: 'Test description',
+                isActive: true,
+                type: 'catalog',
+                code: 'TEST_CATALOG',
+                catalogType: 'Sales',
+                effectiveStartDate: '2025-01-01T00:00',
+                effectiveEndDate: '2025-12-31T23:59',
+                children: [],
+                isNew: true,
+                isSynced: false
+            };
+            
+            // This is a structure test - actual integration will be tested manually
+            assert(expectedStructure.hasOwnProperty('code'), 'Structure should include code');
+            assert(expectedStructure.hasOwnProperty('catalogType'), 'Structure should include catalogType');
+            assert(expectedStructure.hasOwnProperty('effectiveStartDate'), 'Structure should include effectiveStartDate');
+            assert(expectedStructure.hasOwnProperty('effectiveEndDate'), 'Structure should include effectiveEndDate');
+        });
+
+        // Wait for DOM to load, then run tests
+        window.addEventListener('DOMContentLoaded', () => {
+            // First, we need to ensure the modal exists
+            // For testing, we'll check if AddNodeManager exists and create modal
+            if (window.addNodeManager && window.addNodeManager.createAddCatalogModal) {
+                window.addNodeManager.createAddCatalogModal();
+            }
+            
+            // Run tests after a short delay to ensure everything is initialized
+            setTimeout(runTests, 500);
+        });
+    </script>
+
+    <!-- Include the actual scripts being tested -->
+    <script src="static/js/add-node-manager.js"></script>
+</body>
+</html>

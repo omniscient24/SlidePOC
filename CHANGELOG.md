@@ -4,6 +4,34 @@ All notable changes to the Revenue Cloud Migration Tool will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2025-07-24] - Add Catalog Feature
+
+### Added
+- **Add Catalog Functionality**: New feature to create Product Catalogs directly from the Product Hierarchy visualization
+  - Hover-activated + icon on catalog nodes
+  - Comprehensive modal form with all ProductCatalog fields
+  - Auto-generation of Code field from Name
+  - Date range validation for Effective Start/End dates
+  - Real-time UI updates without page reload
+  - Automatic Excel file synchronization
+
+### Fixed
+- **Modal Visibility**: Added missing `active` class to success/error modals
+- **Button Event Handling**: Fixed "Close & Update View" button click handler
+- **New Catalog Isolation**: New catalogs now start empty without inheriting categories/products from existing catalogs
+- **Circular JSON Error**: Resolved issue when serializing node additions for commit
+
+### Changed
+- **Change Tracker**: Enhanced with `handleSuccessfulCommit` and `refreshHierarchyData` methods
+- **Server Response**: Commit endpoint now returns `addition_details` with temp_id to real_id mapping
+- **Upload Service**: Improved result structure handling for both insert and upsert operations
+
+### Technical Details
+- Added comprehensive Test-Driven Development (TDD) instructions to CLAUDE.md
+- Created test suite for new catalog fields validation
+- Enhanced debugging with console logging for troubleshooting
+- Implemented smart catalog filtering to prevent category inheritance for new catalogs
+
 ## [2025-07-23] - Product Hierarchy Visualization Enhancements
 
 ### Fixed

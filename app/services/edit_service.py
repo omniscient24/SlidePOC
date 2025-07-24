@@ -15,8 +15,9 @@ class EditService:
         'view_only': 0,
         'edit_basic': 1,
         'edit_structure': 2,
-        'full_edit': 3,
-        'admin': 4
+        'delete': 3,
+        'full_edit': 4,
+        'admin': 5
     }
     
     # Default Salesforce field types
@@ -284,6 +285,13 @@ class EditService:
                 'can_delete': False,
                 'can_admin': False
             },
+            'delete': {
+                'can_view': True,
+                'can_edit_basic': True,
+                'can_edit_structure': True,
+                'can_delete': True,
+                'can_admin': False
+            },
             'full_edit': {
                 'can_view': True,
                 'can_edit_basic': True,
@@ -442,6 +450,72 @@ class EditService:
                 }
                 
         return None
+    
+    def log_change_history(self, user_id, org_id, node_id, node_type, operation_type, 
+                          field_changes, status, batch_id):
+        """Log a change to the change history table"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO change_history 
+                (user_id, org_id, node_id, node_type, operation_type, 
+                 field_changes, status, batch_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """, (
+                user_id, org_id, node_id, node_type, operation_type,
+                json.dumps(field_changes), status, batch_id
+            ))
+            
+            conn.commit()
+            conn.close()
+            return True
+            
+        except Exception as e:
+            print(f"Error logging change history: {e}")
+            if conn:
+                conn.close()
+            return False
+    
+    def get_change_history(self, org_id, limit=50):
+        """Get change history for an organization"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT 
+                    id, user_id, node_id, node_type, operation_type,
+                    field_changes, status, created_at, batch_id
+                FROM change_history
+                WHERE org_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            """, (org_id, limit))
+            
+            results = cursor.fetchall()
+            conn.close()
+            
+            history = []
+            for row in results:
+                history.append({
+                    'id': row[0],
+                    'user_id': row[1],
+                    'node_id': row[2],
+                    'node_type': row[3],
+                    'operation_type': row[4],
+                    'field_changes': json.loads(row[5]) if row[5] else {},
+                    'status': row[6],
+                    'created_at': row[7],
+                    'batch_id': row[8]
+                })
+            
+            return history
+            
+        except Exception as e:
+            print(f"Error getting change history: {e}")
+            return []
 
 # Create singleton instance
 edit_service = EditService()

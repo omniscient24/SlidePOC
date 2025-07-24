@@ -529,7 +529,68 @@ a:hover {
         
         .progress-container {
             margin-top: var(--space-lg);
-            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background-color: #f0f0f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0066cc 0%, #0052a3 100%);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.2) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0.2) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 30px 30px;
+            animation: progress-stripes 1s linear infinite;
+        }
+        
+        @keyframes progress-stripes {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 30px 0;
+            }
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .progress-label span:last-child {
+            color: var(--primary-blue);
+            font-weight: 600;
         }
         
         .sync-footer .progress-container {
@@ -1356,6 +1417,34 @@ a:hover {
         #validation-results-table th {
             white-space: nowrap;
         }
+        
+        /* Message Modal Styles */
+        .message-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .message-icon.success {
+            color: #52c41a;
+        }
+        
+        .message-icon.error {
+            color: #ff4d4f;
+        }
+        
+        .message-icon.info {
+            color: #1890ff;
+        }
+        
+        #message-modal .modal-body {
+            text-align: center;
+        }
+        
+        #message-modal .modal-body p {
+            font-size: 16px;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -1371,6 +1460,7 @@ a:hover {
                             <option>Loading...</option>
                         </select>
                     </div>
+                    <a href="/product-hierarchy" class="btn btn-secondary btn-small">Product Hierarchy</a>
                     <a href="/connections" class="btn btn-secondary btn-small">Manage Connections</a>
                     <button class="btn btn-secondary btn-small" onclick="logout()">Logout</button>
                 </div>
@@ -1541,7 +1631,7 @@ a:hover {
                         <!-- Object Selection -->
                         <div class="object-selector">
                             <label class="form-label" for="upload-object">Select Revenue Cloud Object</label>
-                            <select class="form-select" id="upload-object" onchange="updateUploadInfo()">
+                            <select class="form-select" id="upload-object" onchange="handleUploadObjectChange()">
                                 <option value="">-- Select an object --</option>
                                 <optgroup label="Foundation">
                                     <option value="LegalEntity">Legal Entities</option>
@@ -1592,18 +1682,18 @@ a:hover {
                             </select>
                         </div>
 
-                        <!-- Upload Zone -->
-                        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
-                            <h3>Drop files here or click to browse</h3>
-                            <p class="text-secondary">Supports CSV and Excel files (.csv, .xlsx, .xls)</p>
-                            <p class="text-small text-secondary">Maximum file size: 100MB</p>
-                            <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
+                        <!-- Upload from Spreadsheet Notice -->
+                        <div class="alert alert-info" style="margin-top: var(--space-lg);">
+                            <strong>Data Source:</strong> Upload uses data from the master spreadsheet
                         </div>
 
-                        <!-- File List -->
-                        <div id="file-list" class="file-list" style="display: none;">
-                            <h4>Selected File</h4>
-                            <div id="file-items"></div>
+                        <!-- Data Preview -->
+                        <div id="upload-preview" style="display: none; margin-top: var(--space-lg);">
+                            <h4>Data Preview</h4>
+                            <div id="upload-record-count" class="mb-2"></div>
+                            <div id="upload-data-preview" style="max-height: 300px; overflow-y: auto;">
+                                <!-- Table preview will be shown here -->
+                            </div>
                         </div>
 
                         <!-- Upload Options -->
@@ -1624,8 +1714,8 @@ a:hover {
                             </div>
                             
                             <div class="action-buttons">
-                                <button class="btn btn-primary" onclick="startUpload()">
-                                    Start Upload
+                                <button class="btn btn-primary" onclick="uploadFromSpreadsheet()" id="upload-btn" disabled>
+                                    Upload to Salesforce
                                 </button>
                                 <button class="btn btn-secondary" onclick="clearUpload()">
                                     Clear
@@ -2329,7 +2419,7 @@ a:hover {
         }
         
         // Upload data for single object
-        function uploadSingleObject(apiName) {
+        async function uploadSingleObject(apiName) {
             // Find the object name from the API name
             const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === apiName);
             const objectName = objConfig ? objConfig.name : apiName;
@@ -2356,8 +2446,15 @@ a:hover {
             // Scroll to top of page to see upload section
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
-            // Show a message to guide the user
-            showSuccess(`Ready to upload data for ${objectName}. Select a file to continue.`);
+            // Trigger the upload object change to load spreadsheet data
+            await handleUploadObjectChange();
+            
+            // Wait a moment for the UI to update
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Automatically start the upload
+            console.log('Automatically starting upload...');
+            await uploadFromSpreadsheet();
         }
 
         // Open Salesforce Object Manager for an object
@@ -3643,7 +3740,7 @@ a:hover {
             }
             
             const modalHtml = `
-                <div id="upload-progress-modal" class="modal-overlay">
+                <div id="upload-progress-modal" class="modal-overlay active">
                     <div class="modal-content">
                         <div class="modal-header">
                             <div>Upload Progress</div>
@@ -4477,17 +4574,257 @@ a:hover {
         }
 
         function clearUpload() {
-            removeFile();
+            // Clear spreadsheet upload
+            document.getElementById('upload-object').value = '';
+            document.getElementById('upload-preview').style.display = 'none';
+            document.getElementById('upload-options').style.display = 'none';
+            document.getElementById('upload-btn').disabled = true;
             closeUploadProgressModal();
         }
-
-        function showError(message, useToast = true) {
-            if (useToast) {
-                showToast(message, 'error');
-            } else {
-                // For backward compatibility
-                alert('Error: ' + message);
+        
+        // New function to handle object selection for upload
+        async function handleUploadObjectChange() {
+            const objectSelect = document.getElementById('upload-object');
+            const objectName = objectSelect.value;
+            
+            if (!objectName) {
+                document.getElementById('upload-preview').style.display = 'none';
+                document.getElementById('upload-options').style.display = 'none';
+                document.getElementById('upload-btn').disabled = true;
+                return;
             }
+            
+            try {
+                // Load data from spreadsheet just like the View tab
+                showLoading('Loading data from spreadsheet...');
+                
+                const response = await fetch(`/api/workbook/view?object=${objectName}`);
+                const result = await response.json();
+                
+                hideLoading();
+                
+                if (result.success) {
+                    const data = result.data || [];
+                    
+                    console.log('Upload data loaded:', data.length, 'records');
+                    
+                    // Show preview
+                    document.getElementById('upload-preview').style.display = 'block';
+                    document.getElementById('upload-record-count').innerHTML = `<strong>${data.length}</strong> records found in spreadsheet`;
+                    
+                    // Show first 5 records as preview
+                    if (data.length > 0) {
+                        const previewData = data.slice(0, 5);
+                        const columns = Object.keys(previewData[0]).filter(col => col !== 'attributes');
+                        
+                        let tableHtml = '<table class="data-table"><thead><tr>';
+                        columns.forEach(col => {
+                            tableHtml += `<th>${col}</th>`;
+                        });
+                        tableHtml += '</tr></thead><tbody>';
+                        
+                        previewData.forEach(record => {
+                            tableHtml += '<tr>';
+                            columns.forEach(col => {
+                                let value = record[col];
+                                if (value === null || value === undefined) value = '';
+                                tableHtml += `<td>${value}</td>`;
+                            });
+                            tableHtml += '</tr>';
+                        });
+                        
+                        if (data.length > 5) {
+                            tableHtml += `<tr><td colspan="${columns.length}" style="text-align: center; font-style: italic;">... and ${data.length - 5} more records</td></tr>`;
+                        }
+                        
+                        tableHtml += '</tbody></table>';
+                        document.getElementById('upload-data-preview').innerHTML = tableHtml;
+                        
+                        // Show upload options and enable button
+                        document.getElementById('upload-options').style.display = 'block';
+                        document.getElementById('upload-btn').disabled = false;
+                    } else {
+                        document.getElementById('upload-data-preview').innerHTML = '<p class="text-muted">No data found for this object in the spreadsheet.</p>';
+                        document.getElementById('upload-options').style.display = 'none';
+                        document.getElementById('upload-btn').disabled = true;
+                    }
+                } else {
+                    showError('Failed to load data: ' + (result.error || 'Unknown error'));
+                    document.getElementById('upload-preview').style.display = 'none';
+                    document.getElementById('upload-options').style.display = 'none';
+                    document.getElementById('upload-btn').disabled = true;
+                }
+            } catch (error) {
+                hideLoading();
+                showError('Failed to load data: ' + error.message);
+                document.getElementById('upload-preview').style.display = 'none';
+                document.getElementById('upload-options').style.display = 'none';
+                document.getElementById('upload-btn').disabled = true;
+            }
+        }
+        
+        // New function to upload from spreadsheet
+        async function uploadFromSpreadsheet() {
+            console.log('uploadFromSpreadsheet called');
+            
+            // Check if we have an active connection first
+            if (!activeConnection) {
+                showError('No active Salesforce connection. Please select a connection from the Manage Connections page.');
+                return;
+            }
+            
+            const objectSelect = document.getElementById('upload-object');
+            const object = objectSelect.value;
+            console.log('Selected object:', object);
+            
+            if (!object) {
+                showError('Please select an object');
+                return;
+            }
+            
+            // Get object name for display
+            const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === object);
+            const objectName = objConfig ? objConfig.name : object;
+            
+            // Create and show upload progress modal
+            createUploadProgressModal('Master Spreadsheet', objectName);
+            uploadInProgress = true;
+            uploadAborted = false;
+            
+            try {
+                // First, export the workbook data to a temporary file
+                console.log('Starting export...');
+                const statusElement = document.getElementById('upload-modal-status');
+                if (statusElement) {
+                    statusElement.textContent = 'Preparing data for upload...';
+                } else {
+                    console.error('Status element not found!');
+                }
+                
+                const exportResponse = await fetch(`/api/workbook/export?object=${object}`);
+                console.log('Export response:', exportResponse.status);
+                const blob = await exportResponse.blob();
+                console.log('Export blob size:', blob.size);
+                
+                // Create FormData with the exported file
+                const formData = new FormData();
+                const file = new File([blob], `${object}_upload.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                formData.append('file', file);
+                formData.append('object', object);
+                formData.append('operation', document.getElementById('operation-type').value);
+                formData.append('externalId', document.getElementById('external-id').value || '');
+                
+                document.getElementById('upload-modal-status').textContent = 'Uploading to Salesforce...';
+                document.getElementById('upload-modal-progress-bar').style.width = '50%';
+                document.getElementById('upload-modal-percentage').textContent = '50%';
+                
+                // Upload to Salesforce
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Upload response status:', response.status);
+                const result = await response.json();
+                console.log('Upload result:', result);
+                
+                document.getElementById('upload-modal-progress-bar').style.width = '100%';
+                document.getElementById('upload-modal-percentage').textContent = '100%';
+                
+                if (result.success) {
+                    showUploadSuccess(result);
+                } else {
+                    showUploadError(result.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showUploadError(error.message || 'Upload failed');
+            }
+        }
+
+        function showError(message) {
+            showMessageModal('Error', message, 'error');
+        }
+        
+        function showUploadSuccess(result) {
+            // Close the upload progress modal
+            const progressModal = document.getElementById('upload-progress-modal');
+            if (progressModal) {
+                progressModal.remove();
+            }
+            
+            // Build plain English message
+            let message = '';
+            const objectSelect = document.getElementById('upload-object');
+            const selectedOption = objectSelect.options[objectSelect.selectedIndex];
+            const objectName = selectedOption ? selectedOption.text : 'records';
+            
+            if (result.successCount !== undefined && result.successCount > 0) {
+                if (result.errorCount > 0) {
+                    // Partial success
+                    message = `Upload completed with some issues.\n\n`;
+                    message += `✓ ${result.successCount} ${objectName} were successfully uploaded to Salesforce.\n`;
+                    message += `✗ ${result.errorCount} records failed to upload.\n\n`;
+                    message += `The successful records are now available in your Salesforce org. `;
+                    message += `To see what went wrong with the failed records, check the error details in the spreadsheet.`;
+                } else {
+                    // Complete success
+                    message = `Great! All ${result.successCount} ${objectName} have been successfully uploaded to Salesforce.\n\n`;
+                    message += `The records are now available in your Salesforce org and can be used immediately.`;
+                }
+            } else if (result.recordCount) {
+                // Legacy format
+                message = `Success! ${result.recordCount} ${objectName} have been uploaded to Salesforce.\n\n`;
+                message += `You can now view these records in Salesforce or continue with other operations.`;
+            } else {
+                // Generic success
+                message = `Upload completed successfully!\n\n`;
+                message += `Your ${objectName} have been uploaded to Salesforce.`;
+            }
+            
+            showMessageModal('Upload Complete', message, 'success');
+        }
+        
+        function showUploadError(errorMessage) {
+            // Close the upload progress modal
+            const progressModal = document.getElementById('upload-progress-modal');
+            if (progressModal) {
+                progressModal.remove();
+            }
+            
+            // Build plain English error message
+            let message = 'Upload failed.\n\n';
+            
+            // Provide specific guidance based on error
+            if (errorMessage.includes('No active connection')) {
+                message += 'There is no active Salesforce connection selected.\n\n';
+                message += 'To fix this:\n';
+                message += '1. Go to the Connections page\n';
+                message += '2. Click "Make Active" on the connection you want to use\n';
+                message += '3. Return here and try the upload again';
+            } else if (errorMessage.includes('Authentication')) {
+                message += 'Your Salesforce session has expired or is invalid.\n\n';
+                message += 'To fix this:\n';
+                message += '1. Go to the Connections page\n';
+                message += '2. Test your connection\n';
+                message += '3. If needed, refresh or re-authenticate\n';
+                message += '4. Make sure the connection is set as active';
+            } else if (errorMessage.includes('timeout')) {
+                message += 'The upload took too long and timed out.\n\n';
+                message += 'This might happen with large data sets. Try:\n';
+                message += '1. Uploading fewer records at a time\n';
+                message += '2. Checking your internet connection\n';
+                message += '3. Trying again in a few moments';
+            } else {
+                // Generic error
+                message += `Error details: ${errorMessage}\n\n`;
+                message += 'Please check:\n';
+                message += '1. Your Salesforce connection is active\n';
+                message += '2. You have permission to create/update these records\n';
+                message += '3. The data in your spreadsheet is valid';
+            }
+            
+            showMessageModal('Upload Failed', message, 'error');
         }
         
         // Show loading overlay
@@ -4520,12 +4857,48 @@ a:hover {
             }
         }
 
-        function showSuccess(message, useToast = true) {
-            if (useToast) {
-                showToast(message, 'success');
-            } else {
-                // For backward compatibility
-                alert('Success: ' + message);
+        function showSuccess(message) {
+            showMessageModal('Success', message, 'success');
+        }
+        
+        // Show message modal (replaces toast notifications)
+        function showMessageModal(title, message, type = 'info') {
+            // Remove any existing message modals
+            const existingModal = document.getElementById('message-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Create modal HTML
+            const modalHtml = `
+                <div id="message-modal" class="modal-overlay active">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>${title}</h3>
+                            <button class="close-button" onclick="closeMessageModal()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="message-icon ${type}">
+                                ${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}
+                            </div>
+                            <div style="white-space: pre-line; line-height: 1.6;">
+                                ${message}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="closeMessageModal()">OK</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        function closeMessageModal() {
+            const modal = document.getElementById('message-modal');
+            if (modal) {
+                modal.remove();
             }
         }
         

@@ -4,6 +4,15 @@
 
 The Product Hierarchy Visualization is an interactive web-based tool that displays Salesforce product hierarchies in a clear, organized tree structure. Built with D3.js, it provides a visual representation of product relationships, making it easy to understand complex product structures, bundle compositions, and organizational hierarchies.
 
+## Important Requirements
+
+### Default Collapsed State
+- **CRITICAL REQUIREMENT**: The product hierarchy visualization page MUST always load with the hierarchy in a collapsed/retracted state
+- Only top-level catalogs should be visible on initial page load
+- Users must manually expand nodes to see their children
+- This ensures optimal performance and provides a cleaner initial view, especially important for large hierarchies
+- This requirement is permanent and should not be changed without explicit authorization
+
 ## Key Features
 
 ### 1. Fixed Column Layout with D3.js Tree Visualization

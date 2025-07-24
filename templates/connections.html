@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Connections - Revenue Cloud Migration Tool</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            border-radius: 0.25rem;
+        }
+        
+        .badge-success {
+            color: #fff;
+            background-color: #28a745;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -129,6 +147,7 @@
 
     <script>
         let connections = [];
+        let activeConnectionId = null;
         
         // Load connections on page load
         window.addEventListener('DOMContentLoaded', loadConnections);
@@ -140,6 +159,7 @@
                 
                 if (data.success) {
                     connections = data.connections;
+                    activeConnectionId = data.active_connection_id || null;
                     displayConnections();
                 } else {
                     showError('Failed to load connections');
@@ -183,6 +203,10 @@
                         <td>${formatDate(conn.last_used)}</td>
                         <td>
                             <div class="btn-group">
+                                ${activeConnectionId === conn.id ?
+                                    '<span class="badge badge-success">Active</span>' :
+                                    `<button class="btn btn-primary btn-small" onclick="setActiveConnection('${conn.id}')">Make Active</button>`
+                                }
                                 <button class="btn btn-small" onclick="testConnection('${conn.id}')">Test</button>
                                 ${conn.status === 'expired' ? 
                                     `<button class="btn btn-small" onclick="refreshConnection('${conn.id}')">Refresh</button>` : 
@@ -287,6 +311,31 @@
             
             // TODO: Implement refresh
             showError('Refresh functionality coming soon');
+        }
+        
+        async function setActiveConnection(connectionId) {
+            try {
+                const response = await fetch('/api/connections/set-active', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ connection_id: connectionId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    activeConnectionId = connectionId;
+                    displayConnections();
+                    showSuccess('Connection set as active');
+                } else {
+                    showError(data.error || 'Failed to set active connection');
+                }
+            } catch (error) {
+                console.error('Error setting active connection:', error);
+                showError('Failed to set active connection');
+            }
         }
         
         async function deleteConnection(connectionId) {

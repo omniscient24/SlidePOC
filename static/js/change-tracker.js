@@ -496,6 +496,24 @@ class ChangeTracker {
                             </td>
                         </tr>
                     `;
+                } else if (fieldName === '__ADD__') {
+                    // Handle addition change specially
+                    const addInfo = change.newValue;
+                    html += `
+                        <tr class="addition-row">
+                            <td>${addInfo.name}</td>
+                            <td colspan="3" style="color: #2E844A;">
+                                <strong>New ${addInfo.type}</strong>
+                                ${addInfo.description ? ` - ${addInfo.description}` : ''}
+                            </td>
+                            <td>${timestamp}</td>
+                            <td>
+                                <button class="btn btn-sm" onclick="window.changeTracker.undoAddition('${nodeId}')">
+                                    Undo Add
+                                </button>
+                            </td>
+                        </tr>
+                    `;
                 } else {
                     // Regular field change
                     html += `
@@ -662,6 +680,118 @@ class ChangeTracker {
         return nodeChanges.has('__DELETE__');
     }
     
+    // Track a node addition
+    trackAddition(nodeId, nodeData) {
+        console.log('Tracking addition for node:', nodeId, nodeData);
+        
+        // Create a special addition change
+        const change = {
+            nodeId: nodeId,
+            fieldName: '__ADD__',
+            oldValue: null,
+            newValue: nodeData,
+            timestamp: new Date().toISOString(),
+            id: this.generateChangeId(),
+            isAddition: true
+        };
+        
+        // Store the addition
+        if (!this.pendingChanges.has(nodeId)) {
+            this.pendingChanges.set(nodeId, new Map());
+        }
+        
+        const nodeChanges = this.pendingChanges.get(nodeId);
+        nodeChanges.set('__ADD__', change);
+        
+        // Add to history
+        this.addToHistory(change);
+        
+        // Notify listeners
+        this.notifyListeners('addition-tracked', change);
+        
+        // Update UI
+        this.updateChangeSummaryBadge();
+        
+        // Save to session
+        this.saveToSession();
+    }
+    
+    // Check if a node is marked for addition
+    isMarkedForAddition(nodeId) {
+        const nodeChanges = this.pendingChanges.get(nodeId);
+        if (!nodeChanges) return false;
+        
+        return nodeChanges.has('__ADD__');
+    }
+    
+    // Get all pending additions
+    getPendingAdditions() {
+        const additions = [];
+        
+        this.pendingChanges.forEach((nodeChanges, nodeId) => {
+            const additionChange = nodeChanges.get('__ADD__');
+            if (additionChange) {
+                additions.push({
+                    nodeId: nodeId,
+                    ...additionChange.newValue,
+                    timestamp: additionChange.timestamp
+                });
+            }
+        });
+        
+        return additions;
+    }
+    
+    // Undo an addition
+    undoAddition(nodeId) {
+        const nodeChanges = this.pendingChanges.get(nodeId);
+        if (!nodeChanges) return;
+        
+        const additionChange = nodeChanges.get('__ADD__');
+        if (!additionChange) return;
+        
+        // Remove the addition
+        nodeChanges.delete('__ADD__');
+        
+        // If no other changes for this node, remove it entirely
+        if (nodeChanges.size === 0) {
+            this.pendingChanges.delete(nodeId);
+        }
+        
+        // Remove the node from visualization
+        this.removeNodeFromVisualization(nodeId);
+        
+        // Notify listeners
+        this.notifyListeners('addition-undone', { nodeId });
+        
+        // Update UI
+        this.updateChangeSummaryBadge();
+        
+        // Save to session
+        this.saveToSession();
+    }
+    
+    // Remove a node from the visualization
+    removeNodeFromVisualization(nodeId) {
+        // Find and remove the node from the D3 hierarchy
+        if (window.hierarchyRoot) {
+            const nodeToRemove = window.hierarchyRoot.descendants().find(d => d.data.id === nodeId);
+            if (nodeToRemove && nodeToRemove.parent) {
+                const parent = nodeToRemove.parent;
+                if (parent.children) {
+                    parent.children = parent.children.filter(child => child.data.id !== nodeId);
+                    if (parent.children.length === 0) {
+                        delete parent.children;
+                    }
+                }
+                // Trigger update
+                if (window.update) {
+                    window.update(parent);
+                }
+            }
+        }
+    }
+    
     // Get all pending deletions
     getPendingDeletions() {
         const deletions = [];
@@ -684,6 +814,7 @@ class ChangeTracker {
     prepareChangesForCommit() {
         const changes = [];
         const deletions = [];
+        const additions = [];
         
         this.pendingChanges.forEach((nodeChanges, nodeId) => {
             // Get node data to determine type
@@ -699,6 +830,37 @@ class ChangeTracker {
                         ...change.oldValue,
                         timestamp: change.timestamp
                     });
+                } else if (fieldName === '__ADD__') {
+                    // Add to additions - create clean copy without circular references
+                    const nodeData = change.newValue;
+                    console.log('[ChangeTracker] Processing addition:', nodeId, nodeData);
+                    
+                    const cleanNode = {
+                        nodeId: nodeId,
+                        type: nodeData.type || 'unknown',
+                        name: nodeData.name || '',
+                        description: nodeData.description || '',
+                        isActive: nodeData.isActive !== undefined ? nodeData.isActive : true,
+                        tempId: nodeData.id || nodeId, // Store temp ID separately
+                        timestamp: change.timestamp
+                    };
+                    
+                    console.log('[ChangeTracker] Clean node for addition:', cleanNode);
+                    
+                    // Add any additional fields that are needed based on node type
+                    if (nodeData.type === 'catalog') {
+                        // Add catalog-specific fields
+                        cleanNode.code = nodeData.code || '';
+                        cleanNode.catalogType = nodeData.catalogType || 'Sales';
+                        cleanNode.effectiveStartDate = nodeData.effectiveStartDate || '';
+                        cleanNode.effectiveEndDate = nodeData.effectiveEndDate || '';
+                    } else if (nodeData.type === 'category') {
+                        cleanNode.parentCategoryId = nodeData.parentCategoryId || null;
+                    } else if (nodeData.type === 'product') {
+                        cleanNode.productCode = nodeData.productCode || '';
+                    }
+                    
+                    additions.push(cleanNode);
                 } else {
                     // Add to field changes
                     changes.push({
@@ -713,20 +875,20 @@ class ChangeTracker {
             });
         });
         
-        return { changes, deletions };
+        return { changes, deletions, additions };
     }
     
     // Validate changes before commit
     async validateChanges() {
         try {
-            const { changes, deletions } = this.prepareChangesForCommit();
+            const { changes, deletions, additions } = this.prepareChangesForCommit();
             
             const response = await fetch('/api/edit/changes/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ changes, deletions })
+                body: JSON.stringify({ changes, deletions, additions })
             });
             
             if (!response.ok) {
@@ -774,14 +936,14 @@ class ChangeTracker {
             }
             
             // Prepare and send changes
-            const { changes, deletions } = this.prepareChangesForCommit();
+            const { changes, deletions, additions } = this.prepareChangesForCommit();
             
             const response = await fetch('/api/edit/changes/commit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ changes, deletions })
+                body: JSON.stringify({ changes, deletions, additions })
             });
             
             if (!response.ok) {
@@ -904,6 +1066,69 @@ class ChangeTracker {
     }
     
     // Handle commit button click
+    handleSuccessfulCommit(result) {
+        /**
+         * Handle successful commit by updating the UI without page reload
+         * @param {Object} result - The commit result from the server
+         */
+        console.log('Handling successful commit:', result);
+        
+        // Update temporary IDs with real Salesforce IDs
+        if (result.addition_details && result.addition_details.length > 0) {
+            result.addition_details.forEach(addition => {
+                // Update the ID in the additions map
+                if (this.additions.has(addition.temp_id)) {
+                    const nodeData = this.additions.get(addition.temp_id);
+                    nodeData.id = addition.real_id;
+                    nodeData.isNew = false;
+                    nodeData.isSynced = true;
+                    
+                    // Move from additions to regular tracking
+                    this.additions.delete(addition.temp_id);
+                    
+                    // Update the visualization
+                    if (window.hierarchyVisualization && window.hierarchyVisualization.updateNodeId) {
+                        window.hierarchyVisualization.updateNodeId(addition.temp_id, addition.real_id);
+                    }
+                }
+            });
+        }
+        
+        // Clear all changes since they've been committed
+        this.clearSession();
+        
+        // Refresh the product hierarchy data
+        this.refreshHierarchyData();
+    }
+    
+    async refreshHierarchyData() {
+        /**
+         * Refresh the product hierarchy data from the server
+         */
+        try {
+            const response = await fetch('/api/product-hierarchy');
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update the visualization with new data
+                if (window.hierarchyVisualization && window.hierarchyVisualization.updateData) {
+                    window.hierarchyVisualization.updateData(data);
+                } else {
+                    // Fallback to page reload if update method doesn't exist
+                    window.location.reload();
+                }
+            } else {
+                console.error('Failed to refresh hierarchy data');
+                // Fallback to page reload
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Error refreshing hierarchy data:', error);
+            // Fallback to page reload
+            window.location.reload();
+        }
+    }
+
     async handleCommitClick() {
         // Close the change summary modal
         const modal = document.querySelector('.modal-overlay');
@@ -951,7 +1176,7 @@ class ChangeTracker {
             if (result.success) {
                 // Success modal
                 const successModal = document.createElement('div');
-                successModal.className = 'modal-overlay';
+                successModal.className = 'modal-overlay active';
                 successModal.innerHTML = `
                     <div class="modal-content modal-success">
                         <div class="modal-header">
@@ -961,8 +1186,19 @@ class ChangeTracker {
                             <p><strong>Success!</strong> Your changes have been committed to Salesforce.</p>
                             <ul>
                                 <li>${result.changes_processed || 0} field changes committed</li>
+                                <li>${result.additions_processed || 0} additions completed</li>
                                 <li>${result.deletions_processed || 0} deletions completed</li>
                             </ul>
+                            ${result.addition_details && result.addition_details.length > 0 ? `
+                                <details>
+                                    <summary>New Records Created</summary>
+                                    <ul>
+                                        ${result.addition_details.map(a => 
+                                            `<li>${a.name} (${a.type}) - ID: ${a.real_id}</li>`
+                                        ).join('')}
+                                    </ul>
+                                </details>
+                            ` : ''}
                             ${result.deletion_details ? `
                                 <details>
                                     <summary>Deletion Details</summary>
@@ -975,17 +1211,38 @@ class ChangeTracker {
                             ` : ''}
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove();window.location.reload();">
-                                Close & Refresh
+                            <button class="btn btn-primary" id="commit-success-btn">
+                                Close & Update View
                             </button>
                         </div>
                     </div>
                 `;
                 document.body.appendChild(successModal);
+                
+                // Add event listener for the button
+                const successBtn = document.getElementById('commit-success-btn');
+                if (successBtn) {
+                    successBtn.addEventListener('click', () => {
+                        console.log('Close & Update View button clicked');
+                        console.log('Result:', result);
+                        console.log('this context:', this);
+                        console.log('handleSuccessfulCommit exists:', typeof this.handleSuccessfulCommit === 'function');
+                        
+                        if (typeof this.handleSuccessfulCommit === 'function') {
+                            this.handleSuccessfulCommit(result);
+                        } else {
+                            console.error('handleSuccessfulCommit method not found!');
+                        }
+                        
+                        successModal.remove();
+                    });
+                } else {
+                    console.error('commit-success-btn not found!');
+                }
             } else {
                 // Error modal
                 const errorModal = document.createElement('div');
-                errorModal.className = 'modal-overlay';
+                errorModal.className = 'modal-overlay active';
                 errorModal.innerHTML = `
                     <div class="modal-content modal-error">
                         <div class="modal-header">
