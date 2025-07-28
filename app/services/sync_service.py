@@ -186,6 +186,7 @@ class SyncService:
             
             # Build the query - always include Id as first field
             fields = self._get_object_fields(object_name)
+            
             if not fields:
                 # If we can't get fields, at least get Id and Name
                 fields = ['Id', 'Name']

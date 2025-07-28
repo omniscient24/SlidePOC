@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Hierarchy Test</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        #status {
+            padding: 20px;
+            background: #f0f0f0;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        #hierarchy {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            background: white;
+        }
+        .node rect {
+            cursor: pointer;
+        }
+        .node text {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Product Hierarchy Visualization Test</h1>
+    <div id="status">Loading...</div>
+    <div id="hierarchy"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        function updateStatus(message) {
+            statusDiv.innerHTML += '<br>' + new Date().toTimeString().split(' ')[0] + ': ' + message;
+        }
+
+        updateStatus('Page loaded');
+        
+        // Test API call
+        updateStatus('Fetching data from /api/product-hierarchy...');
+        
+        fetch('/api/product-hierarchy')
+            .then(response => {
+                updateStatus('Response received: ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                updateStatus('Data parsed successfully');
+                console.log('Data:', data);
+                
+                if (data.success && data.hierarchy) {
+                    updateStatus('Rendering hierarchy...');
+                    renderHierarchy(data.hierarchy);
+                } else {
+                    updateStatus('ERROR: Invalid data structure');
+                }
+            })
+            .catch(error => {
+                updateStatus('ERROR: ' + error.message);
+                console.error('Error:', error);
+            });
+
+        function renderHierarchy(data) {
+            const width = 800;
+            const height = 600;
+            
+            const svg = d3.select('#hierarchy')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const g = svg.append('g')
+                .attr('transform', 'translate(50, 50)');
+            
+            const tree = d3.tree()
+                .size([height - 100, width - 100]);
+            
+            const root = d3.hierarchy(data);
+            const treeData = tree(root);
+            
+            // Draw links
+            g.selectAll('.link')
+                .data(treeData.links())
+                .enter().append('path')
+                .attr('fill', 'none')
+                .attr('stroke', '#ccc')
+                .attr('stroke-width', 2)
+                .attr('d', d3.linkHorizontal()
+                    .x(d => d.y)
+                    .y(d => d.x)
+                );
+            
+            // Draw nodes
+            const node = g.selectAll('.node')
+                .data(treeData.descendants())
+                .enter().append('g')
+                .attr('class', 'node')
+                .attr('transform', d => `translate(${d.y},${d.x})`);
+            
+            node.append('rect')
+                .attr('width', 120)
+                .attr('height', 40)
+                .attr('x', -60)
+                .attr('y', -20)
+                .attr('fill', '#4CAF50')
+                .attr('stroke', 'white')
+                .attr('stroke-width', 2);
+            
+            node.append('text')
+                .attr('dy', 5)
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'white')
+                .style('font-size', '12px')
+                .text(d => d.data.name);
+            
+            updateStatus('Hierarchy rendered successfully!');
+        }
+    </script>
+</body>
+</html>

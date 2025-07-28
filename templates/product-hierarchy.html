@@ -32,7 +32,8 @@
     
     <!-- Edit functionality scripts -->
     <script src="/static/js/inline-edit.js"></script>
-    <script src="/static/js/change-tracker.js"></script>
+    <script src="/static/js/change-tracker.js?v=20250728_fix_circular"></script>
+    <script src="/static/js/product-hierarchy-sync.js"></script>
     <script src="/static/js/add-node-manager.js"></script>
     
     <style>
@@ -778,6 +779,10 @@
             </h1>
             <div class="header-actions">
                 <div class="toolbar-right" style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn btn-primary" onclick="syncProductHierarchy()" title="Sync product hierarchy data with Salesforce">
+                        <i class="fas fa-sync-alt"></i>
+                        Sync with Salesforce
+                    </button>
                 </div>
                 <div class="org-selector-wrapper">
                     <label for="org-selector" class="field-label">Org:</label>
@@ -1157,7 +1162,10 @@
 
         // Modal functions
         function showModal(title, content, type = 'info', buttons = null, onShow = null) {
+            console.log('=== SHOW MODAL CALLED ===');
             console.log('showModal called with:', { title, content, type, buttons });
+            console.log('Content type:', typeof content);
+            console.log('Content length:', content ? content.length : 0);
             
             const existingModal = document.querySelector('.modal-overlay');
             if (existingModal) {
@@ -1401,6 +1409,9 @@
         
         // D3.js tree visualization with column-based layout
         function renderD3Tree(data) {
+            // Make renderD3Tree globally accessible
+            window.renderD3Tree = renderD3Tree;
+            
             const container = document.getElementById('hierarchy-container');
             const width = container.clientWidth;
             const height = container.clientHeight;
@@ -2553,9 +2564,17 @@
                                 event.stopPropagation();
                                 event.stopImmediatePropagation();
                                 event.preventDefault();
+                                console.log('=== DELETE ICON CLICKED ===');
                                 console.log('Delete icon clicked for node:', d.data.name, d.data);
+                                console.log('Event type:', event.type);
                                 console.log('User permissions:', window.userPermissions);
-                                initiateNodeDeletion(d);
+                                console.log('About to call initiateNodeDeletion...');
+                                try {
+                                    initiateNodeDeletion(d);
+                                } catch (error) {
+                                    console.error('ERROR calling initiateNodeDeletion:', error);
+                                    console.error('Error stack:', error.stack);
+                                }
                             })
                             .on('click', function(event, d) {
                                 event.stopPropagation();
@@ -2835,6 +2854,43 @@
                     update(parent);
                     
                     console.log('Node added successfully');
+                },
+                
+                updateData: function(newData) {
+                    console.log('[HIERARCHY] Updating visualization with new data:', newData);
+                    
+                    // Store the new data globally
+                    window.hierarchyData = newData;
+                    
+                    // Recreate the hierarchy
+                    root = d3.hierarchy(newData);
+                    root.x0 = height / 2;
+                    root.y0 = 0;
+                    
+                    // Clear the existing visualization
+                    svg.selectAll("g.node").remove();
+                    svg.selectAll("path.link").remove();
+                    
+                    // Collapse after the first level
+                    if (root.children) {
+                        root.children.forEach(child => {
+                            if (child.children) {
+                                child._children = child.children;
+                                child.children = null;
+                            }
+                        });
+                    }
+                    
+                    // Update the tree
+                    update(root);
+                    
+                    // Update column headers
+                    setTimeout(() => {
+                        addColumnHeaders();
+                        updateColumnHeaderPositions({ k: 1, x: 100, y: 50 });
+                    }, 600);
+                    
+                    console.log('[HIERARCHY] Visualization updated successfully');
                 }
             };
             
@@ -2998,9 +3054,20 @@
         // Initiate node deletion process
         function initiateNodeDeletion(node) {
             console.log('initiateNodeDeletion called with node:', node);
+            console.log('Node object keys:', Object.keys(node));
+            console.log('Node.data:', node.data);
             console.log('Checking permissions:', window.userPermissions);
             console.log('Capabilities:', window.userPermissions?.capabilities);
             console.log('Can delete?', window.userPermissions?.capabilities?.can_delete);
+            
+            // Add detailed debug info
+            if (node && node.data) {
+                console.log('Node ID:', node.data.id);
+                console.log('Node Name:', node.data.name);
+                console.log('Node Type:', node.data.type);
+                console.log('Node Children:', node.children);
+                console.log('Node _Children:', node._children);
+            }
             
             if (!window.userPermissions || !window.userPermissions.capabilities || !window.userPermissions.capabilities.can_delete) {
                 console.log('Permission check failed - showing error modal');
@@ -3643,6 +3710,50 @@
         }
         
         // Initialize on page load
+        // Debug function to find and test delete functionality
+        function debugDeleteForNode(nodeName) {
+            console.log(`=== DEBUGGING DELETE FOR NODE: ${nodeName} ===`);
+            
+            // Find all nodes
+            const allNodes = d3.selectAll('.node');
+            console.log(`Total nodes found: ${allNodes.size()}`);
+            
+            // Find the specific node
+            let targetNode = null;
+            allNodes.each(function(d) {
+                if (d.data && d.data.name === nodeName) {
+                    console.log(`Found node "${nodeName}":`, d.data);
+                    targetNode = d;
+                    
+                    // Check delete icon
+                    const deleteIcon = d3.select(this).select('.delete-icon-group');
+                    console.log(`Delete icon exists: ${!deleteIcon.empty()}`);
+                    if (!deleteIcon.empty()) {
+                        console.log(`Delete icon opacity: ${deleteIcon.style('opacity')}`);
+                        console.log(`Delete icon display: ${deleteIcon.style('display')}`);
+                        console.log(`Delete icon pointer-events: ${deleteIcon.style('pointer-events')}`);
+                        
+                        // Force make it visible
+                        deleteIcon.style('opacity', 1);
+                    }
+                }
+            });
+            
+            if (targetNode) {
+                console.log('Attempting to call initiateNodeDeletion directly...');
+                try {
+                    initiateNodeDeletion(targetNode);
+                } catch (error) {
+                    console.error('Error calling initiateNodeDeletion:', error);
+                }
+            } else {
+                console.error(`Node "${nodeName}" not found!`);
+            }
+        }
+        
+        // Make it globally available for testing
+        window.debugDeleteForNode = debugDeleteForNode;
+        
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('DOM loaded');
             

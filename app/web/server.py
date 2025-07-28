@@ -113,6 +113,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
             elif path == '/product-hierarchy-test':
                 # Test page without auth
                 self.serve_product_hierarchy_test_page()
+            elif path == '/test-catalogid-fix':
+                # Test page for CatalogId fix
+                self.serve_test_page('test-catalogid-fix.html')
             elif path == '/admin-settings':
                 # Check auth for admin settings page
                 cookie = self.headers.get('Cookie', '')
@@ -464,6 +467,25 @@ class SimpleHandler(BaseHTTPRequestHandler):
             self.wfile.write(content)
         except Exception as e:
             print(f"Error serving product hierarchy test page: {e}")
+            self.send_error(500)
+    
+    def serve_test_page(self, filename):
+        """Serve a test page from the root directory"""
+        try:
+            import os
+            server_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            file_path = os.path.join(server_dir, filename)
+            
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            print(f"Error serving test page {filename}: {e}")
             self.send_error(500)
     
     def serve_admin_settings_page(self):
@@ -1668,6 +1690,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                 'id': catalog_id,
                                 'name': str(catalog_name),
                                 'type': 'catalog',
+                                'catalogId': catalog_id,  # Add catalogId property for findCatalogId function
                                 'children': [],
                                 # Mark items that don't have proper Salesforce IDs as not synced
                                 'isSynced': catalog_id.startswith('0') or catalog_id.startswith('a')
@@ -1706,12 +1729,19 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                 category_dict = {}
                                 for _, category in catalog_categories.iterrows():
                                     cat_id = str(category.get('Id', f'cat-{_}'))
+                                    
+                                    # Skip deleted categories when building the dictionary
+                                    if cat_id in deleted_items:
+                                        print(f"[DEBUG] Skipping deleted category when building dict: {cat_id}")
+                                        continue
+                                    
                                     parent_id = str(category.get('ParentCategoryId', '')) if pd.notna(category.get('ParentCategoryId', '')) else None
                                     
                                     cat_node = {
                                         'id': cat_id,
                                         'name': str(category.get('Name', f'Category {_}')),
                                         'type': 'subcategory' if parent_id else 'category',
+                                        'catalogId': catalog_id,  # Add catalogId property for all categories
                                         'children': [],
                                         'parent_id': parent_id
                                     }
@@ -1914,6 +1944,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                             'id': 'default-catalog',
                             'name': 'Default Catalog',
                             'type': 'catalog',
+                            'catalogId': 'default-catalog',  # Add catalogId for default catalog
                             'children': []
                         }
                         
@@ -1922,9 +1953,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
                         for _, category in categories_df.iterrows():
                             cat_id = str(category.get('Id', f'cat-{_}'))
                             
-                            # Skip deleted categories
+                            # Skip deleted categories when building the dictionary
                             if cat_id in deleted_items:
-                                print(f"[DEBUG] Skipping deleted category: {cat_id}")
+                                print(f"[DEBUG] Skipping deleted category when building dict: {cat_id}")
                                 continue
                                 
                             parent_id = str(category.get('ParentCategoryId', '')) if pd.notna(category.get('ParentCategoryId', '')) else None
@@ -1933,6 +1964,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                 'id': cat_id,
                                 'name': str(category.get('Name', f'Category {_}')),
                                 'type': 'subcategory' if parent_id else 'category',
+                                'catalogId': 'default-catalog',  # Add catalogId for categories in default catalog
                                 'children': [],
                                 'parent_id': parent_id
                             }
@@ -2119,11 +2151,13 @@ class SimpleHandler(BaseHTTPRequestHandler):
                 'id': 'catalog-1',
                 'name': 'Revenue Cloud Products',
                 'type': 'catalog',
+                'catalogId': 'catalog-1',  # Add catalogId for sample catalog
                 'children': [
                     {
                         'id': 'cat-1',
                         'name': 'Software Licenses',
                         'type': 'category',
+                        'catalogId': 'catalog-1',  # Add catalogId for sample category
                         'children': [
                             {
                                 'id': 'subcat-1',
@@ -2185,6 +2219,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                         'id': 'cat-2',
                         'name': 'Services',
                         'type': 'category',
+                        'catalogId': 'catalog-1',  # Add catalogId for sample category
                         'children': [
                             {
                                 'id': 'subcat-3',
@@ -2654,7 +2689,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
                             # Add this item to the appropriate list
                             if node_type == 'catalog' and node_id not in deleted_data['deletedItems']['catalogs']:
                                 deleted_data['deletedItems']['catalogs'].append(node_id)
-                            elif node_type == 'category' and node_id not in deleted_data['deletedItems']['categories']:
+                            elif node_type in ['category', 'subcategory'] and node_id not in deleted_data['deletedItems']['categories']:
                                 deleted_data['deletedItems']['categories'].append(node_id)
                             elif node_type == 'product' and node_id not in deleted_data['deletedItems']['products']:
                                 deleted_data['deletedItems']['products'].append(node_id)
@@ -2720,8 +2755,16 @@ class SimpleHandler(BaseHTTPRequestHandler):
                         record_data = {
                             'Name': addition.get('name'),
                             'Description': addition.get('description', ''),
-                            'ParentCategoryId': addition.get('parentCategoryId')
+                            'CatalogId': addition.get('catalogId'),  # Required field!
+                            'ParentCategoryId': addition.get('parentCategoryId'),
+                            'IsNavigational': addition.get('isNavigational', False),  # Required field with default
+                            'SortOrder': addition.get('sortOrder') if addition.get('sortOrder') is not None else None,
+                            'Code': addition.get('code', ''),
+                            'ExternalId__c': addition.get('externalId', '')
                         }
+                        # Remove None values to avoid Salesforce API errors
+                        record_data = {k: v for k, v in record_data.items() if v is not None}
+                        print(f"[COMMIT] Creating ProductCategory with data: {record_data}")
                     elif node_type == 'product':
                         object_name = 'Product2'
                         record_data = {

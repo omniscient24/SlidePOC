@@ -4,6 +4,156 @@ All notable changes to the Revenue Cloud Migration Tool will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2025-07-28] - Add Product Functionality & Major Fixes
+
+### Added
+- **Complete Add Product Functionality**: Full implementation of product creation in hierarchy
+  - Product modal with comprehensive form fields
+  - Auto-generation for ProductCode and SKU with customizable patterns
+  - Real-time validation and field formatting
+  - Integration with ChangeTracker for staging
+  - ProductCategoryProduct junction record creation
+  - Automatic hierarchy refresh after product addition
+  - Support for all Product2 fields: Name, Description, ProductCode, SKU, Family, IsActive
+
+- **Enhanced Delete Functionality**: Improved deletion for all node types
+  - Fixed delete modal for subcategory nodes
+  - Proper cascade handling for nodes with children
+  - Salesforce deletion with proper cleanup
+
+- **Comprehensive Testing Suite**:
+  - Puppeteer browser automation tests
+  - Direct Salesforce query verification utilities
+  - Manual testing guides and procedures
+  - ProductCategoryProduct sync testing
+
+### Fixed
+- **Event Listener Attachment**: Fixed dynamic button event listeners not attaching properly
+  - Add Product button now responds correctly
+  - Event listeners re-attached when modals are shown
+  
+- **ChangeTracker Enhancements**:
+  - Fixed circular reference error in saveToSession
+  - Now preserves all product fields including categoryId
+  - Better field handling for all node types
+  
+- **Product Creation Flow**:
+  - Fixed bulk upload not returning product IDs
+  - Implemented query-based ID retrieval after creation
+  - Fixed junction record creation for product-category relationships
+  
+- **Hierarchy Refresh**: 
+  - Fixed refresh reliability after commits
+  - Proper node expansion state preservation
+  - Consistent UI updates after operations
+
+### Changed
+- **Modal Management**: Improved modal state handling and transitions
+- **Error Handling**: Enhanced error messages and recovery options
+- **Logging**: Added comprehensive debug logging throughout commit flow
+
+### Technical Details
+- Created `/static/js/add-node-manager.js` enhancements for product handling
+- Modified `/app/api/changes.py` for better product creation flow
+- Updated `/static/js/change-tracker.js` with circular reference fixes
+- Enhanced `/templates/product-hierarchy.html` with product modal
+
+### Known Issues
+- ProductCategoryProduct sheet may need manual column structure update
+- Products may require manual sync to appear in hierarchy
+
+## [2025-07-25] - Product Hierarchy Sync Feature
+
+### Added
+- **Manual Sync Button**: Added "Sync with Salesforce" button to Product Hierarchy page
+  - Allows manual re-synchronization of hierarchy data with Salesforce
+  - Essential for resolving out-of-sync states during development
+  - Located in the top toolbar next to org selector
+  
+- **Sync Progress Modal**: Comprehensive progress tracking during sync
+  - Real-time progress bar with percentage
+  - Animated stripes showing active sync
+  - Individual status tracking for each object type:
+    - Product Catalogs
+    - Product Categories
+    - Product Component Groups
+    - Product Components
+  - Shows record counts for each synced object
+  - Clear success/error messaging in plain English
+  
+- **Sync Implementation** (`product-hierarchy-sync.js`):
+  - Reuses existing sync patterns from Data Management page
+  - Calls existing `/api/sync/{objectName}` endpoints
+  - Automatic page refresh after successful sync
+  - Cancel functionality during sync operation
+  - Error handling with detailed messages
+
+### Technical Details
+- Created `static/js/product-hierarchy-sync.js` module
+- Added script reference to product-hierarchy.html
+- No backend changes needed (uses existing sync endpoints)
+- Progress modal follows UI/UX patterns from Data Management sync
+- Test page created: `test-product-hierarchy-sync.html`
+
+## [2025-07-25] - Add All ProductCategory Fields
+
+### Added
+- **Complete ProductCategory Field Support**: Added all available fields to Add Category modal
+  - IsNavigational (checkbox) - Required field for menu display
+  - Description (textarea, 255 chars) - Category description
+  - SortOrder (number) - Display order in lists
+  - Code (text, 255 chars) - Unique identifier code
+  - ExternalId__c (text, 20 chars) - External system reference
+  - All fields properly validated with max length constraints
+  - Backend updated to handle all new fields in commit process
+  - Field data correctly tracked in changeTracker for pending changes
+
+### Technical Details
+- Used Salesforce Integration Agent to query ProductCategory metadata
+- Discovered 8 createable fields total (Name, CatalogId, IsNavigational required)
+- Updated modal UI with proper field grouping (required vs optional)
+- Enhanced backend record_data to include all new fields
+- Created comprehensive test page (test-category-all-fields.html)
+- Verified end-to-end functionality for all fields
+
+## [2025-07-25] - Category Creation Critical Fixes
+
+### Fixed (Update 2)
+- **Add Category Button Not Working**: Fixed button click handler issues
+  - Fixed malformed try-catch block in submitAddCategory method (indentation was breaking the code)
+  - Added attachCategoryModalEventListeners method to properly attach event listeners
+  - Event listeners are now re-attached each time modal is shown
+  - Used proper function context binding with `self` reference
+  - Replaced inline onclick with addEventListener for better reliability
+
+## [2025-07-25] - Category Creation Critical Fix
+
+### Fixed
+- **ProductCategory Creation Failure**: Fixed categories not being created in Salesforce
+  - Discovered that CatalogId is a required field for ProductCategory object
+  - Added findCatalogId() method to traverse hierarchy and find parent catalog
+  - Updated frontend to include catalogId in category data
+  - Modified backend to pass CatalogId when creating ProductCategory records
+  - ProductCategory now successfully creates with proper catalog association
+  
+- **Modal Freeze Issue**: Fixed "Close & Update View" button not responding after commit
+  - Changed event handler from arrow function to regular function to preserve context
+  - Removed duplicate modal removal that was causing the freeze
+  - Added proper fallback to page reload if handleSuccessfulCommit is unavailable
+  
+- **Visualization Refresh**: Added updateData method to hierarchyVisualization
+  - Properly refreshes the D3 visualization after successful commit
+  - Clears and rebuilds the tree with new data
+  - Updates column headers after data refresh
+
+### Added
+- **Debug Tools**: Created comprehensive debugging utilities
+  - `test-category-creation.html` - Isolated test environment
+  - `test-category-complete-flow.html` - Full flow testing with catalog ID
+  - `debug-category-issue.md` - Comprehensive debugging guide
+  - `debug-commit-flow.js` - Runtime debugging hooks
+  - Enhanced console logging with [ADD CATEGORY] and [COMMIT] prefixes
+
 ## [2025-07-24] - Add Catalog & Category Features
 
 ### Added Product Category Feature

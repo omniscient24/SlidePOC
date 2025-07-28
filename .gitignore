@@ -43,3 +43,54 @@ $RECYCLE.BIN/
 **/__pycache__/
 **/.venv/
 **/venv/
+
+# POC-specific ignores
+# Test files
+test_*.py
+test_*.js
+test_*.html
+test-*.html
+test-*.js
+test-*.py
+test-*.md
+
+# Server logs
+server_*.log
+
+# Upload/sync logs
+data/sync-logs/
+data/upload-logs/
+data/uploads/
+
+# Session files
+sessions/
+
+# CSV result files
+*-failed-records.csv
+*-success-records.csv
+
+# Debug files
+debug*.md
+debug*.json
+*_debug.py
+*_debug.js
+hierarchy_*.json
+
+# Temporary documentation
+ADD_*_SUMMARY.md
+MANUAL_TEST_*.md
+FIX_*.md
+DEBUG_*.md
+COMMIT_DEBUG_*.md
+CHECK_*.py
+COMPREHENSIVE_TEST_*.md
+CATALOG_*.md
+CYBER_*.md
+clear_cache.html
+cookies.txt
+
+# Keep important docs
+!COMPLETED_TASKS.md
+!CHANGELOG.md
+!README.md
+!docs/**/*.md

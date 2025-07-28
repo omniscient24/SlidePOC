@@ -1,0 +1,8 @@
+{
+  "commands": {
+    "push": {
+      "description": "Commit and push POC changes to GitHub with documentation updates",
+      "file": "push.md"
+    }
+  }
+}

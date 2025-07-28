@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag Test</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        svg {
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+        }
+        .node {
+            cursor: move;
+        }
+        .node rect {
+            fill: #4CAF50;
+            stroke: white;
+            stroke-width: 2px;
+        }
+        .node text {
+            fill: white;
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+        .selected rect {
+            stroke: #FF6900;
+            stroke-width: 3px;
+        }
+        #info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #eee;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>D3.js Drag Test</h1>
+    <div id="info">Click and drag the boxes. Position info will appear here.</div>
+    <svg id="test-svg" width="800" height="400"></svg>
+
+    <script>
+        const svg = d3.select('#test-svg');
+        const width = 800;
+        const height = 400;
+        
+        // Create test data
+        const nodes = [
+            { id: 1, name: 'Node 1', x: 100, y: 100 },
+            { id: 2, name: 'Node 2', x: 300, y: 100 },
+            { id: 3, name: 'Node 3', x: 500, y: 100 }
+        ];
+        
+        // Create nodes
+        const nodeGroups = svg.selectAll('.node')
+            .data(nodes)
+            .enter().append('g')
+            .attr('class', 'node')
+            .attr('transform', d => `translate(${d.x},${d.y})`);
+        
+        // Add rectangles
+        nodeGroups.append('rect')
+            .attr('width', 100)
+            .attr('height', 50)
+            .attr('x', -50)
+            .attr('y', -25)
+            .attr('rx', 5);
+        
+        // Add text
+        nodeGroups.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '0.35em')
+            .text(d => d.name);
+        
+        // Add drag behavior
+        const drag = d3.drag()
+            .on('start', function(event, d) {
+                d3.select(this).raise().classed('selected', true);
+                updateInfo(`Drag started: ${d.name}`);
+            })
+            .on('drag', function(event, d) {
+                // Update data
+                d.x = event.x;
+                d.y = event.y;
+                
+                // Update visual position
+                d3.select(this)
+                    .attr('transform', `translate(${d.x},${d.y})`);
+                
+                updateInfo(`Dragging ${d.name} to (${Math.round(d.x)}, ${Math.round(d.y)})`);
+            })
+            .on('end', function(event, d) {
+                d3.select(this).classed('selected', false);
+                updateInfo(`Drag ended: ${d.name} at (${Math.round(d.x)}, ${Math.round(d.y)})`);
+            });
+        
+        // Apply drag to nodes
+        nodeGroups.call(drag);
+        
+        // Helper function to update info
+        function updateInfo(text) {
+            d3.select('#info').text(text);
+        }
+        
+        // Add grid lines for reference
+        const gridSize = 50;
+        
+        // Vertical lines
+        for (let x = 0; x <= width; x += gridSize) {
+            svg.append('line')
+                .attr('x1', x)
+                .attr('y1', 0)
+                .attr('x2', x)
+                .attr('y2', height)
+                .attr('stroke', '#ddd')
+                .attr('stroke-width', 0.5);
+        }
+        
+        // Horizontal lines
+        for (let y = 0; y <= height; y += gridSize) {
+            svg.append('line')
+                .attr('x1', 0)
+                .attr('y1', y)
+                .attr('x2', width)
+                .attr('y2', y)
+                .attr('stroke', '#ddd')
+                .attr('stroke-width', 0.5);
+        }
+    </script>
+</body>
+</html>

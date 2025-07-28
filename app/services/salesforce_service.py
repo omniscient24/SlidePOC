@@ -638,6 +638,7 @@ class SalesforceService:
         type_map = {
             'catalog': 'ProductCatalog',
             'category': 'ProductCategory',
+            'subcategory': 'ProductCategory',  # Subcategories are also ProductCategory in Salesforce
             'product': 'Product2',
             'component': 'ProductRelatedComponent',
             'componentgroup': 'ProductComponentGroup'

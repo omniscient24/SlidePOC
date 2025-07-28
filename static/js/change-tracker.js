@@ -299,16 +299,65 @@ class ChangeTracker {
     }
 
     saveToSession() {
+        // Helper function to handle circular references
+        const getCircularReplacer = () => {
+            const seen = new WeakSet();
+            return (key, value) => {
+                if (typeof value === "object" && value !== null) {
+                    if (seen.has(value)) {
+                        return; // Remove circular reference
+                    }
+                    seen.add(value);
+                }
+                return value;
+            };
+        };
+        
         const data = {
             pendingChanges: Array.from(this.pendingChanges.entries()).map(([nodeId, changes]) => {
                 return [nodeId, Array.from(changes.entries())];
             }),
+            pendingAdditions: this.pendingAdditions || [],
             changeHistory: this.changeHistory,
             historyIndex: this.historyIndex,
             timestamp: new Date().toISOString()
         };
         
-        sessionStorage.setItem('hierarchy-changes', JSON.stringify(data));
+        try {
+            sessionStorage.setItem('hierarchy-changes', JSON.stringify(data, getCircularReplacer()));
+        } catch (error) {
+            console.error('Error saving to session storage:', error);
+            // If it still fails, try to save a minimal version
+            try {
+                const minimalData = {
+                    pendingChanges: Array.from(this.pendingChanges.entries()).map(([nodeId, changes]) => {
+                        return [nodeId, Array.from(changes.entries()).map(([key, value]) => {
+                            // For deletions, only save essential data
+                            if (key === '__DELETE__') {
+                                return [key, {
+                                    nodeId: value.nodeId,
+                                    nodeType: value.nodeType,
+                                    nodeName: value.nodeName,
+                                    deleteChildren: value.deleteChildren,
+                                    newParentId: value.newParentId
+                                }];
+                            }
+                            return [key, value];
+                        })];
+                    }),
+                    pendingAdditions: (this.pendingAdditions || []).map(addition => ({
+                        id: addition.id || null,
+                        tempId: addition.tempId,
+                        name: addition.name,
+                        type: addition.type
+                    })),
+                    timestamp: new Date().toISOString()
+                };
+                sessionStorage.setItem('hierarchy-changes', JSON.stringify(minimalData));
+            } catch (minimalError) {
+                console.error('Error saving minimal data to session storage:', minimalError);
+            }
+        }
     }
 
     loadFromSession() {
@@ -681,26 +730,39 @@ class ChangeTracker {
     }
     
     // Track a node addition
-    trackAddition(nodeId, nodeData) {
-        console.log('Tracking addition for node:', nodeId, nodeData);
+    trackAddition(nodeData) {
+        // Handle both old style (nodeId, nodeData) and new style (just nodeData) calls
+        let actualNodeData, actualNodeId;
+        
+        if (arguments.length === 2) {
+            // Old style call: trackAddition(nodeId, nodeData)
+            actualNodeId = arguments[0];
+            actualNodeData = arguments[1];
+        } else {
+            // New style call: trackAddition(nodeData) where nodeData has nodeId property
+            actualNodeData = nodeData;
+            actualNodeId = nodeData.nodeId || nodeData.id || nodeData.tempId;
+        }
+        
+        console.log('Tracking addition for node:', actualNodeId, actualNodeData);
         
         // Create a special addition change
         const change = {
-            nodeId: nodeId,
+            nodeId: actualNodeId,
             fieldName: '__ADD__',
             oldValue: null,
-            newValue: nodeData,
+            newValue: actualNodeData,
             timestamp: new Date().toISOString(),
             id: this.generateChangeId(),
             isAddition: true
         };
         
         // Store the addition
-        if (!this.pendingChanges.has(nodeId)) {
-            this.pendingChanges.set(nodeId, new Map());
+        if (!this.pendingChanges.has(actualNodeId)) {
+            this.pendingChanges.set(actualNodeId, new Map());
         }
         
-        const nodeChanges = this.pendingChanges.get(nodeId);
+        const nodeChanges = this.pendingChanges.get(actualNodeId);
         nodeChanges.set('__ADD__', change);
         
         // Add to history
@@ -856,8 +918,20 @@ class ChangeTracker {
                         cleanNode.effectiveEndDate = nodeData.effectiveEndDate || '';
                     } else if (nodeData.type === 'category') {
                         cleanNode.parentCategoryId = nodeData.parentCategoryId || null;
+                        cleanNode.parentId = nodeData.parentId || null;  // Add parent ID for catalog reference
+                        cleanNode.catalogId = nodeData.catalogId || null;  // Add catalog ID - REQUIRED for categories!
+                        // Add all category-specific fields
+                        cleanNode.isNavigational = nodeData.isNavigational !== undefined ? nodeData.isNavigational : false;
+                        cleanNode.sortOrder = nodeData.sortOrder || null;
+                        cleanNode.code = nodeData.code || null;
+                        cleanNode.externalId__c = nodeData.externalId__c || null;
                     } else if (nodeData.type === 'product') {
                         cleanNode.productCode = nodeData.productCode || '';
+                        cleanNode.stockKeepingUnit = nodeData.stockKeepingUnit || '';
+                        cleanNode.family = nodeData.family || '';
+                        cleanNode.categoryId = nodeData.categoryId || null;  // CRITICAL for junction creation!
+                        cleanNode.parentId = nodeData.parentId || null;
+                        cleanNode.catalogId = nodeData.catalogId || null;
                     }
                     
                     additions.push(cleanNode);
@@ -1073,52 +1147,92 @@ class ChangeTracker {
          */
         console.log('Handling successful commit:', result);
         
-        // Update temporary IDs with real Salesforce IDs
+        // Clear all pending changes since they've been committed
+        this.pendingChanges.clear();
+        this.clearSession();
+        this.updateChangeSummaryBadge();
+        
+        // Log the results
         if (result.addition_details && result.addition_details.length > 0) {
-            result.addition_details.forEach(addition => {
-                // Update the ID in the additions map
-                if (this.additions.has(addition.temp_id)) {
-                    const nodeData = this.additions.get(addition.temp_id);
-                    nodeData.id = addition.real_id;
-                    nodeData.isNew = false;
-                    nodeData.isSynced = true;
-                    
-                    // Move from additions to regular tracking
-                    this.additions.delete(addition.temp_id);
-                    
-                    // Update the visualization
-                    if (window.hierarchyVisualization && window.hierarchyVisualization.updateNodeId) {
-                        window.hierarchyVisualization.updateNodeId(addition.temp_id, addition.real_id);
-                    }
-                }
-            });
+            console.log('New records created:', result.addition_details);
         }
         
-        // Clear all changes since they've been committed
-        this.clearSession();
+        if (result.deletion_details && result.deletion_details.length > 0) {
+            console.log('Records deleted:', result.deletion_details);
+        }
         
-        // Refresh the product hierarchy data
-        this.refreshHierarchyData();
+        // Refresh the product hierarchy data to show the updated state
+        this.refreshHierarchyData(result);
     }
     
-    async refreshHierarchyData() {
+    async refreshHierarchyData(commitResult) {
         /**
          * Refresh the product hierarchy data from the server
+         * @param {Object} commitResult - Optional result from the commit operation
          */
         try {
+            console.log('Refreshing hierarchy data...');
+            
+            // Show loading indicator
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) {
+                loadingEl.style.display = 'flex';
+            }
+            
             const response = await fetch('/api/product-hierarchy');
             if (response.ok) {
                 const data = await response.json();
+                console.log('Received updated hierarchy data:', data);
                 
-                // Update the visualization with new data
-                if (window.hierarchyVisualization && window.hierarchyVisualization.updateData) {
-                    window.hierarchyVisualization.updateData(data);
+                if (data.success && data.hierarchy) {
+                    // Update the global hierarchy data
+                    window.hierarchyData = data.hierarchy;
+                    window.originalData = data.hierarchy;
+                    window.currentData = JSON.parse(JSON.stringify(data.hierarchy));
+                    
+                    // Re-render the D3 tree with the new data
+                    if (window.renderD3Tree && typeof window.renderD3Tree === 'function') {
+                        console.log('Re-rendering D3 tree with updated data');
+                        // Clear the container first
+                        const container = document.getElementById('hierarchy-container');
+                        if (container) {
+                            container.innerHTML = '';
+                        }
+                        // Render the tree with new data
+                        window.renderD3Tree(window.currentData);
+                        
+                        // If we have addition details, expand the parent nodes
+                        if (commitResult && commitResult.addition_details && commitResult.addition_details.length > 0) {
+                            console.log('Expanding parent nodes for new additions...');
+                            commitResult.addition_details.forEach(detail => {
+                                if (detail.parent_id) {
+                                    // Find and click the parent node to expand it
+                                    setTimeout(() => {
+                                        const parentNode = d3.select(`g[data-node-id="${detail.parent_id}"] circle`);
+                                        if (!parentNode.empty()) {
+                                            console.log(`Expanding parent node: ${detail.parent_id}`);
+                                            parentNode.dispatch('click');
+                                        }
+                                    }, 500); // Small delay to ensure tree is rendered
+                                }
+                            });
+                        }
+                    } else {
+                        console.log('renderD3Tree not found, reloading page');
+                        // Fallback to page reload if render method doesn't exist
+                        window.location.reload();
+                    }
+                    
+                    // Hide loading indicator
+                    if (loadingEl) {
+                        loadingEl.style.display = 'none';
+                    }
                 } else {
-                    // Fallback to page reload if update method doesn't exist
+                    console.error('Invalid data structure received');
                     window.location.reload();
                 }
             } else {
-                console.error('Failed to refresh hierarchy data');
+                console.error('Failed to refresh hierarchy data:', response.status);
                 // Fallback to page reload
                 window.location.reload();
             }
@@ -1222,19 +1336,23 @@ class ChangeTracker {
                 // Add event listener for the button
                 const successBtn = document.getElementById('commit-success-btn');
                 if (successBtn) {
-                    successBtn.addEventListener('click', () => {
+                    // Use regular function to preserve 'this' context
+                    const self = this;
+                    successBtn.addEventListener('click', function() {
                         console.log('Close & Update View button clicked');
                         console.log('Result:', result);
-                        console.log('this context:', this);
-                        console.log('handleSuccessfulCommit exists:', typeof this.handleSuccessfulCommit === 'function');
                         
-                        if (typeof this.handleSuccessfulCommit === 'function') {
-                            this.handleSuccessfulCommit(result);
-                        } else {
-                            console.error('handleSuccessfulCommit method not found!');
-                        }
-                        
+                        // Close the modal
                         successModal.remove();
+                        
+                        // Call handleSuccessfulCommit
+                        if (typeof self.handleSuccessfulCommit === 'function') {
+                            self.handleSuccessfulCommit(result);
+                        } else {
+                            // Fallback: just refresh the page
+                            console.log('Refreshing page after commit...');
+                            window.location.reload();
+                        }
                     });
                 } else {
                     console.error('commit-success-btn not found!');

@@ -704,6 +704,17 @@ a:hover {
     gap: var(--space-sm);
 }
 
+/* Ensure all modal titles are white */
+.modal-header h2,
+.modal-header h3 {
+    color: white !important;
+}
+
+.modal-header .anticon,
+.modal-header i {
+    color: white !important;
+}
+
 /* ========================================
    11. Utility Classes
    ======================================== */
