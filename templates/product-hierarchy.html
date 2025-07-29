@@ -1586,8 +1586,23 @@
                                 
                                 // Position products in this group
                                 groupProducts.forEach((node, index) => {
-                                    // Place products after all category levels
-                                    node.x = (1 + categoryDepth + 1) * columnWidth;
+                                    // Place products in the product column (based on max category depth)
+                                    // Products should always be in the same column regardless of parent depth
+                                    let maxCatDepth = 0;
+                                    root.descendants().forEach(d => {
+                                        if (d.data.type === 'category' || d.data.type === 'subcategory') {
+                                            let depth = 0;
+                                            let current = d;
+                                            while (current.parent && (current.parent.data.type === 'category' || current.parent.data.type === 'subcategory')) {
+                                                depth++;
+                                                current = current.parent;
+                                            }
+                                            maxCatDepth = Math.max(maxCatDepth, depth);
+                                        }
+                                    });
+                                    
+                                    // Products go in column: catalog(1) + categories(maxCatDepth+1) + product(1)
+                                    node.x = (2 + maxCatDepth + 1) * columnWidth;
                                     node._positioned = true; // Mark as positioned
                                     if (!node._manualY) {
                                         node.y = startY + (index * (nodeHeight + spacing));
@@ -1661,8 +1676,22 @@
                                         }
                                         
                                         // Place components in the bundle components column
-                                        // catalog=1, categories..., product=N, component=N+1
-                                        node.x = (1 + categoryDepth + 2) * columnWidth;
+                                        // Need to get max category depth to position correctly
+                                        let maxCatDepth = 0;
+                                        root.descendants().forEach(d => {
+                                            if (d.data.type === 'category' || d.data.type === 'subcategory') {
+                                                let depth = 0;
+                                                let current = d;
+                                                while (current.parent && (current.parent.data.type === 'category' || current.parent.data.type === 'subcategory')) {
+                                                    depth++;
+                                                    current = current.parent;
+                                                }
+                                                maxCatDepth = Math.max(maxCatDepth, depth);
+                                            }
+                                        });
+                                        
+                                        // Components go in column: catalog(1) + categories(maxCatDepth+1) + product(1) + component(1)
+                                        node.x = (2 + maxCatDepth + 2) * columnWidth;
                                         node._positioned = true; // Mark as positioned
                                         
                                         // Set Y position for components
@@ -1670,14 +1699,24 @@
                                             node.y = currentY + (index * (nodeHeight + 15)); // Add 15px spacing
                                         }
                                     } else {
-                                        // This is a regular product, position it normally
-                                        let categoryDepth = 0;
-                                        let current = node.parent;
-                                        while (current && (current.data.type === 'category' || current.data.type === 'subcategory')) {
-                                            categoryDepth++;
-                                            current = current.parent;
-                                        }
-                                        node.x = (1 + categoryDepth + 1) * columnWidth;
+                                        // This is a regular product, position it in the product column
+                                        // Products should always be in the same column regardless of parent depth
+                                        // Calculate the product column based on max category depth
+                                        let maxCatDepth = 0;
+                                        root.descendants().forEach(d => {
+                                            if (d.data.type === 'category' || d.data.type === 'subcategory') {
+                                                let depth = 0;
+                                                let current = d;
+                                                while (current.parent && (current.parent.data.type === 'category' || current.parent.data.type === 'subcategory')) {
+                                                    depth++;
+                                                    current = current.parent;
+                                                }
+                                                maxCatDepth = Math.max(maxCatDepth, depth);
+                                            }
+                                        });
+                                        
+                                        // Products go in column: catalog(1) + categories(maxCatDepth+1) + product(1)
+                                        node.x = (2 + maxCatDepth + 1) * columnWidth;
                                         node._positioned = true; // Mark as positioned
                                         
                                         // Set Y position for products

@@ -1651,10 +1651,10 @@ class SimpleHandler(BaseHTTPRequestHandler):
                         product_category_df = pd.read_excel(workbook_path, sheet_name='26_ProductCategoryProduct')
                         print(f"[DEBUG] Loaded {len(product_category_df)} product-category mappings")
                         # Filter out rows with empty ProductCategoryId or ProductId
-                        if 'ProductCategoryId*' in product_category_df.columns and 'ProductId*' in product_category_df.columns:
+                        if 'ProductCategoryId' in product_category_df.columns and 'ProductId' in product_category_df.columns:
                             product_category_df = product_category_df[
-                                product_category_df['ProductCategoryId*'].notna() & 
-                                product_category_df['ProductId*'].notna()
+                                product_category_df['ProductCategoryId'].notna() & 
+                                product_category_df['ProductId'].notna()
                             ]
                             print(f"[DEBUG] After filtering: {len(product_category_df)} valid mappings")
                     except Exception as e:
@@ -1777,9 +1777,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                         if product_category_df is not None and len(product_category_df) > 0:
                                             # Get product IDs for this category from junction table
                                             try:
-                                                category_mappings = product_category_df[product_category_df['ProductCategoryId*'] == cat_id]
+                                                category_mappings = product_category_df[product_category_df['ProductCategoryId'] == cat_id]
                                                 if len(category_mappings) > 0:
-                                                    product_ids = category_mappings['ProductId*'].tolist()
+                                                    product_ids = category_mappings['ProductId'].tolist()
                                                     # Only get products that haven't been assigned yet
                                                     unassigned_product_ids = [pid for pid in product_ids if pid not in assigned_products]
                                                     category_products = products_df[products_df['Id'].isin(unassigned_product_ids)]
@@ -1851,19 +1851,19 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                             # Since the Excel template is missing ChildProductId, we'll use a hardcoded mapping
                                             # based on the CSV data we found
                                             bundle_mappings = {
-                                                '01tdp000006HfphAAC': [  # DCS Essentials Bundle
+                                                '01tdp000006JEGlAAO': [  # DCS Essentials Bundle (updated ID)
                                                     {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 10},
                                                     {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 20},
                                                     {'id': '01tdp000006HfprAAC', 'name': 'DCS Getting Started Package', 'seq': 30}
                                                 ],
-                                                '01tdp000006HfpiAAC': [  # DCS Advanced Bundle
+                                                '01tdp000006JEGjAAO': [  # DCS Advanced Bundle (updated ID)
                                                     {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 40},
                                                     {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 50},
                                                     {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 60},
                                                     {'id': '01tdp000006HfpmAAC', 'name': 'DCS Analysis Collector', 'seq': 70},
                                                     {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 80, 'required': False}
                                                 ],
-                                                '01tdp000006HfpjAAC': [  # DCS Elite Bundle
+                                                '01tdp000006JEGkAAO': [  # DCS Elite Bundle (updated ID)
                                                     {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 90},
                                                     {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 100},
                                                     {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 110},
@@ -1999,9 +1999,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                 if product_category_df is not None and len(product_category_df) > 0:
                                     # Get product IDs for this category from junction table
                                     try:
-                                        category_mappings = product_category_df[product_category_df['ProductCategoryId*'] == cat_id]
+                                        category_mappings = product_category_df[product_category_df['ProductCategoryId'] == cat_id]
                                         if len(category_mappings) > 0:
-                                            product_ids = category_mappings['ProductId*'].tolist()
+                                            product_ids = category_mappings['ProductId'].tolist()
                                             category_products = products_df[products_df['Id'].isin(product_ids)]
                                     except Exception as e:
                                         print(f"[DEBUG] Error in default catalog product mapping: {e}")
@@ -2047,19 +2047,19 @@ class SimpleHandler(BaseHTTPRequestHandler):
                                     # Since the Excel template is missing ChildProductId, we'll use a hardcoded mapping
                                     # based on the CSV data we found
                                     bundle_mappings = {
-                                        '01tdp000006HfphAAC': [  # DCS Essentials Bundle
+                                        '01tdp000006JEGlAAO': [  # DCS Essentials Bundle (updated ID)
                                             {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 10},
                                             {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 20},
                                             {'id': '01tdp000006HfprAAC', 'name': 'DCS Getting Started Package', 'seq': 30}
                                         ],
-                                        '01tdp000006HfpiAAC': [  # DCS Advanced Bundle
+                                        '01tdp000006JEGjAAO': [  # DCS Advanced Bundle (updated ID)
                                             {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 40},
                                             {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 50},
                                             {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 60},
                                             {'id': '01tdp000006HfpmAAC', 'name': 'DCS Analysis Collector', 'seq': 70},
                                             {'id': '01tdp000006HfppAAC', 'name': 'DCS for OWA', 'seq': 80, 'required': False}
                                         ],
-                                        '01tdp000006HfpjAAC': [  # DCS Elite Bundle
+                                        '01tdp000006JEGkAAO': [  # DCS Elite Bundle (updated ID)
                                             {'id': '01tdp000006HfpoAAC', 'name': 'DCS for Windows', 'seq': 90},
                                             {'id': '01tdp000006HfpkAAC', 'name': 'Data Detection Engine', 'seq': 100},
                                             {'id': '01tdp000006HfpnAAC', 'name': 'DCS Admin Console', 'seq': 110},
