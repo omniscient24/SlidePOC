@@ -10,10 +10,12 @@ import tempfile
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
+import re
 
 from config.settings.app_config import CLI_COMMAND, DATA_ROOT
 from app.services.sync_service import sync_service
 from config.upload_field_config import SPREADSHEET_ONLY_FIELDS, FIELD_TRANSFORMATIONS
+from app.services.upload_error_parser import UniversalUploadErrorParser
 
 class UploadService:
     """Service for uploading data to Salesforce and updating workbook"""
@@ -115,6 +117,27 @@ class UploadService:
             df = df.where(pd.notnull(df), None)
             
             print(f"[UPLOAD] Replaced empty values with NULL for proper Salesforce handling")
+            
+            # Handle integer fields - convert float representations to integers
+            # This is especially important for fields like Sequence which must be integers
+            integer_fields = {
+                'ProductRelatedComponent': ['Sequence'],
+                'ProductComponentGroup': ['Sequence'],
+                'ProductCategory': ['Sequence']
+            }
+            
+            if object_name in integer_fields:
+                for field_name in integer_fields[object_name]:
+                    if field_name in df.columns:
+                        print(f"[UPLOAD] Before conversion - {field_name} values: {df[field_name].head()}")
+                        print(f"[UPLOAD] Before conversion - {field_name} dtypes: {df[field_name].dtype}")
+                        # Convert float values like 1.0 to integer 1
+                        # Only convert non-null values
+                        df[field_name] = df[field_name].apply(
+                            lambda x: str(int(float(x))) if pd.notna(x) and x != '' and str(x) != 'nan' else ''
+                        )
+                        print(f"[UPLOAD] After conversion - {field_name} values: {df[field_name].head()}")
+                        print(f"[UPLOAD] Converted {field_name} to integer type")
             
             # Apply field transformations (e.g., boolean to picklist conversions)
             if object_name in FIELD_TRANSFORMATIONS:
@@ -572,6 +595,148 @@ class UploadService:
         lines.append("3. For Revenue Cloud specific fields, ensure Revenue Cloud features are enabled")
         
         return '\n'.join(lines)
+    
+    def format_detailed_upload_results(self, upload_result: Dict, object_name: str) -> Dict:
+        """
+        Format upload results with detailed error categorization for the UI modal
+        
+        Args:
+            upload_result: Raw upload result from Salesforce
+            object_name: The Salesforce object type
+            
+        Returns:
+            Dictionary formatted for the universal upload results modal
+        """
+        # Initialize the error parser
+        error_parser = UniversalUploadErrorParser()
+        
+        # Extract basic counts
+        records_processed = upload_result.get('records_processed', 0)
+        records_failed = upload_result.get('records_failed', 0)
+        records_created = upload_result.get('records_created', 0)
+        records_updated = records_processed - records_failed - records_created
+        
+        # Initialize the result structure
+        formatted_result = {
+            'success': upload_result.get('success', False),
+            'partial_success': upload_result.get('partial_success', False),
+            'object_name': object_name,
+            'summary': {
+                'total_processed': records_processed,
+                'successful': records_processed - records_failed,
+                'created': records_created,
+                'updated': records_updated,
+                'failed': records_failed
+            },
+            'successful_records': [],
+            'failed_records_by_category': {},
+            'recommendations': [],
+            'can_retry': False,
+            'retry_records': []
+        }
+        
+        # Process successful records if we have a job ID
+        job_id = upload_result.get('job_id')
+        if job_id:
+            success_file = f"{job_id}-success-records.csv"
+            if Path(success_file).exists():
+                try:
+                    import pandas as pd
+                    df_success = pd.read_csv(success_file)
+                    
+                    # Extract successful record identifiers
+                    for _, row in df_success.iterrows():
+                        record_info = {
+                            'id': row.get('sf__Id', ''),
+                            'created': row.get('sf__Created', 'false') == 'true',
+                            'identifier': error_parser.get_record_identifier(row.to_dict(), object_name)
+                        }
+                        formatted_result['successful_records'].append(record_info)
+                except Exception as e:
+                    print(f"[ERROR] Failed to process success records: {e}")
+        
+        # Process failed records if any
+        if records_failed > 0 and job_id:
+            failed_file = f"{job_id}-failed-records.csv"
+            if Path(failed_file).exists():
+                try:
+                    import pandas as pd
+                    df_failed = pd.read_csv(failed_file)
+                    
+                    # Collect errors for categorization
+                    errors = []
+                    for idx, row in df_failed.iterrows():
+                        error_msg = row.get('sf__Error', 'Unknown error')
+                        # Add row number for better identification
+                        row_data = row.to_dict()
+                        row_data['__row_num__'] = idx + 1
+                        errors.append((error_msg, row_data))
+                    
+                    # Categorize errors using the parser
+                    categorized = error_parser.categorize_errors(errors, object_name)
+                    formatted_result['failed_records_by_category'] = categorized
+                    
+                    # Generate recommendations based on error patterns
+                    formatted_result['recommendations'] = error_parser.generate_recommendations(
+                        categorized, object_name
+                    )
+                    
+                    # Determine if records can be retried
+                    retryable_categories = ['DATA', 'DUPLICATE', 'VALIDATION']
+                    for category in categorized:
+                        if category in retryable_categories:
+                            formatted_result['can_retry'] = True
+                            # Collect records that can be retried
+                            for record in categorized[category]['records']:
+                                formatted_result['retry_records'].append({
+                                    'identifier': record['identifier'],
+                                    'category': category,
+                                    'error': record['error']
+                                })
+                    
+                except Exception as e:
+                    print(f"[ERROR] Failed to process failed records: {e}")
+                    # Fallback to basic error processing
+                    if 'failure_details' in upload_result:
+                        # Convert old format to new categorized format
+                        for error_type, details in upload_result['failure_details'].items():
+                            formatted_result['failed_records_by_category'][error_type] = {
+                                'count': details['count'],
+                                'resolutions': [details.get('message', '')],
+                                'records': [
+                                    {
+                                        'identifier': rec,
+                                        'error': error_type,
+                                        'extracted_info': None
+                                    }
+                                    for rec in details.get('example_records', [])
+                                ]
+                            }
+        
+        # Handle complete failure case
+        elif not formatted_result['success'] and not formatted_result['partial_success']:
+            error_msg = upload_result.get('error', 'Unknown error')
+            parsed_error = error_parser.parse_error(error_msg, object_name)
+            
+            formatted_result['failed_records_by_category'] = {
+                parsed_error['category']: {
+                    'count': 1,
+                    'resolutions': [parsed_error['resolution']],
+                    'records': [{
+                        'identifier': 'All records',
+                        'error': parsed_error['original_error'],
+                        'extracted_info': parsed_error['extracted_info']
+                    }]
+                }
+            }
+            
+            # Generate recommendations for the failure
+            formatted_result['recommendations'] = error_parser.generate_recommendations(
+                {parsed_error['category']: {'count': 1}}, 
+                object_name
+            )
+        
+        return formatted_result
 
 # Singleton instance
 upload_service = UploadService()

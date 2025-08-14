@@ -543,42 +543,14 @@ a:hover {
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #0066cc 0%, #0052a3 100%);
+            background: linear-gradient(90deg, #80b3ff 0%, #66a3ff 100%);
             border-radius: 12px;
             transition: width 0.3s ease;
             position: relative;
             overflow: hidden;
         }
         
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(
-                45deg,
-                rgba(255, 255, 255, 0.2) 25%,
-                transparent 25%,
-                transparent 50%,
-                rgba(255, 255, 255, 0.2) 50%,
-                rgba(255, 255, 255, 0.2) 75%,
-                transparent 75%,
-                transparent
-            );
-            background-size: 30px 30px;
-            animation: progress-stripes 1s linear infinite;
-        }
-        
-        @keyframes progress-stripes {
-            0% {
-                background-position: 0 0;
-            }
-            100% {
-                background-position: 30px 0;
-            }
-        }
+        /* Removed animated stripes for solid color progress bar */
         
         .progress-label {
             display: flex;
@@ -791,6 +763,27 @@ a:hover {
         .modal-body .data-table {
             min-width: max-content;
             width: auto;
+        }
+        
+        /* Override for sync progress modal to fill full width */
+        #sync-modal-details .data-table {
+            width: 100% !important;
+            min-width: 100% !important;
+            table-layout: fixed !important;
+        }
+        
+        #sync-modal-details .table-wrapper {
+            width: 100% !important;
+        }
+        
+        #sync-modal-details .data-table td,
+        #sync-modal-details .data-table th {
+            width: auto !important;
+            min-width: auto !important;
+        }
+        
+        #sync-modal-details .progress-bar {
+            width: 100% !important;
         }
         
         /* Better spacing for modal tables */
@@ -1444,6 +1437,50 @@ a:hover {
         #message-modal .modal-body p {
             font-size: 16px;
             margin: 0;
+        }
+
+        /* Alert styles for consistent alignment with Summary section */
+        .alert {
+            padding: 15px;
+            margin: 0 0 20px 0;
+            border-radius: 8px;
+            border: 1px solid transparent;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border-color: #b6d4ea;
+            color: #0c5460;
+        }
+
+        /* Ensure Error Details title aligns with Summary section left edge */
+        .error-details-section h3 {
+            margin: 0 0 15px 0;
+            padding-left: 15px;
+        }
+
+        /* Override any default margins on error-details-section */
+        .error-details-section {
+            margin-top: 20px;
+            padding: 0;
         }
     </style>
 </head>
@@ -2424,8 +2461,8 @@ a:hover {
             const objConfig = REVENUE_CLOUD_OBJECTS.find(obj => obj.apiName === apiName);
             const objectName = objConfig ? objConfig.name : apiName;
             
-            // Switch to upload tab
-            switchTab('upload');
+            // Don't switch tabs - stay on the current tab
+            // switchTab('upload');
             
             // Pre-select the object in the dropdown
             const uploadSelect = document.getElementById('upload-object');
@@ -3632,9 +3669,9 @@ a:hover {
             const modalHtml = `
                 <div id="sync-progress-modal" class="modal-overlay">
                     <div class="modal-content">
-                        <div class="modal-header">
-                            <div>Sync Progress</div>
-                            <button class="close-button" onclick="closeSyncProgressModal()" title="Close">×</button>
+                        <div class="modal-header" style="background: #0066cc; color: white; border-radius: 8px 8px 0 0;">
+                            <div style="color: white; font-weight: bold;">Sync Progress</div>
+                            <button class="close-button" onclick="closeSyncProgressModal()" title="Close" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
                         </div>
                         <div class="modal-body">
                             <div class="progress-container">
@@ -3649,14 +3686,14 @@ a:hover {
                             
                             <div id="sync-modal-details" class="mt-4">
                                 <h4>Object Sync Status</h4>
-                                <div class="table-wrapper" style="border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: auto; max-height: 400px;">
-                                    <table class="data-table" style="margin: 0;">
+                                <div class="table-wrapper" style="border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: auto; max-height: 400px; width: 100%;">
+                                    <table class="data-table" style="margin: 0; width: 100%;">
                                         <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                                             <tr>
-                                                <th>Object</th>
-                                                <th>Status</th>
-                                                <th>Records</th>
-                                                <th>Progress</th>
+                                                <th style="width: 30%;">Object</th>
+                                                <th style="width: 20%;">Status</th>
+                                                <th style="width: 20%;">Records</th>
+                                                <th style="width: 30%;">Progress</th>
                                             </tr>
                                         </thead>
                                         <tbody id="sync-modal-details-tbody">
@@ -3742,9 +3779,9 @@ a:hover {
             const modalHtml = `
                 <div id="upload-progress-modal" class="modal-overlay active">
                     <div class="modal-content">
-                        <div class="modal-header">
-                            <div>Upload Progress</div>
-                            <button class="close-button" onclick="closeUploadProgressModal()" title="Close" id="upload-modal-close-x" style="display: none;">×</button>
+                        <div class="modal-header" style="background: #0066cc; color: white; border-radius: 8px 8px 0 0;">
+                            <div style="color: white; font-weight: bold;">Upload Progress</div>
+                            <button class="close-button" onclick="closeUploadProgressModal()" title="Close" id="upload-modal-close-x" style="display: none; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
                         </div>
                         <div class="modal-body">
                             <div class="upload-info mb-3">
@@ -3917,51 +3954,24 @@ a:hover {
                 });
                 
                 const data = await response.json();
+                console.log('[DEBUG] Upload response data:', data);
+                console.log('[DEBUG] Has detailed_results:', !!data.detailed_results);
                 
                 clearInterval(progressInterval);
                 
+                // Close the progress modal and show the detailed results
+                document.getElementById('upload-modal-progress-bar').style.width = '100%';
+                document.getElementById('upload-modal-percentage').textContent = '100%';
+                
                 if (data.success) {
-                    // Update modal to show success
-                    document.getElementById('upload-modal-progress-bar').style.width = '100%';
-                    document.getElementById('upload-modal-percentage').textContent = '100%';
-                    document.getElementById('upload-modal-status').textContent = 'Upload complete!';
-                    
-                    // Show result details
-                    const resultDiv = document.getElementById('upload-modal-result');
-                    resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = `
-                        <div class="alert alert-success">
-                            <strong>Success!</strong> Successfully uploaded ${data.recordCount} records to ${objectName}.
-                        </div>
-                        ${data.preview ? `
-                            <div class="mt-3">
-                                <h4>Preview (first 5 records):</h4>
-                                <pre style="background: var(--background); padding: var(--space-sm); border-radius: var(--border-radius); overflow-x: auto;">${JSON.stringify(data.preview, null, 2)}</pre>
-                            </div>
-                        ` : ''}
-                    `;
-                    
-                    // Update object status if on sync tab
-                    if (document.getElementById('sync-tab').classList.contains('active')) {
-                        const recordCount = parseInt(document.getElementById(`record-count-${object}`)?.textContent || '0') + data.recordCount;
-                        updateObjectStatus(object, 'ready', recordCount);
-                    }
+                    console.log('[DEBUG] Calling showUploadSuccess');
+                    showUploadSuccess(data);
                 } else {
-                    // Show error in modal
-                    document.getElementById('upload-modal-status').textContent = 'Upload failed';
-                    const resultDiv = document.getElementById('upload-modal-result');
-                    resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = `
-                        <div class="alert alert-error">
-                            <strong>Error:</strong> ${data.error || 'Upload failed'}
-                        </div>
-                    `;
+                    console.log('[DEBUG] Calling showUploadError with detailed_results:', data.detailed_results);
+                    showUploadError(data.error || 'Upload failed', data.detailed_results);
                 }
                 
                 uploadInProgress = false;
-                document.getElementById('upload-modal-cancel-btn').style.display = 'none';
-                document.getElementById('upload-modal-close-btn').style.display = 'inline-block';
-                document.getElementById('upload-modal-close-x').style.display = 'block';
                 
             } catch (error) {
                 clearInterval(progressInterval);
@@ -4734,7 +4744,7 @@ a:hover {
                 if (result.success) {
                     showUploadSuccess(result);
                 } else {
-                    showUploadError(result.error || 'Upload failed');
+                    showUploadError(result.error || 'Upload failed', result.detailed_results);
                 }
             } catch (error) {
                 console.error('Upload error:', error);
@@ -4746,13 +4756,324 @@ a:hover {
             showMessageModal('Error', message, 'error');
         }
         
+        // New universal upload results modal
+        function showDetailedUploadResults(detailedResults) {
+            console.log('[showDetailedUploadResults] Called with:', detailedResults);
+            
+            // Close any existing progress modal
+            const progressModal = document.getElementById('upload-progress-modal');
+            if (progressModal) {
+                console.log('[showDetailedUploadResults] Removing progress modal');
+                progressModal.remove();
+            }
+            
+            // Remove any existing results modal
+            const existingModal = document.getElementById('detailed-upload-results-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Get object display name
+            const objectDisplay = detailedResults.object_name || 'Records';
+            
+            // Calculate summary
+            const summary = detailedResults.summary || {};
+            console.log('[showDetailedUploadResults] Summary:', summary);
+            
+            // Ensure we have all required fields with defaults
+            summary.total_processed = summary.total_processed || 0;
+            summary.successful = summary.successful || 0;
+            summary.failed = summary.failed || 0;
+            summary.created = summary.created || 0;
+            summary.updated = summary.updated || 0;
+            
+            // Separate out ALREADY_EXISTS from actual failures
+            let alreadyExistsCount = 0;
+            if (detailedResults.failed_records_by_category && detailedResults.failed_records_by_category.ALREADY_EXISTS) {
+                alreadyExistsCount = detailedResults.failed_records_by_category.ALREADY_EXISTS.count || 0;
+            }
+            const actualFailures = summary.failed - alreadyExistsCount;
+            
+            const hasErrors = actualFailures > 0;
+            const hasAlreadyExists = alreadyExistsCount > 0;
+            const isPartialSuccess = summary.successful > 0 && actualFailures > 0;
+            const isCompleteSuccess = summary.successful > 0 && actualFailures === 0;
+            const isCompleteFailure = summary.successful === 0 && actualFailures > 0;
+            
+            // Build the modal HTML
+            let modalHtml = `
+                <div id="detailed-upload-results-modal" class="modal" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;">
+                    <div class="modal-backdrop" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9998;"></div>
+                    <div class="modal-content modal-wide" style="position: relative; max-width: 1200px; width: 90%; max-height: 90vh; display: flex; flex-direction: column; margin: 50px auto; background: white; border-radius: 8px; z-index: 9999;">
+                        <div class="modal-header" style="padding: 20px; background: #0066cc; color: white; border-bottom: none; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="margin: 0; color: white;">Upload Results - ${objectDisplay}</h2>
+                            <button class="modal-close" onclick="document.getElementById('detailed-upload-results-modal').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: white; opacity: 1;">×</button>
+                        </div>
+                        <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+                            <!-- Summary Section -->
+                            <div class="results-summary" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <h3 style="margin-top: 0;">Summary</h3>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                                    <div class="stat-card">
+                                        <div style="font-size: 24px; font-weight: bold; color: var(--primary);">${summary.total_processed}</div>
+                                        <div style="color: var(--text-secondary);">Total Processed</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div style="font-size: 24px; font-weight: bold; color: var(--success);">${summary.successful}</div>
+                                        <div style="color: var(--text-secondary);">Successful</div>
+                                    </div>
+                                    ${summary.created ? `
+                                    <div class="stat-card">
+                                        <div style="font-size: 24px; font-weight: bold; color: var(--info);">${summary.created}</div>
+                                        <div style="color: var(--text-secondary);">Created</div>
+                                    </div>` : ''}
+                                    ${summary.updated ? `
+                                    <div class="stat-card">
+                                        <div style="font-size: 24px; font-weight: bold; color: var(--info);">${summary.updated}</div>
+                                        <div style="color: var(--text-secondary);">Updated</div>
+                                    </div>` : ''}
+                                    ${actualFailures > 0 ? `
+                                    <div class="stat-card">
+                                        <div style="font-size: 24px; font-weight: bold; color: var(--error);">${actualFailures}</div>
+                                        <div style="color: var(--text-secondary);">Failed</div>
+                                    </div>` : ''}
+                                    ${alreadyExistsCount > 0 ? `
+                                    <div class="stat-card">
+                                        <div style="font-size: 24px; font-weight: bold; color: var(--info);">${alreadyExistsCount}</div>
+                                        <div style="color: var(--text-secondary);">Already Exists</div>
+                                    </div>` : ''}
+                                </div>
+                            </div>
+            `;
+            
+            // Plain English result message
+            let plainMessage = '';
+            if (isCompleteSuccess) {
+                plainMessage = `<div class="alert alert-success">
+                    <strong>Great!</strong> All ${summary.successful} ${objectDisplay} have been successfully uploaded to Salesforce.
+                    The records are now available in your Salesforce org and can be used immediately.
+                </div>`;
+            } else if (isPartialSuccess) {
+                plainMessage = `<div class="alert alert-warning">
+                    <strong>Upload completed with some issues.</strong><br>
+                    ✓ ${summary.successful} ${objectDisplay} were successfully uploaded to Salesforce.<br>
+                    ✗ ${actualFailures} records failed to upload.<br>
+                    ${alreadyExistsCount > 0 ? `ℹ️ ${alreadyExistsCount} records already exist (no changes made).<br>` : ''}
+                    <br>
+                    The successful records are now available in your Salesforce org. 
+                    Review the error details below to understand what went wrong with the failed records.
+                </div>`;
+            } else if (isCompleteFailure && actualFailures === 0 && alreadyExistsCount > 0) {
+                // All records already exist
+                plainMessage = `<div class="alert alert-info">
+                    <strong>All records already exist in Salesforce.</strong><br>
+                    ℹ️ ${alreadyExistsCount} ${objectDisplay} were skipped because they already exist.<br>
+                    No changes were made to your Salesforce org.
+                </div>`;
+            } else if (isCompleteFailure) {
+                plainMessage = `<div class="alert alert-error">
+                    <strong>Upload failed.</strong><br>
+                    None of the records were uploaded successfully. 
+                    Review the error details below to understand what went wrong.
+                </div>`;
+            }
+            
+            modalHtml += plainMessage;
+            
+            // Already Exists section (if there are existing records)
+            if (hasAlreadyExists && detailedResults.failed_records_by_category && detailedResults.failed_records_by_category.ALREADY_EXISTS) {
+                const alreadyExistsData = detailedResults.failed_records_by_category.ALREADY_EXISTS;
+                modalHtml += `
+                    <div class="already-exists-section" style="margin-top: 20px;">
+                        <h3 style="margin: 0 0 15px 0;">Pre-existing Records</h3>
+                        <div class="already-exists-category" style="border: 1px solid #17a2b8; border-radius: 8px; padding: 10px; background: #d1ecf1;">
+                            <div class="category-header" style="cursor: pointer; padding: 10px; background: #bee5eb; border-radius: 4px;" 
+                                 onclick="toggleErrorCategory('ALREADY_EXISTS')">
+                                <span style="color: #0c5460; font-weight: bold;">
+                                    ℹ️ Records Already Exist (${alreadyExistsData.count} records)
+                                </span>
+                                <span style="float: right;">▼</span>
+                            </div>
+                            <div id="error-category-ALREADY_EXISTS" class="category-content" style="display: none; padding: 10px; background: white; margin-top: 5px; border-radius: 4px; max-height: 400px; overflow-y: auto;">
+                                <div style="margin-bottom: 10px;">
+                                    <strong>Information:</strong><br>
+                                    ${alreadyExistsData.resolutions.map(r => `• ${r}`).join('<br>')}
+                                </div>
+                                <div style="border: 1px solid var(--border); padding: 5px; border-radius: 4px;">
+                                    <strong>Records that already exist:</strong><br>
+                                    <div style="min-width: 0;">
+                                        <ul style="margin: 5px 0; padding-left: 20px;">
+                                        ${alreadyExistsData.records.slice(0, 10).map(record => 
+                                            `<li style="word-break: break-all; margin-bottom: 5px;">
+                                                <strong>${record.identifier}</strong>
+                                            </li>`
+                                        ).join('')}
+                                        ${alreadyExistsData.records.length > 10 ? `<li><em>...and ${alreadyExistsData.records.length - 10} more</em></li>` : ''}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Error details section (if there are errors)
+            if (hasErrors && detailedResults.failed_records_by_category) {
+                modalHtml += `
+                    <div class="error-details-section" style="margin-top: 20px;">
+                        <h3 style="margin: 0 0 15px 0;">Error Details</h3>
+                        <div class="error-categories" style="border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+                `;
+                
+                // Group errors by category (excluding ALREADY_EXISTS which is handled separately)
+                const errorCategories = detailedResults.failed_records_by_category;
+                const categoryOrder = ['VALIDATION', 'PERMISSION', 'RELATIONSHIP', 'DATA', 'DUPLICATE', 'SYSTEM'];
+                
+                categoryOrder.forEach(category => {
+                    if (errorCategories[category] && category !== 'ALREADY_EXISTS') {
+                        const categoryData = errorCategories[category];
+                        const categoryColor = {
+                            'VALIDATION': 'var(--warning)',
+                            'PERMISSION': 'var(--error)',
+                            'RELATIONSHIP': 'var(--info)',
+                            'DATA': 'var(--warning)',
+                            'DUPLICATE': 'var(--info)',
+                            'SYSTEM': 'var(--error)'
+                        }[category] || 'var(--text-secondary)';
+                        
+                        modalHtml += `
+                            <div class="error-category" style="margin-bottom: 15px;">
+                                <div class="category-header" style="cursor: pointer; padding: 10px; background: #e0e0e0; border-radius: 4px;" 
+                                     onclick="toggleErrorCategory('${category}')">
+                                    <span style="color: ${categoryColor}; font-weight: bold;">
+                                        ${category} (${categoryData.count} records)
+                                    </span>
+                                    <span style="float: right;">▼</span>
+                                </div>
+                                <div id="error-category-${category}" class="category-content" style="display: none; padding: 10px; background: var(--surface); margin-top: 5px; border-radius: 4px; max-height: 400px; overflow-y: auto;">
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>Resolution:</strong><br>
+                                        ${categoryData.resolutions.map(r => `• ${r}`).join('<br>')}
+                                    </div>
+                                    <div style="border: 1px solid var(--border); padding: 5px; border-radius: 4px;">
+                                        <strong>Affected Records:</strong><br>
+                                        <div style="min-width: 0;">
+                                            <ul style="margin: 5px 0; padding-left: 20px;">
+                                            ${categoryData.records.slice(0, 10).map(record => 
+                                                `<li style="word-break: break-all; margin-bottom: 5px;">
+                                                    <strong>${record.identifier}</strong><br>
+                                                    <span style="color: var(--text-secondary); font-size: 0.9em;">${record.error}</span>
+                                                </li>`
+                                            ).join('')}
+                                            ${categoryData.records.length > 10 ? `<li><em>...and ${categoryData.records.length - 10} more</em></li>` : ''}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                modalHtml += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Close modal body and add footer
+            modalHtml += `
+                        </div>
+                        <div class="modal-footer">
+                            ${detailedResults.can_retry ? `
+                            <button class="btn btn-secondary" onclick="retryFailedRecords('${objectDisplay}')">
+                                Retry Failed Records (${summary.failed})
+                            </button>` : ''}
+                            <button class="btn btn-primary" onclick="document.getElementById('detailed-upload-results-modal').remove()">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add the modal to the page
+            console.log('[showDetailedUploadResults] Adding modal to page');
+            try {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                console.log('[showDetailedUploadResults] Modal added successfully');
+                
+                // Check if modal exists
+                const addedModal = document.getElementById('detailed-upload-results-modal');
+                if (addedModal) {
+                    console.log('[showDetailedUploadResults] Modal element found in DOM');
+                    console.log('[showDetailedUploadResults] Modal display style:', addedModal.style.display);
+                } else {
+                    console.error('[showDetailedUploadResults] Modal element NOT found in DOM after adding');
+                }
+            } catch (error) {
+                console.error('[showDetailedUploadResults] Error adding modal:', error);
+                console.error('[showDetailedUploadResults] Modal HTML length:', modalHtml.length);
+            }
+            
+            // Store retry data globally for retry function
+            window.uploadRetryData = {
+                object: detailedResults.object_name,
+                records: detailedResults.retry_records
+            };
+        }
+        
+        // Toggle error category expansion
+        function toggleErrorCategory(category) {
+            const content = document.getElementById(`error-category-${category}`);
+            const header = content.previousElementSibling;
+            const arrow = header.querySelector('span:last-child');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                arrow.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                arrow.textContent = '▼';
+            }
+        }
+        
+        // Retry failed records
+        function retryFailedRecords(objectName) {
+            if (!window.uploadRetryData || !window.uploadRetryData.records) {
+                showError('No failed records to retry');
+                return;
+            }
+            
+            showMessageModal('Retry Feature', 
+                `The retry feature would re-attempt uploading the ${window.uploadRetryData.records.length} failed records.\n\n` +
+                `This feature is coming soon. For now, you can:\n` +
+                `1. Fix the issues in your spreadsheet based on the error details\n` +
+                `2. Re-upload the corrected data`, 
+                'info');
+        }
+        
         function showUploadSuccess(result) {
+            console.log('[showUploadSuccess] Called with:', result);
+            console.log('[showUploadSuccess] Has detailed_results:', !!result.detailed_results);
+            
             // Close the upload progress modal
             const progressModal = document.getElementById('upload-progress-modal');
             if (progressModal) {
                 progressModal.remove();
             }
             
+            // Check if we have detailed results from the new system
+            if (result.detailed_results) {
+                console.log('[showUploadSuccess] Calling showDetailedUploadResults');
+                showDetailedUploadResults(result.detailed_results);
+                return;
+            }
+            
+            console.log('[showUploadSuccess] No detailed_results, using legacy modal');
+            
+            // Fall back to legacy handling
             // Build plain English message
             let message = '';
             const objectSelect = document.getElementById('upload-object');
@@ -4785,13 +5106,20 @@ a:hover {
             showMessageModal('Upload Complete', message, 'success');
         }
         
-        function showUploadError(errorMessage) {
+        function showUploadError(errorMessage, detailedResults = null) {
             // Close the upload progress modal
             const progressModal = document.getElementById('upload-progress-modal');
             if (progressModal) {
                 progressModal.remove();
             }
             
+            // Check if we have detailed results from the new system
+            if (detailedResults) {
+                showDetailedUploadResults(detailedResults);
+                return;
+            }
+            
+            // Fall back to legacy handling
             // Build plain English error message
             let message = 'Upload failed.\n\n';
             
