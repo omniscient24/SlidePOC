@@ -291,4 +291,56 @@ public class TextParseTest {
         System.assertEquals('USD', outputs[0].parsedValues[2], 'Third code should be USD (uppercase)');
         System.assertEquals('CAD', outputs[0].parsedValues[3], 'Fourth code should be CAD');
     }
+    
+    @isTest
+    static void testExtractCurrencyWithConversionRate() {
+        // Setup
+        TextParse.InputWrapper input = new TextParse.InputWrapper();
+        input.inputText = 'USD';
+        input.extractCurrencyCode = true;
+        List<TextParse.InputWrapper> inputs = new List<TextParse.InputWrapper>{input};
+        
+        // Execute
+        Test.startTest();
+        List<TextParse.OutputWrapper> outputs = TextParse.parseText(inputs);
+        Test.stopTest();
+        
+        // Verify single currency
+        System.assertEquals(1, outputs.size(), 'Should return one output');
+        System.assertEquals('USD', outputs[0].currencyCode, 'Should extract currency code');
+        System.assertEquals(1, outputs[0].conversionRates.size(), 'Should have one conversion rate');
+        System.assertNotEquals(null, outputs[0].conversionRate, 'Single conversion rate should be populated');
+        System.assertNotEquals(null, outputs[0].conversionRates[0], 'Conversion rate in collection should be populated');
+        
+        // Test with multiple currencies
+        TextParse.InputWrapper input2 = new TextParse.InputWrapper();
+        input2.inputText = 'USD - US Dollar;EUR - European Euro';
+        input2.extractCurrencyCode = true;
+        List<TextParse.InputWrapper> inputs2 = new List<TextParse.InputWrapper>{input2};
+        
+        List<TextParse.OutputWrapper> outputs2 = TextParse.parseText(inputs2);
+        System.assertEquals(2, outputs2[0].parsedValues.size(), 'Should extract two currency codes');
+        System.assertEquals(2, outputs2[0].conversionRates.size(), 'Should have two conversion rates');
+        System.assertEquals(2, outputs2[0].currencyDataList.size(), 'Should have two currency data objects');
+        System.assertEquals(2, outputs2[0].currencyWithRates.size(), 'Should have two formatted currency:rate strings');
+        System.assertEquals('USD', outputs2[0].parsedValues[0], 'First code should be USD');
+        System.assertEquals('EUR', outputs2[0].parsedValues[1], 'Second code should be EUR');
+        System.assertEquals('USD', outputs2[0].currencyDataList[0].isoCode, 'First currency data should have USD');
+        System.assertEquals('EUR', outputs2[0].currencyDataList[1].isoCode, 'Second currency data should have EUR');
+        System.assertNotEquals(null, outputs2[0].currencyDataList[0].conversionRate, 'First currency should have conversion rate');
+        System.assertNotEquals(null, outputs2[0].currencyDataList[1].conversionRate, 'Second currency should have conversion rate');
+        // Verify formatted strings
+        System.assert(outputs2[0].currencyWithRates[0].startsWith('USD:'), 'First formatted string should start with USD:');
+        System.assert(outputs2[0].currencyWithRates[1].startsWith('EUR:'), 'Second formatted string should start with EUR:');
+        
+        // Test with non-existent currency
+        TextParse.InputWrapper input3 = new TextParse.InputWrapper();
+        input3.inputText = 'XYZ';
+        input3.extractCurrencyCode = true;
+        List<TextParse.InputWrapper> inputs3 = new List<TextParse.InputWrapper>{input3};
+        
+        List<TextParse.OutputWrapper> outputs3 = TextParse.parseText(inputs3);
+        System.assertEquals('XYZ', outputs3[0].currencyCode, 'Should extract currency code');
+        System.assertEquals(1.0, outputs3[0].conversionRates[0], 'Should default to 1.0 for non-existent currency');
+    }
 }
